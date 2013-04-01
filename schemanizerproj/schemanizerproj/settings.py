@@ -140,6 +140,7 @@ INSTALLED_APPS = (
     #=============
     # project apps
     #=============
+    'schemanizer',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -195,6 +196,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'schemanizer': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        }
     },
 }
 
