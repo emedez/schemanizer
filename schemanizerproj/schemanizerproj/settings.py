@@ -1,4 +1,4 @@
-# Django settings for schemanizer project.
+# Django settings for schemanizerproj project.
 
 import os
 
@@ -109,10 +109,10 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
-ROOT_URLCONF = 'schemanizer.urls'
+ROOT_URLCONF = 'schemanizerproj.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'schemanizer.wsgi.application'
+WSGI_APPLICATION = 'schemanizerproj.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -183,7 +183,6 @@ LOGGING = {
             'encoding': 'utf-8',
             'delay': True,
         },
-
     },
     'loggers': {
         'django.request': {
@@ -191,7 +190,7 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
-        'schemanizer': {
+        'schemanizerproj': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': True,

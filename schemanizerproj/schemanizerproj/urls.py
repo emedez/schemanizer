@@ -9,8 +9,8 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    # url(r'^$', 'schemanizer.views.home', name='home'),
-    # url(r'^schemanizer/', include('schemanizer.foo.urls')),
+    # url(r'^$', 'schemanizerproj.views.home', name='home'),
+    # url(r'^schemanizerproj/', include('schemanizerproj.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),

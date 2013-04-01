@@ -7,3 +7,4 @@
 *.db
 local_settings.py
 *.log
+spikes/
