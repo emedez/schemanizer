@@ -1,0 +1,9 @@
+*.py[cod]
+
+# Developer
+.project
+.pydevproject
+.idea
+*.db
+local_settings.py
+*.log

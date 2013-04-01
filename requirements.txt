@@ -1,0 +1,7 @@
+MySQL-python
+PIL
+Django
+pytz
+South
+django-crispy-forms
+django-debug-toolbar
