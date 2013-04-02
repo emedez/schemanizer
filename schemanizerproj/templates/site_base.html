@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}Schemanizer{% endblock %}</title>
+
+    <!-- Bootstrap -->
+    <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Site -->
+    <link href="{{ STATIC_URL }}site/css/site.css" rel="stylesheet" />
+
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    {% block layout %}
+        <div class="container-fluid">
+            {% block navbar %}
+                <div class="navbar navbar-fixed-top navbar-inverse">
+                    <div class="navbar-inner">
+                        <a class="brand" href="{% url 'home' %}">{% block brand %}Schemanizer{% endblock %}</a>
+                        {% if request.user.is_authenticated %}
+                            <ul class="nav">
+                                {% block nav_links %}
+                                    <li class="{% block class_home %}{% endblock %}"><a href="{% url 'home' %}">Home</a></li>
+                                    {% if request.user.schemanizer_user.role.name == 'admin' %}
+                                        <li class="{% block class_users %}{% endblock %}"><a href="{% url 'schemanizer_users' %}">Users</a></li>
+                                    {% endif %}
+                                    {% comment %}
+                                    <li><a href="#">Link</a></li>
+                                    <li><a href="#">Link</a></li>
+                                    {% endcomment %}
+
+                                {% endblock %}
+                            </ul>
+                            <ul class="nav pull-right">
+                                <li><p class="navbar-text">Welcome, {{ request.user.get_username }}!</p></li>
+                                <li><a href="{% url 'logout' %}" >Logout</a></li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endblock %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>
+                        <a class="close" data-dismiss="alert" href="#">&times;</a>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% block contents %}
+                {% comment %}
+                <div class="row-fluid">
+                    <div class="span12">
+                    </div>
+                </div>
+                {% endcomment %}
+            {% endblock %}
+        </div>
+    {% endblock %}
+    <script src="{{ STATIC_URL }}jquery/jquery-1.9.1.min.js"></script>
+    <script src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>

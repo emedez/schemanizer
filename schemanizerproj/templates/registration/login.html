@@ -1,0 +1,8 @@
+{% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ block.super }} - Login{% endblock %}
+
+{% block contents %}
+    {% crispy form form.helper %}
+{% endblock %}

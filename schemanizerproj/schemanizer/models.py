@@ -1,5 +1,9 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.db import models
+
+log = logging.getLogger(__name__)
 
 
 class Role(models.Model):
@@ -19,7 +23,7 @@ class Role(models.Model):
 class User(models.Model):
     name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, blank=True)
-    role = models.ForeignKey(Role, db_column='role_id', null=True, blank=True)
+    role = models.OneToOneField(Role, db_column='role_id', null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(

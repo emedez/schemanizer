@@ -1,3 +1,13 @@
+Dependencies
+============
+
+Aside from the Python packages listed on requirements.txt,
+the following are used:
+
+Twitter Bootstrap 2.3.1
+jQuery 1.9.1
+
+
 Schema Changes
 ==============
 
@@ -30,3 +40,4 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 ```
+
