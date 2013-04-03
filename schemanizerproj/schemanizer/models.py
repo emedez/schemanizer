@@ -1,12 +1,20 @@
 import logging
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User as AuthUser
 from django.db import models
+from django.utils import timezone
+
+from schemanizer import exceptions
 
 log = logging.getLogger(__name__)
 
 
 class Role(models.Model):
+    ROLE_ADMIN = u'admin'
+    ROLE_DBA = u'dba'
+    ROLE_DEVELOPER = u'developer'
+    ROLE_LIST = [ROLE_ADMIN, ROLE_DBA, ROLE_DEVELOPER]
+
     name = models.CharField(max_length=255, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
@@ -23,14 +31,14 @@ class Role(models.Model):
 class User(models.Model):
     name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, blank=True)
-    role = models.OneToOneField(Role, db_column='role_id', null=True, blank=True)
+    role = models.ForeignKey(Role, db_column='role_id', null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
 
     user = models.OneToOneField(
-        get_user_model(), related_name='schemanizer_user',
+        AuthUser, related_name='schemanizer_user',
         db_column='auth_user_id')
 
     class Meta:
@@ -39,6 +47,10 @@ class User(models.Model):
     def __unicode__(self):
         return self.name
 
+
+class ChangesetManager(models.Manager):
+    def get_needs_to_be_reviewed(self):
+        return self.filter(review_status=Changeset.REVIEW_STATUS_NEEDS)
 
 class Changeset(models.Model):
     DDL_TABLE_CREATE = u'DDL:Table:Create'
@@ -119,6 +131,8 @@ class Changeset(models.Model):
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
 
+    objects = ChangesetManager()
+
     class Meta:
         db_table = 'changesets'
 
@@ -130,6 +144,72 @@ class Changeset(models.Model):
                     ret += u', '
                 ret += u'%s=%s' % (k, v)
         return ret
+
+    def can_be_reviewed_by(self, auth_user):
+        """Checks if this changeset can be reviewed by user."""
+        role = auth_user.schemanizer_user.role
+        if (self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA) and (
+                self.review_status == self.REVIEW_STATUS_NEEDS or
+                self.review_status == self.REVIEW_STATUS_IN_PROGRESS)):
+            return True
+        else:
+            return False
+
+    def can_be_approved_by(self, auth_user):
+        """Checks if this changeset can be approved by user."""
+        role = auth_user.schemanizer_user.role
+        if (self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA) and (
+                self.review_status == self.REVIEW_STATUS_IN_PROGRESS)):
+            return True
+        else:
+            return False
+    can_be_rejected_by = can_be_approved_by
+
+    def set_reviewed_by(self, auth_user):
+        """Sets this changeset as reviewed."""
+        if self.can_be_reviewed_by(auth_user):
+            now = timezone.now()
+            self.review_status = self.REVIEW_STATUS_IN_PROGRESS
+            self.reviewed_by = auth_user.schemanizer_user
+            self.reviewed_at = now
+            self.save()
+
+            ChangesetAction.objects.create(
+                changeset=self,
+                type=ChangesetAction.TYPE_REVISE,
+                timestamp=now)
+        else:
+            raise exceptions.NotAllowed(u'User is not allowed to review changeset.')
+
+    def set_approved_by(self, auth_user):
+        if self.can_be_approved_by(auth_user):
+            now = timezone.now()
+            self.review_status = self.REVIEW_STATUS_APPROVED
+            self.approved_by = auth_user.schemanizer_user
+            self.approved_at = now
+            self.save()
+
+            ChangesetAction.objects.create(
+                changeset=self,
+                type=ChangesetAction.TYPE_REVISE,
+                timestamp=now)
+        else:
+            raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
+
+    def set_rejected_by(self, auth_user):
+        if self.can_be_rejected_by(auth_user):
+            now = timezone.now()
+            self.review_status = self.REVIEW_STATUS_REJECTED
+            self.approved_by = auth_user.schemanizer_user
+            self.approved_at = now
+            self.save()
+
+            ChangesetAction.objects.create(
+                changeset=self,
+                type=ChangesetAction.TYPE_REMOVE,
+                timestamp=now)
+        else:
+            raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
 
 
 class ChangesetDetail(models.Model):
@@ -181,7 +261,7 @@ class ChangesetDetail(models.Model):
 
 class ChangesetAction(models.Model):
     TYPE_NEW = u'new'
-    TYPE_REVISE = u'review'
+    TYPE_REVISE = u'revise'
     TYPE_REMOVE = u'remove'
 
     TYPE_CHOICES = (

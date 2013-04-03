@@ -25,11 +25,7 @@
                                     {% if request.user.schemanizer_user.role.name == 'admin' %}
                                         <li class="{% block class_users %}{% endblock %}"><a href="{% url 'schemanizer_users' %}">Users</a></li>
                                     {% endif %}
-                                    {% comment %}
-                                    <li><a href="#">Link</a></li>
-                                    <li><a href="#">Link</a></li>
-                                    {% endcomment %}
-
+                                    <li class="{% block class_changesets %}{% endblock %}"><a href="{% url 'schemanizer_changesets' %}">Changesets</a></li>
                                 {% endblock %}
                             </ul>
                             <ul class="nav pull-right">

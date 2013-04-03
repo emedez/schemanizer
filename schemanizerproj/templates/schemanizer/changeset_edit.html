@@ -6,10 +6,10 @@
 {% block contents %}
     {% if user_has_access %}
         <form method="post" action="">
-            <h2>Changeset</h2>
+            <p><strong>Changeset</strong></p>
             {% crispy changeset_form changeset_form.helper %}
 
-            <h2>Changeset Details</h2>
+            <p><strong>Changeset Details</strong></p>
 
             <div class="changeset_details">
                 {{ changeset_detail_formset.management_form }}
@@ -25,7 +25,7 @@
             </div>
 
             <div class="form-actions">
-                <input class="btn btn-primary" type="submit" value="Submit changeset"/>
+                <input class="btn btn-primary" type="submit" value="Save"/>
                 <input id="add_blank_changeset_detail_form_button" class="btn" type="button" value="Add blank changeset detail form"/>
             </div>
         </form>

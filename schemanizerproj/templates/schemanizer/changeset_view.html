@@ -1,10 +1,11 @@
 {% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}{{ block.super }} - Changeset{% endblock %}
 
 {% block contents %}
     {% if user_has_access %}
-        <h2>Changeset</h2>
+        <p><strong>Changeset</strong></p>
         <table class="table table-striped table-condensed table-bordered table-hover">
             <tbody>
                 <tr>
@@ -20,7 +21,7 @@
                     <td>{{ changeset.classification }}</td>
                 </tr>
                 <tr>
-                    <th>Version control url:</th>
+                    <th>Version control URL:</th>
                     <td>{{ changeset.version_control_url }}</td>
                 </tr>
                 <tr>
@@ -62,7 +63,7 @@
             </tbody>
         </table>
 
-        <h2>Changeset Details</h2>
+        <p><strong>Changeset Details</strong></p>
         {% if changeset.changesetdetail_set.all %}
             <table class="table table-striped table-condensed table-bordered table-hover">
                 <thead>
@@ -102,7 +103,7 @@
             <p class="text-info"><em>No changeset details.</em></p>
         {% endif %}
 
-        <h2>Changeset Actions</h2>
+        <p><strong>Changeset Actions</strong></p>
         {% if changeset.changesetaction_set.all %}
             <table class="table table-striped table-condensed table-bordered table-hover">
                 <thead>
@@ -129,5 +130,20 @@
         {% else %}
             <p class="text-info"><em>No changeset actions.</em></p>
         {% endif %}
+
+        <form method="post" action="">
+            {% csrf_token %}
+            <div class="form-actions">
+                {% if can_review %}
+                    <input type="submit" class="btn" name="submit_review" value="Review" />
+                {% endif %}
+                {% if can_approve %}
+                    <input type="submit" class="btn" name="submit_approve" value="Approve" />
+                {% endif %}
+                {% if can_reject %}
+                    <input type="submit" class="btn" name="submit_reject" value="Reject" />
+                {% endif %}
+            </div>
+        </form>
     {% endif %}
 {% endblock %}

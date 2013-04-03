@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm as BuiltinAuthenticatio
 from django import forms
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit
+from crispy_forms.layout import Submit, Button
 
 from schemanizer import models
 
@@ -54,4 +54,23 @@ class ChangesetDetailForm(forms.ModelForm):
 
         helper = FormHelper()
         helper.form_tag = False
+        self.helper = helper
+
+
+class ChangesetActionsForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        can_review = kwargs.pop('can_review', None)
+        can_approve = kwargs.pop('can_approve', None)
+        can_reject = kwargs.pop('can_reject', None)
+
+        super(ChangesetActionsForm, self).__init__(*args, **kwargs)
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        if can_review:
+            helper.add_input(Submit(u'submit_review', u'Review'))
+        if can_approve:
+            helper.add_input(Submit(u'submit_approve', u'Approve'))
+        if can_reject:
+            helper.add_input(Submit(u'submit_reject', u'Reject'))
         self.helper = helper
