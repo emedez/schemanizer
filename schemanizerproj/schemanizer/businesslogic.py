@@ -145,6 +145,19 @@ def send_changeset_rejected_mail(changeset):
         log.warn('No email recipients.')
 
 
+def soft_delete_changeset(changeset):
+    """Soft deletes changeset."""
+    changeset.is_deleted = 1
+    changeset.save()
+
+    models.ChangesetAction.objects.create(
+        changeset=changeset,
+        type=models.ChangesetAction.TYPE_DELETED,
+        timestamp=timezone.now()
+    )
+    log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+
+
 def changeset_submit(**kwargs):
     """Submits changeset.
 
@@ -170,7 +183,7 @@ def changeset_submit(**kwargs):
 
     models.ChangesetAction.objects.create(
         changeset=changeset,
-        type=models.ChangesetAction.TYPE_NEW,
+        type=models.ChangesetAction.TYPE_CREATED,
         timestamp = now)
 
     log.info('A changeset was submitted:\n%s' % (changeset,))

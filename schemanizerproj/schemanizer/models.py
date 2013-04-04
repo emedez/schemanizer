@@ -49,8 +49,13 @@ class User(models.Model):
 
 
 class ChangesetManager(models.Manager):
-    def get_needs_to_be_reviewed(self):
-        return self.filter(review_status=Changeset.REVIEW_STATUS_NEEDS)
+
+    def get_not_deleted(self):
+        return self.filter(is_deleted=0)
+
+    def get_needs_review(self):
+        return self.get_not_deleted().filter(review_status=Changeset.REVIEW_STATUS_NEEDS)
+
 
 class Changeset(models.Model):
     DDL_TABLE_CREATE = u'DDL:Table:Create'
@@ -131,6 +136,8 @@ class Changeset(models.Model):
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
 
+    is_deleted = models.IntegerField(null=True, blank=True, default=0)
+
     objects = ChangesetManager()
 
     class Meta:
@@ -165,6 +172,14 @@ class Changeset(models.Model):
             return False
     can_be_rejected_by = can_be_approved_by
 
+    def can_be_soft_deleted_by(self, user):
+        """Checks if this changeset can be soft deleted by user."""
+        role = user.role
+        if self.pk and role.name in (Role.ROLE_ADMIN,):
+            return True
+        else:
+            return False
+
     def set_reviewed_by(self, user):
         """Sets this changeset as reviewed."""
         if self.can_be_reviewed_by(user):
@@ -176,7 +191,7 @@ class Changeset(models.Model):
 
             ChangesetAction.objects.create(
                 changeset=self,
-                type=ChangesetAction.TYPE_REVISE,
+                type=ChangesetAction.TYPE_CHANGED,
                 timestamp=now)
         else:
             raise exceptions.NotAllowed(u'User is not allowed to review changeset.')
@@ -191,7 +206,7 @@ class Changeset(models.Model):
 
             ChangesetAction.objects.create(
                 changeset=self,
-                type=ChangesetAction.TYPE_REVISE,
+                type=ChangesetAction.TYPE_CHANGED,
                 timestamp=now)
         else:
             raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
@@ -206,7 +221,7 @@ class Changeset(models.Model):
 
             ChangesetAction.objects.create(
                 changeset=self,
-                type=ChangesetAction.TYPE_REMOVE,
+                type=ChangesetAction.TYPE_CHANGED,
                 timestamp=now)
         else:
             raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
@@ -260,20 +275,20 @@ class ChangesetDetail(models.Model):
 
 
 class ChangesetAction(models.Model):
-    TYPE_NEW = u'new'
-    TYPE_REVISE = u'revise'
-    TYPE_REMOVE = u'remove'
+    TYPE_CREATED = u'created'
+    TYPE_CHANGED = u'changed'
+    TYPE_DELETED = u'deleted'
 
     TYPE_CHOICES = (
-        (TYPE_NEW, TYPE_NEW),
-        (TYPE_REVISE, TYPE_REVISE),
-        (TYPE_REMOVE, TYPE_REMOVE)
+        (TYPE_CREATED, TYPE_CREATED),
+        (TYPE_CHANGED, TYPE_CHANGED),
+        (TYPE_DELETED, TYPE_DELETED)
     )
 
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True)
     type = models.CharField(
-        max_length=6, blank=True, choices=TYPE_CHOICES,
+        max_length=7, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])
     timestamp = models.DateTimeField(null=True, blank=True)
 

@@ -44,6 +44,7 @@ class Migration(SchemaMigration):
             ('submitted_at', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('created_at', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, null=True, blank=True)),
             ('updated_at', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, auto_now_add=True, null=True, blank=True)),
+            ('is_deleted', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
         ))
         db.send_create_signal(u'schemanizer', ['Changeset'])
 
@@ -68,7 +69,7 @@ class Migration(SchemaMigration):
         db.create_table('changeset_actions', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('changeset', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['schemanizer.Changeset'], null=True, db_column='changeset_id', blank=True)),
-            ('type', self.gf('django.db.models.fields.CharField')(default=u'new', max_length=6, blank=True)),
+            ('type', self.gf('django.db.models.fields.CharField')(default=u'created', max_length=7, blank=True)),
             ('timestamp', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('created_at', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, null=True, blank=True)),
             ('updated_at', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, auto_now_add=True, null=True, blank=True)),
@@ -137,6 +138,7 @@ class Migration(SchemaMigration):
             'classification': ('django.db.models.fields.CharField', [], {'default': "u'painless'", 'max_length': '10', 'blank': 'True'}),
             'created_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_deleted': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True', 'blank': 'True'}),
             'review_status': ('django.db.models.fields.CharField', [], {'default': "u'needs'", 'max_length': '11', 'blank': 'True'}),
             'reviewed_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'reviewed_by': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'reviewed_changesets'", 'null': 'True', 'db_column': "'reviewed_by'", 'to': u"orm['schemanizer.User']"}),
@@ -152,7 +154,7 @@ class Migration(SchemaMigration):
             'created_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'timestamp': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'type': ('django.db.models.fields.CharField', [], {'default': "u'new'", 'max_length': '6', 'blank': 'True'}),
+            'type': ('django.db.models.fields.CharField', [], {'default': "u'created'", 'max_length': '7', 'blank': 'True'}),
             'updated_at': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'auto_now_add': 'True', 'null': 'True', 'blank': 'True'})
         },
         u'schemanizer.changesetdetail': {

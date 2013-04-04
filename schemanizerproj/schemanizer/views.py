@@ -21,11 +21,12 @@ def home(request, template='schemanizer/home.html'):
 
     if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
         show_to_be_reviewed_changesets = True
-        changesets = models.Changeset.objects.get_needs_to_be_reviewed()
+        changesets = models.Changeset.objects.get_needs_review()
 
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
+@login_required
 def confirm_delete_user(request, id, template='schemanizer/confirm_delete_user.html'):
     user = request.user.schemanizer_user
     user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
@@ -105,6 +106,24 @@ def users(request, template='schemanizer/users.html'):
 
     if user_has_access:
         users = models.User.objects.select_related().all()
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def confirm_soft_delete_changeset(request, id, template='schemanizer/confirm_soft_delete_changeset.html'):
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+
+    if user_has_access:
+        id = int(id)
+        changeset = models.Changeset.objects.get(id=id)
+        if request.method == 'POST':
+            if 'confirm_soft_delete' in request.POST:
+                businesslogic.soft_delete_changeset(changeset)
+                messages.success(request, 'Changeset [id=%s] was soft deleted.' % (id,))
+                return redirect('schemanizer_changesets')
     else:
         messages.error(request, MSG_USER_NO_ACCESS)
     return render_to_response(template, locals(), context_instance=RequestContext(request))
@@ -209,9 +228,11 @@ def changesets(request, template='schemanizer/changesets.html'):
     user_has_access = user.role.name in models.Role.ROLE_LIST
 
     if user_has_access:
-        changesets = models.Changeset.objects.all()
+        changesets = models.Changeset.objects.get_not_deleted()
     else:
         messages.error(request, MSG_USER_NO_ACCESS)
+    can_soft_delete = user.role.name in (models.Role.ROLE_ADMIN,)
+
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
