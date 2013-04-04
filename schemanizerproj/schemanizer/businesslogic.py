@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.auth.models import User as AuthUser
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
@@ -8,6 +9,32 @@ from django.utils import timezone
 from schemanizer import models
 
 log = logging.getLogger(__name__)
+
+
+def update_user(id, name, email, role):
+    """Updates user."""
+    user = models.User.objects.get(id=id)
+    user.name = name
+    user.email = email
+    user.role = role
+    user.save()
+
+    auth_user = user.auth_user
+    auth_user.username = user.name
+    auth_user.email = user.email
+    auth_user.save()
+
+    log.info('User [id=%s] was updated.' % (id,))
+
+    return user
+
+
+def create_user(name, email, role, password):
+    """Creates user."""
+    auth_user = AuthUser.objects.create_user(name, email, password)
+    user = models.User.objects.create(name=name, email=email, role=role, auth_user=auth_user)
+    log.info('User %s created.' % (name,))
+    return user
 
 
 def send_mail(
@@ -33,22 +60,6 @@ def send_mail(
         cc=cc)
     msg.attach_alternative(html_content, 'text/html')
     msg.send()
-
-
-def user_role_is_in_roles(auth_user, role_name_list):
-    """Returns True, if auth_user's role is in the list, otherwise False."""
-    schemanizer_user = auth_user.schemanizer_user
-    role = None
-    if schemanizer_user:
-        role = schemanizer_user.role
-    else:
-        log.warn('Authentication user is not associated to a Schemanizer user.')
-    if role and role.name in role_name_list:
-        return True
-    elif auth_user.is_superuser and models.Role.ROLE_ADMIN in role_name_list:
-        return True
-    else:
-        return False
 
 
 def send_changeset_submitted_mail(changeset):
@@ -185,7 +196,7 @@ def changeset_review(**kwargs):
     reviewed_by = kwargs.get('user')
 
     changeset = changeset_form.save(commit=False)
-    changeset.set_reviewed_by(reviewed_by.user)
+    changeset.set_reviewed_by(reviewed_by)
     changeset_form.save_m2m()
     changeset_detail_formset.save()
 
@@ -201,12 +212,12 @@ def changeset_approve(**kwargs):
 
     expected keyword arguments:
         changeset
-        auth_user
+        user
     """
     changeset = kwargs.get('changeset')
-    auth_user = kwargs.get('auth_user')
+    user = kwargs.get('user')
 
-    changeset.set_approved_by(auth_user)
+    changeset.set_approved_by(user)
 
     log.info('A changeset was approved:\n%s' % (changeset,))
 
@@ -220,12 +231,12 @@ def changeset_reject(**kwargs):
 
     expected keyword arguments:
         changeset
-        auth_user
+        user
     """
     changeset = kwargs.get('changeset')
-    auth_user = kwargs.get('auth_user')
+    user = kwargs.get('user')
 
-    changeset.set_rejected_by(auth_user)
+    changeset.set_rejected_by(user)
 
     log.info('A changeset was rejected:\n%s' % (changeset,))
 

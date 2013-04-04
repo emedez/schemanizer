@@ -11,6 +11,59 @@ from schemanizer import models
 log = logging.getLogger(__name__)
 
 
+class UpdateUserForm(forms.Form):
+    """Form for updating users."""
+
+    name = forms.CharField(max_length=255)
+    email = forms.EmailField(max_length=255)
+    role = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(UpdateUserForm, self).__init__(*args, **kwargs)
+
+        role_qs = models.Role.objects.all()
+        role_choices = []
+        for role in role_qs:
+            role_choices.append((role.id, role.name))
+        self.fields['role'].choices = role_choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('submit', 'Save'))
+        self.helper = helper
+
+
+class CreateUserForm(forms.Form):
+    """Form for creating users."""
+
+    name = forms.CharField(max_length=255)
+    email = forms.EmailField(max_length=255)
+    role = forms.ChoiceField()
+    password = forms.CharField(max_length=30, widget=forms.PasswordInput)
+    confirm_password = forms.CharField(max_length=30, widget=forms.PasswordInput)
+
+    def __init__(self, *args, **kwargs):
+        super(CreateUserForm, self).__init__(*args, **kwargs)
+
+        role_qs = models.Role.objects.all()
+        role_choices = []
+        for role in role_qs:
+            role_choices.append((role.id, role.name))
+        self.fields['role'].choices = role_choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('submit', 'Save'))
+        self.helper = helper
+
+    def clean(self):
+        password = self.cleaned_data.get('password')
+        confirm_password = self.cleaned_data.get('confirm_password')
+        if password != confirm_password:
+            raise forms.ValidationError(u'Passwords don\'t match')
+        return self.cleaned_data
+
+
 class AuthenticationForm(BuiltinAuthenticationForm):
     def __init__(self, *args, **kwargs):
         super(AuthenticationForm, self).__init__(*args, **kwargs)

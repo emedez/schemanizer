@@ -37,7 +37,7 @@ class User(models.Model):
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
 
-    user = models.OneToOneField(
+    auth_user = models.OneToOneField(
         AuthUser, related_name='schemanizer_user',
         db_column='auth_user_id')
 
@@ -145,9 +145,9 @@ class Changeset(models.Model):
                 ret += u'%s=%s' % (k, v)
         return ret
 
-    def can_be_reviewed_by(self, auth_user):
+    def can_be_reviewed_by(self, user):
         """Checks if this changeset can be reviewed by user."""
-        role = auth_user.schemanizer_user.role
+        role = user.role
         if (self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA) and (
                 self.review_status == self.REVIEW_STATUS_NEEDS or
                 self.review_status == self.REVIEW_STATUS_IN_PROGRESS)):
@@ -155,9 +155,9 @@ class Changeset(models.Model):
         else:
             return False
 
-    def can_be_approved_by(self, auth_user):
+    def can_be_approved_by(self, user):
         """Checks if this changeset can be approved by user."""
-        role = auth_user.schemanizer_user.role
+        role = user.role
         if (self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA) and (
                 self.review_status == self.REVIEW_STATUS_IN_PROGRESS)):
             return True
@@ -165,12 +165,12 @@ class Changeset(models.Model):
             return False
     can_be_rejected_by = can_be_approved_by
 
-    def set_reviewed_by(self, auth_user):
+    def set_reviewed_by(self, user):
         """Sets this changeset as reviewed."""
-        if self.can_be_reviewed_by(auth_user):
+        if self.can_be_reviewed_by(user):
             now = timezone.now()
             self.review_status = self.REVIEW_STATUS_IN_PROGRESS
-            self.reviewed_by = auth_user.schemanizer_user
+            self.reviewed_by = user
             self.reviewed_at = now
             self.save()
 
@@ -181,11 +181,11 @@ class Changeset(models.Model):
         else:
             raise exceptions.NotAllowed(u'User is not allowed to review changeset.')
 
-    def set_approved_by(self, auth_user):
-        if self.can_be_approved_by(auth_user):
+    def set_approved_by(self, user):
+        if self.can_be_approved_by(user):
             now = timezone.now()
             self.review_status = self.REVIEW_STATUS_APPROVED
-            self.approved_by = auth_user.schemanizer_user
+            self.approved_by = user
             self.approved_at = now
             self.save()
 
@@ -196,11 +196,11 @@ class Changeset(models.Model):
         else:
             raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
 
-    def set_rejected_by(self, auth_user):
-        if self.can_be_rejected_by(auth_user):
+    def set_rejected_by(self, user):
+        if self.can_be_rejected_by(user):
             now = timezone.now()
             self.review_status = self.REVIEW_STATUS_REJECTED
-            self.approved_by = auth_user.schemanizer_user
+            self.approved_by = user
             self.approved_at = now
             self.save()
 

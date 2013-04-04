@@ -16,24 +16,93 @@ MSG_USER_NO_ACCESS = u'You do not have access to this page.'
 
 @login_required
 def home(request, template='schemanizer/home.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(request.user, models.Role.ROLE_LIST)
-    role = request.user.schemanizer_user.role
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in models.Role.ROLE_LIST
 
-    if role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
         show_to_be_reviewed_changesets = True
         changesets = models.Changeset.objects.get_needs_to_be_reviewed()
 
-    ROLE_ADMIN=models.Role.ROLE_ADMIN,
-    ROLE_DBA=models.Role.ROLE_DBA,
-    ROLE_DEVELOPER=models.Role.ROLE_DEVELOPER
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
+
+def confirm_delete_user(request, id, template='schemanizer/confirm_delete_user.html'):
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+
+    if user_has_access:
+        id = int(id)
+        to_be_del_user = models.User.objects.get(id=id)
+        if request.method == 'POST':
+            if 'confirm_delete' in request.POST:
+                to_be_del_user.auth_user.delete()
+                log.info('User [id=%s] was deleted.' % (id,))
+                messages.success(request, 'User [id=%s] was deleted.' % (id,))
+                return redirect('schemanizer_users')
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def update_user(request, id, template='schemanizer/update_user.html'):
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+
+    if user_has_access:
+        id = int(id)
+
+        # to be updated user
+        user2 = models.User.objects.get(id=id)
+        initial = dict(
+            name=user2.name, email=user2.email, role=user2.role_id)
+        if request.method == 'POST':
+            form = forms.UpdateUserForm(request.POST, initial=initial)
+            if form.is_valid():
+                name = form.cleaned_data['name']
+                email = form.cleaned_data['email']
+                role_id = form.cleaned_data['role']
+                role = models.Role.objects.get(id=role_id)
+                businesslogic.update_user(id, name, email, role)
+                messages.success(request, u'User updated.')
+                return redirect('schemanizer_users')
+        else:
+            form = forms.UpdateUserForm(initial=initial)
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def user_create(request, template='schemanizer/user_create.html'):
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+
+    if user_has_access:
+        initial = dict(role=1)
+        if request.method == 'POST':
+            form = forms.CreateUserForm(request.POST, initial=initial)
+            if form.is_valid():
+                name = form.cleaned_data['name']
+                email = form.cleaned_data['email']
+                role_id = form.cleaned_data['role']
+                password = form.cleaned_data['password']
+                role = models.Role.objects.get(id=role_id)
+                businesslogic.create_user(name, email, role, password)
+                messages.success(request, u'User created.')
+                return redirect('schemanizer_users')
+        else:
+            form = forms.CreateUserForm(initial=initial)
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
 def users(request, template='schemanizer/users.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(
-        request.user, (models.Role.ROLE_ADMIN,))
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+
     if user_has_access:
         users = models.User.objects.select_related().all()
     else:
@@ -43,8 +112,9 @@ def users(request, template='schemanizer/users.html'):
 
 @login_required
 def changeset_submit(request, template='schemanizer/changeset_edit.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(
-        request.user, models.Role.ROLE_LIST)
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in models.Role.ROLE_LIST
+
     if user_has_access:
         changeset = models.Changeset()
         ChangesetDetailFormSet = inlineformset_factory(
@@ -58,7 +128,7 @@ def changeset_submit(request, template='schemanizer/changeset_edit.html'):
                 changeset = businesslogic.changeset_submit(
                     changeset_form=changeset_form,
                     changeset_detail_formset=changeset_detail_formset,
-                    user=request.user.schemanizer_user)
+                    user=user)
                 messages.success(request, u'Changeset submitted.')
                 return redirect('schemanizer_changeset_view', changeset.id)
         else:
@@ -71,8 +141,9 @@ def changeset_submit(request, template='schemanizer/changeset_edit.html'):
 
 @login_required
 def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(
-        request.user, (models.Role.ROLE_ADMIN, models.Role.ROLE_DBA))
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
+
     if user_has_access:
         id = int(id)
         changeset = models.Changeset.objects.get(id=id)
@@ -87,7 +158,7 @@ def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
                 changeset = businesslogic.changeset_review(
                     changeset_form=changeset_form,
                     changeset_detail_formset=changeset_detail_formset,
-                    user=request.user.schemanizer_user)
+                    user=user)
                 messages.success(request, u'Changeset reviewed.')
                 return redirect('schemanizer_changeset_view', changeset.id)
         else:
@@ -100,9 +171,9 @@ def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
 
 @login_required
 def changeset_view(request, id, template='schemanizer/changeset_view.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(
-        request.user, models.Role.ROLE_LIST)
-    role = request.user.schemanizer_user.role
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in models.Role.ROLE_LIST
+
     if user_has_access:
         id = int(id)
         changeset = models.Changeset.objects.select_related().get(id=id)
@@ -112,11 +183,11 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                     return redirect('schemanizer_changeset_review', changeset.id)
                 elif u'submit_approve' in request.POST:
                     businesslogic.changeset_approve(
-                        changeset=changeset, auth_user=request.user)
+                        changeset=changeset, user=user)
                     messages.success(request, u'Changeset approved.')
                 elif u'submit_reject' in request.POST:
                     businesslogic.changeset_reject(
-                        changeset=changeset, auth_user=request.user)
+                        changeset=changeset, user=user)
                     messages.success(request, u'Changeset rejected.')
                 else:
                     messages.error(request, u'Unknown command.')
@@ -124,9 +195,9 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                 log.exception('EXCEPTION')
                 messages.error(request, e.message)
 
-        can_review=changeset.can_be_reviewed_by(request.user)
-        can_approve=changeset.can_be_approved_by(request.user)
-        can_reject=changeset.can_be_rejected_by(request.user)
+        can_review=changeset.can_be_reviewed_by(user)
+        can_approve=changeset.can_be_approved_by(user)
+        can_reject=changeset.can_be_rejected_by(user)
     else:
         messages.error(request, MSG_USER_NO_ACCESS)
     return render_to_response(template, locals(), context_instance=RequestContext(request))
@@ -134,10 +205,13 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
 
 @login_required
 def changesets(request, template='schemanizer/changesets.html'):
-    user_has_access = businesslogic.user_role_is_in_roles(
-        request.user, models.Role.ROLE_LIST)
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in models.Role.ROLE_LIST
+
     if user_has_access:
         changesets = models.Changeset.objects.all()
     else:
         messages.error(request, MSG_USER_NO_ACCESS)
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+

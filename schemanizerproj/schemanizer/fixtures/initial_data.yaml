@@ -1,0 +1,39 @@
+- fields: {domain: 'localhost:8000', name: Schemanizer}
+  model: sites.site
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-01 04:02:25+00:00', name: admin, updated_at: !!timestamp '2013-04-01
+      04:02:25+00:00'}
+  model: schemanizer.role
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-01 04:02:31+00:00', name: dba, updated_at: !!timestamp '2013-04-01
+      04:02:31+00:00'}
+  model: schemanizer.role
+  pk: 2
+- fields: {created_at: !!timestamp '2013-04-01 04:02:36+00:00', name: developer, updated_at: !!timestamp '2013-04-01
+      04:02:36+00:00'}
+  model: schemanizer.role
+  pk: 3
+- fields:
+    date_joined: 2013-04-03 16:57:35+00:00
+    email: EMedez+admin@palominodb.com
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: true
+    is_superuser: true
+    last_login: 2013-04-03 16:58:17+00:00
+    last_name: ''
+    password: pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=
+    user_permissions: []
+    username: admin
+  model: auth.user
+  pk: 1
+- fields:
+    auth_user: [admin]
+    created_at: 2013-04-03 17:02:34+00:00
+    email: EMedez+admin@palominodb.com
+    name: admin
+    role: 1
+    updated_at: 2013-04-03 17:02:34+00:00
+  model: schemanizer.user
+  pk: 1

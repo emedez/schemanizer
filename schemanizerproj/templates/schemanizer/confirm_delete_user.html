@@ -1,0 +1,16 @@
+{% extends 'site_base.html' %}
+
+{% block title %}{{ block.super }} - Confirm Delete User{% endblock %}
+
+{% block contents %}
+    <div class="alert">
+        <h4>Warning!</h4>
+        <p>
+            This will delete all associated records.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="submit" class="btn btn-warning" name="confirm_delete" value="Confirm Delete"/>
+        </form>
+    </div>
+{% endblock %}

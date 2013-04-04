@@ -9,7 +9,7 @@ class RoleAdmin(admin.ModelAdmin):
 
 class UserAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'email', 'role', 'created_at', 'updated_at', 'user')
+        'id', 'name', 'email', 'role', 'created_at', 'updated_at', 'auth_user')
 
 
 class ChangesetDetailInline(admin.TabularInline):

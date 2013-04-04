@@ -3,5 +3,6 @@ PIL
 Django
 pytz
 South
+PyYAML
 django-crispy-forms
 django-debug-toolbar
