@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.5.29, for debian-linux-gnu (x86_64)
 --
--- Host: localhost    Database: schemanizer_dev
+-- Host: localhost    Database: cdt
 -- ------------------------------------------------------
 -- Server version	5.5.29-0ubuntu0.12.04.2-log
 
@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `changeset_actions`;
 CREATE TABLE `changeset_actions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('new','revise','remove') DEFAULT NULL,
+  `type` enum('created','changed','deleted') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -210,6 +210,7 @@ CREATE TABLE `changesets` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `submitted_by` int(11) DEFAULT NULL,
+  `is_deleted` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -903,4 +904,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-04-04  0:53:41
+-- Dump completed on 2013-04-04 20:47:42
