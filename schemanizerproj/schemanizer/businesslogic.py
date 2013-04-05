@@ -310,7 +310,9 @@ def apply_changesets(request, database_schema):
                 log.info(msg)
                 messages.info(request, msg)
 
-                mysql_conn = create_aws_mysql_connection()
+                host = instance.public_dns_name
+                log.debug('instance.public_dns_name=%s' % (host,))
+                mysql_conn = create_aws_mysql_connection(host=host)
                 query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
                 utils.execute(mysql_conn, query)
 
@@ -321,7 +323,8 @@ def apply_changesets(request, database_schema):
                     schema_version = schema_versions[0]
                 if schema_version:
                     mysql_conn.close()
-                    mysql_conn = create_aws_mysql_connection(db=database_schema.name)
+                    mysql_conn = create_aws_mysql_connection(
+                        db=database_schema.name, host=host)
                     utils.execute(mysql_conn, schema_version.ddl)
 
                     changesets = models.Changeset.objects.get_not_deleted(
@@ -366,11 +369,13 @@ def apply_changesets(request, database_schema):
         messages.warning(request, msg)
 
 
-def create_aws_mysql_connection(db=None):
+def create_aws_mysql_connection(db=None, host=None):
     """Creates connection to MySQL on EC2 instance."""
     connection_options = {}
     if settings.AWS_MYSQL_HOST:
         connection_options['host'] = settings.AWS_MYSQL_HOST
+    elif host:
+        connection_options['host'] = host
     if settings.AWS_MYSQL_PORT:
         connection_options['port'] = settings.AWS_MYSQL_PORT
     if settings.AWS_MYSQL_USER:

@@ -353,7 +353,8 @@ class Environment(models.Model):
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
+        null=True, blank=True, auto_now_add=True, auto_now=True,
+        db_column='update_at')
 
     class Meta:
         db_table = 'environments'

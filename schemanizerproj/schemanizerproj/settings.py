@@ -244,8 +244,8 @@ AWS_INSTANCE_TYPE = 'm1.small'
 # AWS MySQL user/password
 AWS_MYSQL_HOST = None
 AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = None
-AWS_MYSQL_PASSWORD = None
+AWS_MYSQL_USER = 'sandbox'
+AWS_MYSQL_PASSWORD = 'sandbox'
 
 try:
     from local_settings import *
