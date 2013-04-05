@@ -11,6 +11,27 @@ from schemanizer import models
 log = logging.getLogger(__name__)
 
 
+class ApplyChangesetsForm(forms.Form):
+    """Form for collection data for applying changesets."""
+    database_schema = forms.ChoiceField(
+        help_text="The latest schema version for this database will be used.")
+
+    def __init__(self, *args, **kwargs):
+        super(ApplyChangesetsForm, self).__init__(*args, **kwargs)
+
+        choices = []
+        qs = models.DatabaseSchema.objects.all()
+        for qs_item in qs:
+            choices.append((qs_item.id, qs_item.name))
+
+        self.fields['database_schema'].choices = choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('submit', 'Submit'))
+        self.helper = helper
+
+
 class UpdateUserForm(forms.Form):
     """Form for updating users."""
 

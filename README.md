@@ -15,7 +15,7 @@ Set Local Settings
 
 Copy schemanizerproj/schemanizerproj/local_settings.py.sample to schemanizerproj/schemanizerproj/local_settings.py
 
-Edit the contents of local_settings.py and set the correct values.
+Edit the contents of local_settings.py and set the correct values for settings.
 
 Initial Data
 ------------
@@ -30,6 +30,9 @@ $ ./manage.py syncdb --noinput
 $ ./manage.py migrate --fake
 $ ./manage.py loaddata schemanizer/fixtures/initial_data.yaml
 ```
+
+At this point user 'admin' now exists with password 'admin'.
+
 
 Run Server
 ----------

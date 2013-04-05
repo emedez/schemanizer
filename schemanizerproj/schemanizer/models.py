@@ -245,7 +245,8 @@ class ChangesetDetail(models.Model):
     )
 
     changeset = models.ForeignKey(
-        Changeset, db_column='changeset_id', null=True, blank=True)
+        Changeset, db_column='changeset_id', null=True, blank=True,
+        related_name='changeset_details')
     type = models.CharField(
         max_length=6, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])
@@ -298,6 +299,109 @@ class ChangesetAction(models.Model):
 
     class Meta:
         db_table = 'changeset_actions'
+
+    def __unicode__(self):
+        ret = u''
+        for k, v in vars(self).iteritems():
+            if not k.startswith('_'):
+                if ret:
+                    ret += u', '
+                ret += u'%s=%s' % (k, v)
+        return ret
+
+
+class DatabaseSchema(models.Model):
+    name = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'database_schemas'
+
+    def __unicode__(self):
+        return self.name
+
+
+class SchemaVersion(models.Model):
+    database_schema = models.ForeignKey(
+        DatabaseSchema, db_column='database_schema_id', null=True, blank=True,
+        related_name='schema_versions')
+    ddl = models.TextField(blank=True)
+    checksum = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'schema_versions'
+
+    def __unicode__(self):
+        ret = u''
+        for k, v in vars(self).iteritems():
+            if not k.startswith('_'):
+                if ret:
+                    ret += u', '
+                ret += u'%s=%s' % (k, v)
+        return ret
+
+
+class Environment(models.Model):
+    name = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'environments'
+
+    def __unicode__(self):
+        return self.name
+
+
+class Server(models.Model):
+    name = models.CharField(max_length=255, unique=True, blank=True)
+    cached_size = models.IntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    environment = models.ForeignKey(
+        Environment, db_column='environment_id', null=True, blank=True,
+        related_name='servers')
+
+    class Meta:
+        db_table = 'servers'
+
+    def __unicode__(self):
+        return self.name
+
+
+class ChangesetDetailApply(models.Model):
+    changeset_detail = models.ForeignKey(
+        ChangesetDetail, db_column='changeset_detail_id', null=True, blank=True,
+        related_name='changeset_detail_applies')
+    before_version = models.IntegerField(null=True, blank=True)
+    after_version = models.IntegerField(null=True, blank=True)
+    environment = models.ForeignKey(
+        Environment, db_column='environment_id', null=True, blank=True,
+        related_name='environment_changeset_detail_applies')
+    server = models.ForeignKey(
+        Server, db_column='server_id', null=True, blank=True,
+        related_name='server_changeset_detail_applies')
+    results_log = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'changeset_detail_applies'
+        verbose_name_plural = 'changeset detail applies'
 
     def __unicode__(self):
         ret = u''

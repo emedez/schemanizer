@@ -5,4 +5,5 @@ pytz
 South
 PyYAML
 django-crispy-forms
+boto
 django-debug-toolbar

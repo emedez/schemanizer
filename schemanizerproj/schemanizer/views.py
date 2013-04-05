@@ -21,6 +21,7 @@ def home(request, template='schemanizer/home.html'):
 
     if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
         show_to_be_reviewed_changesets = True
+        can_apply_changesets = True
         changesets = models.Changeset.objects.get_needs_review()
 
     return render_to_response(template, locals(), context_instance=RequestContext(request))
@@ -236,3 +237,28 @@ def changesets(request, template='schemanizer/changesets.html'):
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
+@login_required
+def apply_changesets(request, template='schemanizer/schemanizer_apply_changesets.html'):
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+
+    if user_has_access:
+        initial = dict(
+            region = 'ap-southeast-1',
+            ami_id = 'ami-4edb971c',
+            key_name = 'tools-sqlcanon1-sg-key',
+            security_group = 'quicklaunch-1',
+            instance_type = 'm1.small')
+        if request.method == 'POST':
+            form = forms.ApplyChangesetsForm(request.POST, initial=initial)
+            if form.is_valid():
+                database_schema_id = form.cleaned_data['database_schema']
+                database_schema = models.DatabaseSchema.objects.get(id=int(database_schema_id))
+                messages.warning(request, u'Warning! businesslogic.apply_changesets() method is still being tested.')
+                businesslogic.apply_changesets(request, database_schema)
+        else:
+            form = forms.ApplyChangesetsForm(initial=initial)
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
+
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
