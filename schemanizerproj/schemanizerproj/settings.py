@@ -247,6 +247,10 @@ AWS_MYSQL_PORT = None
 AWS_MYSQL_USER = 'sandbox'
 AWS_MYSQL_PASSWORD = 'sandbox'
 
+# Number of seconds to wait before trying to connect to MySQL server.
+# This is to give time for it to start completely.
+AWS_MYSQL_START_WAIT = 30
+
 try:
     from local_settings import *
 except ImportError:

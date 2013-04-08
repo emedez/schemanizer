@@ -313,42 +313,46 @@ def apply_changesets(request, database_schema):
                 host = instance.public_dns_name
                 log.debug('instance.public_dns_name=%s' % (host,))
                 mysql_conn = create_aws_mysql_connection(host=host)
-                query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
-                utils.execute(mysql_conn, query)
+                if mysql_conn:
+                    query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
+                    utils.execute(mysql_conn, query)
 
-                schema_versions = models.SchemaVersion.objects.filter(
-                    database_schema=database_schema).order_by('-created_at', '-id')
-                schema_version = None
-                if schema_versions.count() > 0:
-                    schema_version = schema_versions[0]
-                if schema_version:
-                    mysql_conn.close()
-                    mysql_conn = create_aws_mysql_connection(
-                        db=database_schema.name, host=host)
-                    utils.execute(mysql_conn, schema_version.ddl)
+                    schema_versions = models.SchemaVersion.objects.filter(
+                        database_schema=database_schema).order_by('-created_at', '-id')
+                    schema_version = None
+                    if schema_versions.count() > 0:
+                        schema_version = schema_versions[0]
+                    if schema_version:
+                        mysql_conn.close()
+                        mysql_conn = create_aws_mysql_connection(
+                            db=database_schema.name, host=host)
+                        utils.execute(mysql_conn, schema_version.ddl)
 
-                    changesets = models.Changeset.objects.get_not_deleted(
-                        ).select_related().filter(
-                        review_status=models.Changeset.REVIEW_STATUS_APPROVED)
-                    for changeset in changesets:
-                        for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
-                            try:
-                                results = utils.fetchall(mysql_conn, changeset_detail.apply_sql)
-                                models.ChangesetDetailApply.objects.create(
-                                    changeset_detail=changeset_detail,
-                                    before_version=schema_version.id,
-                                    results_log=u'%s' % (results,)
-                                )
-                            except Exception, e:
-                                log.exception('EXCEPTION')
-                                messages.error(request, e.message)
-                    msg = u'Apply changesets completed. Login as admin and go to /admin pages to view changeset detail applies.'
-                    log.info(msg)
-                    messages.info(request, msg)
-
+                        changesets = models.Changeset.objects.get_not_deleted(
+                            ).select_related().filter(
+                            review_status=models.Changeset.REVIEW_STATUS_APPROVED)
+                        for changeset in changesets:
+                            for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
+                                try:
+                                    results = utils.fetchall(mysql_conn, changeset_detail.apply_sql)
+                                    models.ChangesetDetailApply.objects.create(
+                                        changeset_detail=changeset_detail,
+                                        before_version=schema_version.id,
+                                        results_log=u'%s' % (results,)
+                                    )
+                                except Exception, e:
+                                    log.exception('EXCEPTION')
+                                    messages.error(request, e.message)
+                        msg = u'Apply changesets completed. Login as admin and go to /admin pages to view changeset detail applies.'
+                        log.info(msg)
+                        messages.info(request, msg)
+                    else:
+                        msg = u'No schema version found.'
+                        log.error(msg)
+                        messages.error(request, msg)
                 else:
-                    msg = u'No schema version found.'
-                    log.error(msg)
+                    msg = u'Unable to connect to MySQL server on EC2 instance.'
+                    log.info(msg)
                     messages.error(request, msg)
 
                 instance.terminate()
@@ -371,6 +375,8 @@ def apply_changesets(request, database_schema):
 
 def create_aws_mysql_connection(db=None, host=None):
     """Creates connection to MySQL on EC2 instance."""
+    import time
+    conn = None
     connection_options = {}
     if settings.AWS_MYSQL_HOST:
         connection_options['host'] = settings.AWS_MYSQL_HOST
@@ -384,4 +390,21 @@ def create_aws_mysql_connection(db=None, host=None):
         connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
     if db:
         connection_options['db'] = db
-    return MySQLdb.connect(**connection_options)
+    time.sleep(settings.AWS_MYSQL_START_WAIT)
+    tries = 0
+    start_time = time.time()
+    while True:
+        try:
+            tries += 1
+            log.debug('Connecting to MySQL server on EC2 instance... (tries=%s)' % (tries,))
+            conn = MySQLdb.connect(**connection_options)
+            log.debug('Connected to MySQL server on EC2 instance.')
+            break
+        except:
+            log.exception('EXCEPTION')
+            time.sleep(1)
+            elapsed_time = time.time() - start_time
+            if elapsed_time > 300:
+                # stop trying if past 5 minutes
+                break
+    return conn

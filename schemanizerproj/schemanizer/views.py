@@ -254,7 +254,6 @@ def apply_changesets(request, template='schemanizer/schemanizer_apply_changesets
             if form.is_valid():
                 database_schema_id = form.cleaned_data['database_schema']
                 database_schema = models.DatabaseSchema.objects.get(id=int(database_schema_id))
-                messages.warning(request, u'Warning! businesslogic.apply_changesets() method is still being tested.')
                 businesslogic.apply_changesets(request, database_schema)
         else:
             form = forms.ApplyChangesetsForm(initial=initial)
