@@ -31,6 +31,8 @@ $ ./manage.py migrate --fake
 $ ./manage.py loaddata schemanizer/fixtures/initial_data.yaml
 ```
 
+&lt;dbname&gt; should be the same as the database name that you had set in your local_settings.py.
+
 At this point user 'admin' now exists with password 'admin'.
 
 
@@ -46,8 +48,9 @@ $ ./manage.py runserver
 Dumping Data
 ============
 
+```
 ./manage.py dumpdata -n --format=yaml auth.User auth.Group sites schemanizer > data.yaml
-
+```
 
 Dependencies
 ============
