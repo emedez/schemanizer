@@ -134,6 +134,9 @@
         <form method="post" action="">
             {% csrf_token %}
             <div class="form-actions">
+                {% if can_update %}
+                    <input type="submit" class="btn" name="submit_update" value="Update (review status will be set to 'needs')"/>
+                {% endif %}
                 {% if can_review %}
                     <input type="submit" class="btn" name="submit_review" value="Revise/Review" />
                 {% endif %}

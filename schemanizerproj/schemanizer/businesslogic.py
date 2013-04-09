@@ -203,6 +203,28 @@ def changeset_submit(**kwargs):
     return changeset
 
 
+def update_changeset(**kwargs):
+    """Updates changeset.
+
+    expected keyword arguments:
+        changeset_form
+        changeset_detail_formset
+        user
+    """
+    changeset_form = kwargs.get('changeset_form')
+    changeset_detail_formset = kwargs.get('changeset_detail_formset')
+    updated_by = kwargs.get('user')
+
+    changeset = changeset_form.save(commit=False)
+    changeset.set_updated_by(updated_by)
+    changeset_form.save_m2m()
+    changeset_detail_formset.save()
+
+    log.info(u'Changeset was updated:\n%s' % (changeset,))
+
+    return changeset
+
+
 def changeset_review(**kwargs):
     """Reviews changeset.
 

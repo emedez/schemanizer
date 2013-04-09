@@ -152,6 +152,15 @@ class Changeset(models.Model):
                 ret += u'%s=%s' % (k, v)
         return ret
 
+    def can_be_updated_by(self, user):
+        """Checks if this changeset can be updated by user."""
+        role = user.role
+        if (self.pk and role.name in Role.ROLE_LIST and
+                self.review_status != self.REVIEW_STATUS_APPROVED):
+            return True
+        else:
+            return False
+
     def can_be_reviewed_by(self, user):
         """Checks if this changeset can be reviewed by user."""
         role = user.role
@@ -179,6 +188,20 @@ class Changeset(models.Model):
             return True
         else:
             return False
+
+    def set_updated_by(self, user):
+        """Sets this changeset as edited."""
+        if self.can_be_updated_by(user):
+            now = timezone.now()
+            self.review_status = self.REVIEW_STATUS_NEEDS
+            self.save()
+
+            ChangesetAction.objects.create(
+                changeset=self,
+                type=ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
+        else:
+            raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
 
     def set_reviewed_by(self, user):
         """Sets this changeset as reviewed."""

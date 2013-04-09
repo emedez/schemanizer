@@ -14,4 +14,5 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^changeset/review/(?P<id>\d+)/$', 'changeset_review', name='schemanizer_changeset_review'),
     url(r'^changeset/soft_delete/(?P<id>\d+)/$', 'confirm_soft_delete_changeset', name='schemanizer_confirm_soft_delete_changeset'),
     url(r'^apply-changesets/$', 'apply_changesets', name='schemanizer_apply_changesets'),
+    url(r'^update-changeset/(?P<id>\d+)/$', 'update_changeset', name='schemanizer_update_changeset'),
 )

@@ -160,6 +160,41 @@ def changeset_submit(request, template='schemanizer/changeset_edit.html'):
 
 
 @login_required
+def update_changeset(request, id, template='schemanizer/changeset_edit.html'):
+    """Update changeset page."""
+
+    user = request.user.schemanizer_user
+    user_has_access = user.role.name in models.Role.ROLE_LIST
+
+    if user_has_access:
+        id = int(id)
+        changeset = models.Changeset.objects.get(id=id)
+        if changeset.can_be_updated_by(user):
+            ChangesetDetailFormSet = inlineformset_factory(
+                models.Changeset, models.ChangesetDetail,
+                form=forms.ChangesetDetailForm,
+                extra=1, can_delete=False)
+            if request.method == 'POST':
+                changeset_form = forms.ChangesetForm(request.POST, instance=changeset)
+                changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
+                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
+                    changeset =businesslogic.update_changeset(
+                        changeset_form=changeset_form,
+                        changeset_detail_formset=changeset_detail_formset,
+                        user=user)
+                    messages.success(request, u'Changeset updated.')
+                    return redirect('schemanizer_changeset_view', changeset.id)
+            else:
+                changeset_form = forms.ChangesetForm(instance=changeset)
+                changeset_detail_formset = ChangesetDetailFormSet(instance=changeset)
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+    else:
+        messages.error(request, MSG_USER_NO_ACCESS)
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
 def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
     user = request.user.schemanizer_user
     user_has_access = user.role.name in (models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
@@ -199,7 +234,9 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
         changeset = models.Changeset.objects.select_related().get(id=id)
         if request.method == 'POST':
             try:
-                if u'submit_review' in request.POST:
+                if u'submit_update' in request.POST:
+                    return redirect('schemanizer_update_changeset', changeset.id)
+                elif u'submit_review' in request.POST:
                     return redirect('schemanizer_changeset_review', changeset.id)
                 elif u'submit_approve' in request.POST:
                     businesslogic.changeset_approve(
@@ -215,6 +252,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                 log.exception('EXCEPTION')
                 messages.error(request, e.message)
 
+        can_update=changeset.can_be_updated_by(user)
         can_review=changeset.can_be_reviewed_by(user)
         can_approve=changeset.can_be_approved_by(user)
         can_reject=changeset.can_be_rejected_by(user)
