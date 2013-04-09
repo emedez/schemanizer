@@ -64,7 +64,7 @@
         </table>
 
         <p><strong>Changeset Details</strong></p>
-        {% if changeset.changesetdetail_set.all %}
+        {% if changeset.changeset_details.all %}
             <table class="table table-striped table-condensed table-bordered table-hover">
                 <thead>
                     <tr>
@@ -82,7 +82,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for detail in changeset.changesetdetail_set.all %}
+                    {% for detail in changeset.changeset_details.all %}
                         <tr>
                             <td>{{ detail.id }}</td>
                             <td>{{ detail.type }}</td>
