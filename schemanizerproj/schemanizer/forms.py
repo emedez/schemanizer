@@ -120,11 +120,10 @@ class ChangesetDetailForm(forms.ModelForm):
         super(ChangesetDetailForm, self).__init__(*args, **kwargs)
 
         self.fields['type'].required = True
-        self.fields['description'].widget.attrs.update(dict(rows=2))
-        self.fields['apply_sql'].widget.attrs.update(dict(rows=2))
-        self.fields['revert_sql'].widget.attrs.update(dict(rows=2))
-        self.fields['count_sql'].widget.attrs.update(dict(rows=2))
-        self.fields['volumetric_values'].widget.attrs.update(dict(rows=2))
+        for fld_name, fld in self.fields.iteritems():
+            log.debug(u'%s - %s' % (fld_name, type(fld.widget)))
+            if isinstance(fld.widget, forms.Textarea):
+                fld.widget.attrs.update({'rows': '4', 'cols': '80', 'class': 'form-textarea'})
 
         helper = FormHelper()
         helper.form_tag = False
