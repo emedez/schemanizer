@@ -106,6 +106,10 @@ class Changeset(models.Model):
         (REVIEW_STATUS_APPROVED, REVIEW_STATUS_APPROVED)
     )
 
+    database_schema = models.ForeignKey(
+        'schemanizer.DatabaseSchema', db_column='database_schema_id', null=True, blank=True,
+        related_name='changesets')
+
     type = models.CharField(
         max_length=17, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])

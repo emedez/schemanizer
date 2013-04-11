@@ -87,9 +87,9 @@ def send_changeset_submitted_mail(changeset):
             u'New changeset was submitted by %s: \n'
             u'%s') % (changeset.submitted_by.name, changeset_url,)
         send_mail(subject=subject, body=body, to=to)
-        log.info('New submitted changeset email sent to: %s' % (to,))
+        log.info(u'New submitted changeset email sent to: %s' % (to,))
     else:
-        log.warn('No email recipients.')
+        log.warn(u'No email recipients.')
 
 
 def send_changeset_reviewed_mail(changeset):
@@ -196,7 +196,7 @@ def changeset_submit(**kwargs):
         type=models.ChangesetAction.TYPE_CREATED,
         timestamp = now)
 
-    log.info('A changeset was submitted:\n%s' % (changeset,))
+    log.info(u'A changeset was submitted:\n%s' % (changeset,))
 
     send_changeset_submitted_mail(changeset)
 
@@ -316,79 +316,93 @@ def apply_changesets(request, database_schema):
 
     if reservation:
         instances = reservation.instances
-        log.debug('instances: %s' % (instances,))
+        try:
+            log.debug('instances: %s' % (instances,))
 
-        if instances:
-            instance = instances[0]
+            if instances:
+                instance = instances[0]
+                time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
+                tries = 0
+                start_time = time.time()
+                while True:
+                    try:
+                        tries += 1
+                        log.debug(u'Waiting for instance to run... (tries=%s)' % (tries,))
+                        if instance.state == 'running':
+                            break
+                    except:
+                        log.exception(u'EXCEPTION')
+                    finally:
+                        time.sleep(1)
+                        elapsed_time = time.time() - start_time
+                        if elapsed_time > settings.AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT:
+                            log.debug(u'Gave up trying to wait for EC2 instance to run.')
+                            break
 
-            orig_tries = tries = 60
-            while (tries > 0) and (instance.state != 'running'):
-                time.sleep(1)
-                instance.update()
-                tries -= 1
+                if instance.state == 'running':
+                    msg = u'EC2 instance running.'
+                    log.info(msg)
+                    messages.info(request, msg)
 
-            if instance.state == 'running':
-                msg = u'EC2 instance started.'
-                log.info(msg)
-                messages.info(request, msg)
+                    host = instance.public_dns_name
+                    log.debug('instance.public_dns_name=%s' % (host,))
+                    mysql_conn = create_aws_mysql_connection(host=host)
+                    if mysql_conn:
+                        query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
+                        utils.execute(mysql_conn, query)
 
-                host = instance.public_dns_name
-                log.debug('instance.public_dns_name=%s' % (host,))
-                mysql_conn = create_aws_mysql_connection(host=host)
-                if mysql_conn:
-                    query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
-                    utils.execute(mysql_conn, query)
+                        schema_versions = models.SchemaVersion.objects.filter(
+                            database_schema=database_schema).order_by('-created_at', '-id')
+                        schema_version = None
+                        if schema_versions.count() > 0:
+                            schema_version = schema_versions[0]
+                        if schema_version:
+                            mysql_conn.close()
+                            mysql_conn = create_aws_mysql_connection(
+                                db=database_schema.name, host=host)
+                            utils.execute(mysql_conn, schema_version.ddl)
 
-                    schema_versions = models.SchemaVersion.objects.filter(
-                        database_schema=database_schema).order_by('-created_at', '-id')
-                    schema_version = None
-                    if schema_versions.count() > 0:
-                        schema_version = schema_versions[0]
-                    if schema_version:
-                        mysql_conn.close()
-                        mysql_conn = create_aws_mysql_connection(
-                            db=database_schema.name, host=host)
-                        utils.execute(mysql_conn, schema_version.ddl)
-
-                        changesets = models.Changeset.objects.get_not_deleted(
-                            ).select_related().filter(
-                            review_status=models.Changeset.REVIEW_STATUS_APPROVED)
-                        for changeset in changesets:
-                            for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
-                                try:
-                                    results = utils.fetchall(mysql_conn, changeset_detail.apply_sql)
-                                    models.ChangesetDetailApply.objects.create(
-                                        changeset_detail=changeset_detail,
-                                        before_version=schema_version.id,
-                                        results_log=u'%s' % (results,)
-                                    )
-                                except Exception, e:
-                                    log.exception('EXCEPTION')
-                                    messages.error(request, e.message)
-                        msg = u'Apply changesets completed. Login as admin and go to /admin pages to view changeset detail applies.'
-                        log.info(msg)
-                        messages.info(request, msg)
+                            changesets = models.Changeset.objects.get_not_deleted(
+                                ).select_related().filter(
+                                review_status=models.Changeset.REVIEW_STATUS_APPROVED)
+                            for changeset in changesets:
+                                for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
+                                    try:
+                                        results = utils.fetchall(mysql_conn, changeset_detail.apply_sql)
+                                        models.ChangesetDetailApply.objects.create(
+                                            changeset_detail=changeset_detail,
+                                            before_version=schema_version.id,
+                                            results_log=u'%s' % (results,)
+                                        )
+                                    except Exception, e:
+                                        log.exception('EXCEPTION')
+                                        messages.error(request, e.message)
+                            msg = u'Apply changesets completed. Login as admin and go to /admin pages to view changeset detail applies.'
+                            log.info(msg)
+                            messages.info(request, msg)
+                        else:
+                            msg = u'No schema version found.'
+                            log.error(msg)
+                            messages.error(request, msg)
                     else:
-                        msg = u'No schema version found.'
-                        log.error(msg)
+                        msg = u'Unable to connect to MySQL server on EC2 instance.'
+                        log.info(msg)
                         messages.error(request, msg)
                 else:
-                    msg = u'Unable to connect to MySQL server on EC2 instance.'
-                    log.info(msg)
+                    msg = u"Instance state did not reach 'running' after checking for %s times." % (tries,)
+                    log.error(msg)
                     messages.error(request, msg)
-
-                instance.terminate()
-                msg = u'EC2 instance terminated.'
-                log.info(msg)
-                messages.info(request, msg)
             else:
-                msg = u"Instance state did not reach 'running' after checking for %s times." % (orig_tries,)
-                log.error(msg)
-                messages.error(request, msg)
-        else:
-            msg = u'No EC2 instances were returned.'
-            log.warn(msg)
-            messages.warning(request, msg)
+                msg = u'No EC2 instances were returned.'
+                log.warn(msg)
+                messages.warning(request, msg)
+        finally:
+            if instances:
+                for instance in instances:
+                    instance.terminate()
+                    msg = u'EC2 instance terminated.'
+                    log.info(msg)
+                    messages.info(request, msg)
     else:
         msg = u'No AWS reservation was returned.'
         log.warn(msg)
@@ -418,15 +432,15 @@ def create_aws_mysql_connection(db=None, host=None):
     while True:
         try:
             tries += 1
-            log.debug('Connecting to MySQL server on EC2 instance... (tries=%s)' % (tries,))
+            log.debug(u'Connecting to MySQL server on EC2 instance... (tries=%s)' % (tries,))
             conn = MySQLdb.connect(**connection_options)
-            log.debug('Connected to MySQL server on EC2 instance.')
+            log.debug(u'Connected to MySQL server on EC2 instance.')
             break
         except:
-            log.exception('EXCEPTION')
+            log.exception(u'EXCEPTION')
             time.sleep(1)
             elapsed_time = time.time() - start_time
-            if elapsed_time > 300:
-                # stop trying if past 5 minutes
+            if elapsed_time > settings.AWS_MYSQL_CONNECT_TIMEOUT:
+                log.debug(u'Gave up trying to connect to MySQL server on EC2 instance.')
                 break
     return conn

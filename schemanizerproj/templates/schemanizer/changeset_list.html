@@ -10,6 +10,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Database schema</th>
                     <th>Type</th>
                     <th>Classification</th>
                     <th>Version control URL</th>
@@ -29,6 +30,7 @@
             {% for changeset in changesets %}
                 <tr>
                     <td>{{ changeset.id }}</td>
+                    <td>{{ changeset.database_schema }}</td>
                     <td>{{ changeset.type }}</td>
                     <td>{{ changeset.classification }}</td>
                     <td>{{ changeset.version_control_url }}</td>

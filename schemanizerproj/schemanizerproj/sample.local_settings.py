@@ -82,3 +82,10 @@ AWS_MYSQL_HOST = None
 AWS_MYSQL_PORT = None
 AWS_MYSQL_USER = None
 AWS_MYSQL_PASSWORD = None
+
+# Number of seconds to wait for EC2 instance to start before accessing it.
+AWS_EC2_INSTANCE_START_WAIT = 10
+
+# Number of seconds to wait before trying to connect to MySQL server.
+# This is to give time for it to start completely.
+AWS_MYSQL_START_WAIT = 30

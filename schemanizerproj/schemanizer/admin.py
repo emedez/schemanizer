@@ -22,7 +22,8 @@ class ChangesetActionInline(admin.TabularInline):
 
 class ChangesetAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'type', 'classification', 'version_control_url',
+        'id', 'database_schema', 'type', 'classification',
+        'version_control_url',
         'review_status', 'reviewed_by', 'reviewed_at',
         'approved_by', 'approved_at',
         'submitted_by', 'submitted_at',

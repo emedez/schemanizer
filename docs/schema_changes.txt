@@ -1,0 +1,7 @@
+2013-04-11 GMT+08
+=================
+
+ALTER TABLE `schemanizer_dev`.`changesets`
+ADD COLUMN `database_schema_id` INT(11) NULL
+AFTER `is_deleted` ;
+
