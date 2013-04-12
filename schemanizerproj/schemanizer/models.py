@@ -320,10 +320,6 @@ class ChangesetAction(models.Model):
         default=TYPE_CHOICES[0][0])
     timestamp = models.DateTimeField(null=True, blank=True)
 
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
     class Meta:
         db_table = 'changeset_actions'
 

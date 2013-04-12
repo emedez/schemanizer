@@ -1,7 +1,12 @@
 2013-04-11 GMT+08
 =================
 
-ALTER TABLE `schemanizer_dev`.`changesets`
+ALTER TABLE `changesets`
 ADD COLUMN `database_schema_id` INT(11) NULL
 AFTER `is_deleted` ;
+
+2013-04-12 GMT+08
+
+ALTER TABLE `changeset_actions`
+DROP COLUMN `updated_at` , DROP COLUMN `created_at` ;
 
