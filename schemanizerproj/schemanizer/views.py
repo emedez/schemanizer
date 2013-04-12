@@ -443,3 +443,57 @@ def changeset_apply(request, template='schemanizer/changeset_apply.html'):
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def changeset_view_apply_results(request, template='schemanizer/changeset_view_apply_results.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        user_has_access = user.role.name in models.Role.ROLE_LIST
+
+        if user_has_access:
+
+            database_schema_id = request.GET.get('database_schema_id', None)
+            if database_schema_id:
+                database_schema_id = int(database_schema_id)
+                database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
+
+            schema_version_id = request.GET.get('schema_version_id', None)
+            if schema_version_id:
+                schema_version_id = int(schema_version_id)
+                schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
+
+            if request.method == 'POST':
+                if u'select_database_schema_form_submit' in request.POST:
+                    form = forms.SelectDatabaseSchemaForm(request.POST)
+                    if form.is_valid():
+                        database_schema_id = int(form.cleaned_data['database_schema'])
+                        url = reverse('schemanizer_changeset_view_apply_results')
+                        query_string = urllib.urlencode(dict(
+                            database_schema_id=database_schema_id))
+                        return redirect('%s?%s' % (url, query_string))
+                elif u'select_schema_version_form_submit' in request.POST:
+                    form = forms.SelectSchemaVersionForm(request.POST, database_schema=database_schema)
+                    if form.is_valid():
+                        schema_version_id = int(form.cleaned_data['schema_version'])
+                        url = reverse('schemanizer_changeset_view_apply_results')
+                        query_string = urllib.urlencode(dict(
+                            database_schema_id=database_schema_id,
+                            schema_version_id=schema_version_id))
+                        return redirect('%s?%s' % (url, query_string))
+                else:
+                    messages.error(request, u'Unknown command.')
+            else:
+                if database_schema_id and schema_version_id:
+                    applied_changesets = businesslogic.get_applied_changesets(schema_version)
+                elif database_schema_id:
+                    form = forms.SelectSchemaVersionForm(database_schema=database_schema)
+                else:
+                    form = forms.SelectDatabaseSchemaForm()
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))

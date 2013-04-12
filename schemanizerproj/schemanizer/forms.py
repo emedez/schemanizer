@@ -41,6 +41,28 @@ class SelectDatabaseSchemaForm(forms.Form):
         self.helper = helper
 
 
+class SelectSchemaVersionForm(forms.Form):
+    """Form for selecting schema version."""
+    schema_version = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        database_schema = kwargs.pop('database_schema')
+        super(SelectSchemaVersionForm, self).__init__(*args, **kwargs)
+
+        choices = []
+        for sv in database_schema.schema_versions.all().order_by('created_at'):
+            choices.append((
+                sv.id,
+                u'ID: %s, Created at: %s, Updated at: %s' % (
+                    sv.id, sv.created_at, sv.updated_at)))
+        self.fields['schema_version'].choices = choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('select_schema_version_form_submit', 'Submit'))
+        self.helper = helper
+
+
 class ApplyChangesetForm(forms.Form):
     """Form for collecting data for applying changeset."""
     schema_version = forms.ChoiceField()

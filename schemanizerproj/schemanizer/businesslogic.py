@@ -454,3 +454,19 @@ def create_aws_mysql_connection(db=None, host=None):
                 log.debug(u'Gave up trying to connect to MySQL server on EC2 instance.')
                 break
     return conn
+
+
+def get_applied_changesets(schema_version):
+    if isinstance(schema_version, int):
+        schema_version = models.SchemaVersion.objects.get(pk=schema_version)
+
+    selected_changesets = []
+
+    changesets = models.Changeset.objects.all()
+    for changeset in changesets:
+        changeset_detail_applies = models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
+            schema_version.id, changeset.id)
+        if changeset_detail_applies.count():
+            selected_changesets.append(changeset)
+
+    return selected_changesets
