@@ -11,24 +11,64 @@ from schemanizer import models
 log = logging.getLogger(__name__)
 
 
-class ApplyChangesetsForm(forms.Form):
-    """Form for collection data for applying changesets."""
-    database_schema = forms.ChoiceField(
-        help_text="The latest schema version for this database will be used.")
+class ContinueForm(forms.Form):
+    """Form that contains submit button only."""
 
     def __init__(self, *args, **kwargs):
-        super(ApplyChangesetsForm, self).__init__(*args, **kwargs)
+        super(ContinueForm, self).__init__(*args, **kwargs)
 
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('continue_form_submit', u'Continue'))
+        self.helper = helper
+
+
+class SelectDatabaseSchemaForm(forms.Form):
+    """Form for selecting database schema."""
+    database_schema = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(SelectDatabaseSchemaForm, self).__init__(*args, **kwargs)
         choices = []
         qs = models.DatabaseSchema.objects.all()
         for qs_item in qs:
             choices.append((qs_item.id, qs_item.name))
-
         self.fields['database_schema'].choices = choices
 
         helper = FormHelper()
         helper.form_class = 'form-inline'
-        helper.add_input(Submit('submit', 'Submit'))
+        helper.add_input(Submit('select_database_schema_form_submit', 'Submit'))
+        self.helper = helper
+
+
+class ApplyChangesetForm(forms.Form):
+    """Form for collecting data for applying changeset."""
+    schema_version = forms.ChoiceField()
+    changeset = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        database_schema = kwargs.pop('database_schema')
+        super(ApplyChangesetForm, self).__init__(*args, **kwargs)
+
+        schema_version_choices = []
+        for r in database_schema.schema_versions.all().order_by('created_at'):
+            schema_version_choices.append((
+                r.id,
+                u'ID: %s, Created at: %s, Updated at: %s' % (
+                    r.id, r.created_at, r.updated_at)))
+        self.fields['schema_version'].choices = schema_version_choices
+
+        changeset_choices = []
+        for r in database_schema.get_approved_changesets():
+            changeset_choices.append((
+                r.id,
+                u'ID: %s, Type: %s, Classification: %s, Version control URL: %s, Created at: %s, Updated at: %s' % (
+                    r.id, r.type, r.classification, r.version_control_url, r.created_at, r.updated_at)))
+        self.fields['changeset'].choices = changeset_choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('apply_changeset_form_submit', 'Submit'))
         self.helper = helper
 
 

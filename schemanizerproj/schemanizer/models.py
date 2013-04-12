@@ -350,6 +350,11 @@ class DatabaseSchema(models.Model):
     def __unicode__(self):
         return self.name
 
+    def get_approved_changesets(self):
+        """Returns approved changesets for this database schema."""
+        return self.changesets.all().filter(
+            review_status=Changeset.REVIEW_STATUS_APPROVED)
+
 
 class SchemaVersion(models.Model):
     database_schema = models.ForeignKey(
@@ -409,6 +414,14 @@ class Server(models.Model):
         return self.name
 
 
+class ChangesetDetailApplyManager(models.Manager):
+    def get_by_schema_version_changeset(self, schema_version_id, changeset_id):
+        """Returns all changeset_detail_applies filtered by schema version and changeset."""
+        return self.filter(
+            before_version=schema_version_id,
+            changeset_detail__changeset_id=changeset_id)
+
+
 class ChangesetDetailApply(models.Model):
     changeset_detail = models.ForeignKey(
         ChangesetDetail, db_column='changeset_detail_id', null=True, blank=True,
@@ -426,6 +439,8 @@ class ChangesetDetailApply(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    objects = ChangesetDetailApplyManager()
 
     class Meta:
         db_table = 'changeset_detail_applies'

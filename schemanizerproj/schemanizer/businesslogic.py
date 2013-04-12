@@ -290,8 +290,14 @@ def changeset_reject(**kwargs):
     return changeset
 
 
-def apply_changesets(request, database_schema):
+def apply_changeset(schema_version_id, changeset_id):
     """Launches and EC2 instance and applies changesets for the schema."""
+
+    schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
+    database_schema = schema_version.database_schema
+    changeset = models.Changeset.objects.get(pk=changeset_id)
+    if changeset.database_schema_id != schema_version.database_schema_id:
+        raise Exception(u'Schema version and changeset do not have the same database schema.')
 
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
@@ -328,6 +334,7 @@ def apply_changesets(request, database_schema):
                     try:
                         tries += 1
                         log.debug(u'Waiting for instance to run... (tries=%s)' % (tries,))
+                        instance.update()
                         if instance.state == 'running':
                             break
                     except:
@@ -342,7 +349,6 @@ def apply_changesets(request, database_schema):
                 if instance.state == 'running':
                     msg = u'EC2 instance running.'
                     log.info(msg)
-                    messages.info(request, msg)
 
                     host = instance.public_dns_name
                     log.debug('instance.public_dns_name=%s' % (host,))
@@ -351,62 +357,66 @@ def apply_changesets(request, database_schema):
                         query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
                         utils.execute(mysql_conn, query)
 
-                        schema_versions = models.SchemaVersion.objects.filter(
-                            database_schema=database_schema).order_by('-created_at', '-id')
-                        schema_version = None
-                        if schema_versions.count() > 0:
-                            schema_version = schema_versions[0]
-                        if schema_version:
-                            mysql_conn.close()
-                            mysql_conn = create_aws_mysql_connection(
-                                db=database_schema.name, host=host)
-                            utils.execute(mysql_conn, schema_version.ddl)
+                        mysql_conn.close()
+                        mysql_conn = create_aws_mysql_connection(
+                            db=database_schema.name, host=host)
+                        utils.execute(mysql_conn, schema_version.ddl)
 
-                            changesets = models.Changeset.objects.get_not_deleted(
-                                ).select_related().filter(
-                                review_status=models.Changeset.REVIEW_STATUS_APPROVED)
-                            for changeset in changesets:
-                                for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
-                                    try:
-                                        results = utils.fetchall(mysql_conn, changeset_detail.apply_sql)
-                                        models.ChangesetDetailApply.objects.create(
-                                            changeset_detail=changeset_detail,
-                                            before_version=schema_version.id,
-                                            results_log=u'%s' % (results,)
-                                        )
-                                    except Exception, e:
-                                        log.exception('EXCEPTION')
-                                        messages.error(request, e.message)
-                            msg = u'Apply changesets completed. Login as admin and go to /admin pages to view changeset detail applies.'
-                            log.info(msg)
-                            messages.info(request, msg)
-                        else:
-                            msg = u'No schema version found.'
-                            log.error(msg)
-                            messages.error(request, msg)
+                        for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
+                            cur = None
+                            try:
+                                cur = mysql_conn.cursor()
+                                results_log_items = []
+                                affected_rows = cur.execute(changeset_detail.apply_sql)
+                                results_log_items.append(u'Affected rows: %s' % (affected_rows,))
+                                if cur.messages:
+                                    for exc, val in cur.messages:
+                                        val_str = u'%s' % (val,)
+                                        if val_str not in results_log_items:
+                                            results_log_items.append(val_str)
+                                if results_log_items:
+                                    results_log = u'\n'.join(results_log_items)
+                                else:
+                                    results_log = ''
+                                models.ChangesetDetailApply.objects.create(
+                                    changeset_detail=changeset_detail,
+                                    before_version=schema_version.id,
+                                    results_log=results_log)
+                            except Exception, e:
+                                if cur:
+                                    log.error(cur.messages)
+                                log.exception('EXCEPTION')
+                                raise
+                            finally:
+                                if cur:
+                                    cur.close()
+
+                        msg = u'Changeset was applied.'
+                        log.info(msg)
+
                     else:
                         msg = u'Unable to connect to MySQL server on EC2 instance.'
                         log.info(msg)
-                        messages.error(request, msg)
+                        raise Exception(msg)
                 else:
-                    msg = u"Instance state did not reach 'running' after checking for %s times." % (tries,)
+                    msg = u"Instance state did not reach 'running' state after checking for %s times." % (tries,)
                     log.error(msg)
-                    messages.error(request, msg)
+                    raise Exception(msg)
+
             else:
                 msg = u'No EC2 instances were returned.'
                 log.warn(msg)
-                messages.warning(request, msg)
+                raise Exception(msg)
         finally:
             if instances:
                 for instance in instances:
                     instance.terminate()
                     msg = u'EC2 instance terminated.'
                     log.info(msg)
-                    messages.info(request, msg)
     else:
         msg = u'No AWS reservation was returned.'
-        log.warn(msg)
-        messages.warning(request, msg)
+        log.error(msg)
+        raise Exception(msg)
 
 
 def create_aws_mysql_connection(db=None, host=None):
