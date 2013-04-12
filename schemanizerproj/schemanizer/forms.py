@@ -162,7 +162,6 @@ class ChangesetDetailForm(forms.ModelForm):
 
         self.fields['type'].required = True
         for fld_name, fld in self.fields.iteritems():
-            log.debug(u'%s - %s' % (fld_name, type(fld.widget)))
             if isinstance(fld.widget, forms.Textarea):
                 fld.widget.attrs.update({'rows': '4', 'cols': '80', 'class': 'form-textarea'})
 

@@ -146,6 +146,9 @@
                 {% if can_reject %}
                     <input type="submit" class="btn" name="submit_reject" value="Reject" />
                 {% endif %}
+                {% if can_soft_delete %}
+                    <input type="submit" class="btn btn-warning" name="submit_delete" value="Delete" />
+                {% endif %}
             </div>
         </form>
     {% endif %}

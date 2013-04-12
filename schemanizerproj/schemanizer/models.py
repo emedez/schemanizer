@@ -188,7 +188,9 @@ class Changeset(models.Model):
     def can_be_soft_deleted_by(self, user):
         """Checks if this changeset can be soft deleted by user."""
         role = user.role
-        if self.pk and role.name in (Role.ROLE_ADMIN,):
+        if self.pk and role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN,):
+            return True
+        elif self.pk and role.name in (Role.ROLE_DEVELOPER, ) and self.review_status != self.REVIEW_STATUS_APPROVED:
             return True
         else:
             return False

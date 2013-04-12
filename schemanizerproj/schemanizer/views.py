@@ -143,10 +143,9 @@ def confirm_soft_delete_changeset(request, id, template='schemanizer/confirm_sof
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
+        changeset = models.Changeset.objects.get(pk=int(id))
+        user_has_access = changeset.can_be_soft_deleted_by(user)
         if user_has_access:
-            id = int(id)
-            changeset = models.Changeset.objects.get(id=id)
             if request.method == 'POST':
                 if 'confirm_soft_delete' in request.POST:
                     with transaction.commit_on_success():
@@ -294,6 +293,8 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                             businesslogic.changeset_reject(
                                 changeset=changeset, user=user)
                         messages.success(request, u'Changeset rejected.')
+                    elif u'submit_delete' in request.POST:
+                        return redirect(reverse('schemanizer_confirm_soft_delete_changeset', args=[changeset.id]))
                     else:
                         messages.error(request, u'Unknown command.')
                 except exceptions.NotAllowed, e:
@@ -304,6 +305,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             can_review=changeset.can_be_reviewed_by(user)
             can_approve=changeset.can_be_approved_by(user)
             can_reject=changeset.can_be_rejected_by(user)
+            can_soft_delete = changeset.can_be_soft_deleted_by(user)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
