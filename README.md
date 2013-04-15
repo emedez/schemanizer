@@ -44,6 +44,13 @@ Do the following:
 $ ./manage.py runserver
 ```
 
+Web App Usage
+-------------
+
+Start here and login as 'admin' if there are no other users yet.:
+```
+http://localhost:8000/
+```
 
 Dumping Data
 ============

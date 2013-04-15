@@ -7,3 +7,6 @@ PyYAML
 django-crispy-forms
 boto
 django-debug-toolbar
+nose
+django-nose
+coverage

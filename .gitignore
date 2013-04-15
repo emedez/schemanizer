@@ -1,6 +1,7 @@
 *.py[cod]
 
 # Developer
+.coverage
 .project
 .pydevproject
 .idea

@@ -34,7 +34,7 @@ def update_user(id, name, email, role):
     auth_user.email = user.email
     auth_user.save()
 
-    log.info('User [id=%s] was updated.' % (id,))
+    log.info(u'User [id=%s] was updated.' % (id,))
 
     return user
 
@@ -43,8 +43,18 @@ def create_user(name, email, role, password):
     """Creates user."""
     auth_user = AuthUser.objects.create_user(name, email, password)
     user = models.User.objects.create(name=name, email=email, role=role, auth_user=auth_user)
-    log.info('User %s created.' % (name,))
+    log.info(u'User [id=%s] was created.' % (user.id,))
     return user
+
+
+def delete_user(user):
+    """Deletes user."""
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+    auth_user = user.auth_user
+    user_id = user.id
+    auth_user.delete()
+    log.info(u'User [id=%s] was deleted.' % (user_id,))
 
 
 def send_mail(
@@ -166,6 +176,17 @@ def soft_delete_changeset(changeset):
         timestamp=timezone.now()
     )
     log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+
+
+def delete_changeset(changeset):
+    """Deletes changeset."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+
+    changeset_id = changeset.id
+    changeset.delete()
+    log.info('Changeset [id=%s] was deleted.' % (changeset_id,))
 
 
 def changeset_submit(**kwargs):
@@ -293,6 +314,10 @@ def changeset_reject(**kwargs):
 def apply_changeset(schema_version_id, changeset_id):
     """Launches and EC2 instance and applies changesets for the schema."""
 
+    no_ec2 = settings.DEV_NO_EC2_APPLY_CHANGESET
+    if no_ec2:
+        log.info(u'No EC2 instances will be started.')
+
     schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
     database_schema = schema_version.database_schema
     changeset = models.Changeset.objects.get(pk=changeset_id)
@@ -308,51 +333,57 @@ def apply_changeset(schema_version_id, changeset_id):
     security_groups = settings.AWS_SECURITY_GROUPS
     instance_type = settings.AWS_INSTANCE_TYPE
 
-    conn = boto.ec2.connect_to_region(
-        region,
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key)
+    if not no_ec2:
+        conn = boto.ec2.connect_to_region(
+            region,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key)
 
-    reservation = conn.run_instances(
-        ami_id,
-        key_name=key_name,
-        instance_type=instance_type,
-        security_groups=security_groups)
-    log.debug('reservation: %s' % (reservation,))
+        reservation = conn.run_instances(
+            ami_id,
+            key_name=key_name,
+            instance_type=instance_type,
+            security_groups=security_groups)
+        log.debug('reservation: %s' % (reservation,))
 
-    if reservation:
-        instances = reservation.instances
+    if no_ec2 or reservation:
+        if not no_ec2:
+            instances = reservation.instances
         try:
-            log.debug('instances: %s' % (instances,))
+            if not no_ec2:
+                log.debug('instances: %s' % (instances,))
 
-            if instances:
-                instance = instances[0]
-                time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
-                tries = 0
-                start_time = time.time()
-                while True:
-                    try:
-                        tries += 1
-                        log.debug(u'Waiting for instance to run... (tries=%s)' % (tries,))
-                        instance.update()
-                        if instance.state == 'running':
-                            break
-                    except:
-                        log.exception(u'EXCEPTION')
-                    finally:
-                        time.sleep(1)
-                        elapsed_time = time.time() - start_time
-                        if elapsed_time > settings.AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT:
-                            log.debug(u'Gave up trying to wait for EC2 instance to run.')
-                            break
+            if no_ec2 or instances:
+                if not no_ec2:
+                    instance = instances[0]
+                    time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
+                    tries = 0
+                    start_time = time.time()
+                    while True:
+                        try:
+                            tries += 1
+                            log.debug(u'Waiting for instance to run... (tries=%s)' % (tries,))
+                            instance.update()
+                            if instance.state == 'running':
+                                break
+                        except:
+                            log.exception(u'EXCEPTION')
+                        finally:
+                            time.sleep(1)
+                            elapsed_time = time.time() - start_time
+                            if elapsed_time > settings.AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT:
+                                log.debug(u'Gave up trying to wait for EC2 instance to run.')
+                                break
 
-                if instance.state == 'running':
-                    msg = u'EC2 instance running.'
-                    log.info(msg)
-
-                    host = instance.public_dns_name
-                    log.debug('instance.public_dns_name=%s' % (host,))
-                    mysql_conn = create_aws_mysql_connection(host=host)
+                if no_ec2 or (instance.state == 'running'):
+                    if not no_ec2:
+                        msg = u'EC2 instance running.'
+                        log.info(msg)
+                        host = instance.public_dns_name
+                        log.debug('instance.public_dns_name=%s' % (host,))
+                    else:
+                        host = None
+                    mysql_conn = create_aws_mysql_connection(host=host, wait=True)
                     if mysql_conn:
                         query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
                         utils.execute(mysql_conn, query)
@@ -408,18 +439,19 @@ def apply_changeset(schema_version_id, changeset_id):
                 log.warn(msg)
                 raise Exception(msg)
         finally:
-            if instances:
-                for instance in instances:
-                    instance.terminate()
-                    msg = u'EC2 instance terminated.'
-                    log.info(msg)
+            if not no_ec2:
+                if instances:
+                    for instance in instances:
+                        instance.terminate()
+                        msg = u'EC2 instance terminated.'
+                        log.info(msg)
     else:
         msg = u'No AWS reservation was returned.'
         log.error(msg)
         raise Exception(msg)
 
 
-def create_aws_mysql_connection(db=None, host=None):
+def create_aws_mysql_connection(db=None, host=None, wait=False):
     """Creates connection to MySQL on EC2 instance."""
     import time
     conn = None
@@ -436,7 +468,8 @@ def create_aws_mysql_connection(db=None, host=None):
         connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
     if db:
         connection_options['db'] = db
-    time.sleep(settings.AWS_MYSQL_START_WAIT)
+    if wait:
+        time.sleep(settings.AWS_MYSQL_START_WAIT)
     tries = 0
     start_time = time.time()
     while True:

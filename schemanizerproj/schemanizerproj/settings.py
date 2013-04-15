@@ -136,12 +136,15 @@ INSTALLED_APPS = (
     'south',
     'crispy_forms',
     'debug_toolbar',
+    'django_nose',
 
     #=============
     # project apps
     #=============
     'schemanizer',
 )
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -260,6 +263,8 @@ AWS_MYSQL_START_WAIT = 30
 # this is the number of seconds that should elapse before giving up.
 AWS_MYSQL_CONNECT_TIMEOUT = 300
 
+# If True will not launch an EC2 instance
+DEV_NO_EC2_APPLY_CHANGESET = False
 
 try:
     from local_settings import *

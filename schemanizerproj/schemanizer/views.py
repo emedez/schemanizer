@@ -1,5 +1,9 @@
 import logging
 import urllib
+import warnings
+
+import MySQLdb
+warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -139,7 +143,8 @@ def users(request, template='schemanizer/users.html'):
 
 
 @login_required
-def confirm_soft_delete_changeset(request, id, template='schemanizer/confirm_soft_delete_changeset.html'):
+def confirm_soft_delete_changeset(
+        request, id, template='schemanizer/confirm_soft_delete_changeset.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -238,7 +243,8 @@ def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
+        user_has_access = user.role.name in (
+            models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
         if user_has_access:
             id = int(id)
             changeset = models.Changeset.objects.get(id=id)
@@ -247,8 +253,10 @@ def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
                 form=forms.ChangesetDetailForm,
                 extra=1, can_delete=False)
             if request.method == 'POST':
-                changeset_form = forms.ChangesetForm(request.POST, instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
+                changeset_form = forms.ChangesetForm(
+                    request.POST, instance=changeset)
+                changeset_detail_formset = ChangesetDetailFormSet(
+                    request.POST, instance=changeset)
                 if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                     with transaction.commit_on_success():
                         changeset = businesslogic.changeset_review(
@@ -259,7 +267,8 @@ def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
                     return redirect('schemanizer_changeset_view', changeset.id)
             else:
                 changeset_form = forms.ChangesetForm(instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(instance=changeset)
+                changeset_detail_formset = ChangesetDetailFormSet(
+                    instance=changeset)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
@@ -280,9 +289,11 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:
-                        return redirect('schemanizer_update_changeset', changeset.id)
+                        return redirect(
+                            'schemanizer_update_changeset', changeset.id)
                     elif u'submit_review' in request.POST:
-                        return redirect('schemanizer_changeset_review', changeset.id)
+                        return redirect(
+                            'schemanizer_changeset_review', changeset.id)
                     elif u'submit_approve' in request.POST:
                         with transaction.commit_on_success():
                             businesslogic.changeset_approve(
@@ -294,17 +305,19 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                                 changeset=changeset, user=user)
                         messages.success(request, u'Changeset rejected.')
                     elif u'submit_delete' in request.POST:
-                        return redirect(reverse('schemanizer_confirm_soft_delete_changeset', args=[changeset.id]))
+                        return redirect(reverse(
+                            'schemanizer_confirm_soft_delete_changeset',
+                            args=[changeset.id]))
                     else:
                         messages.error(request, u'Unknown command.')
                 except exceptions.NotAllowed, e:
                     log.exception('EXCEPTION')
                     messages.error(request, e.message)
 
-            can_update=changeset.can_be_updated_by(user)
-            can_review=changeset.can_be_reviewed_by(user)
-            can_approve=changeset.can_be_approved_by(user)
-            can_reject=changeset.can_be_rejected_by(user)
+            can_update = changeset.can_be_updated_by(user)
+            can_review = changeset.can_be_reviewed_by(user)
+            can_approve = changeset.can_be_approved_by(user)
+            can_reject = changeset.can_be_rejected_by(user)
             can_soft_delete = changeset.can_be_soft_deleted_by(user)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -366,7 +379,8 @@ def changeset_apply(request, template='schemanizer/changeset_apply.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
         if user_has_access:
 
             # query string variables
