@@ -522,8 +522,6 @@ class PageAccessTestCase(TestCase):
                 # only dbas and admins can review changesets
                 #
                 if u in (u'dba', u'admin'):
-                    log.debug('user: %s' % (u,))
-                    log.debug(r.content)
                     tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
                         tmp_changeset.review_status,
@@ -573,7 +571,78 @@ class PageAccessTestCase(TestCase):
             finally:
                 businesslogic.delete_changeset(changeset)
 
+    def test_changeset_update(self):
+        """Tests changeset update."""
+        c = Client()
+        for u, p in self.users:
+            self._login(c, u, p)
+            user = models.User.objects.get(name=u)
+            changeset = self._create_changeset()
+            changeset_id = changeset.id
+            try:
+                url = reverse('schemanizer_update_changeset', args=[changeset_id])
+                r = c.get(url)
+
+                self.assertTrue(r.context['user_has_access'])
+                if changeset.can_be_updated_by(user):
+                    self.assertTrue('changeset_form' in r.context)
+                    self.assertTrue('changeset_detail_formset' in r.context)
+            finally:
+                businesslogic.delete_changeset(changeset_id)
+
+    def test_changeset_update_post(self):
+        """Tests changeset update posts."""
+        c = Client()
+        for u, p in self.users:
+            self._login(c, u, p)
+            user = models.User.objects.get(name=u)
+            changeset = self._create_changeset()
+            changeset_id = changeset.id
+            try:
+                changeset_detail = changeset.changeset_details.all()[0]
+                url = reverse('schemanizer_update_changeset', args=[changeset_id])
+                if changeset.can_be_updated_by(user):
+                    data = {}
+                    # changeset data
+                    data.update(dict(
+                        database_schema=changeset.database_schema_id,
+                        type=changeset.type,
+                        classification=changeset.classification,
+                        version_control_url=changeset.version_control_url,
+                    ))
+                    # form management data
+                    data.update({
+                        'changeset_details-TOTAL_FORMS': 2,
+                        'changeset_details-INITIAL_FORMS': 1,
+                        'changeset_details-MAX_NUM_FORMS': 1000
+                    })
+                    # changeset details data
+                    data.update({
+                        'changeset_details-0-changeset': changeset_id,
+                        'changeset_details-0-type': changeset_detail.type,
+                        'changeset_details-0-description': changeset_detail.description,
+                        'changeset_details-0-apply_sql': changeset_detail.apply_sql,
+                        'changeset_details-0-revert_sql': changeset_detail.revert_sql,
+                        'changeset_details-0-before_checksum': changeset_detail.before_checksum,
+                        'changeset_details-0-after_checksum': changeset_detail.after_checksum,
+                        'changeset_details-0-count_sql': changeset_detail.count_sql,
+                        'changeset_details-0-volumetric_values': changeset_detail.volumetric_values,
+                        'changeset_details-0-id': changeset_detail.id,
+                        'changeset_details-1-changeset': changeset_id,
+                        'changeset_details-1-type': models.ChangesetDetail.TYPE_ADD,
+                        })
+                    r = c.post(url, data=data)
+                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                    self.assertEqual(
+                        tmp_changeset.review_status,
+                        models.Changeset.REVIEW_STATUS_NEEDS)
+
+            finally:
+                businesslogic.delete_changeset(changeset_id)
+
     def test_changeset_apply_continue_form_submit(self):
+        """Tests changeset apply."""
+
         database_schema_id = 4
         schema_version_id = 4
         changeset_id = 15

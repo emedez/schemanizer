@@ -34,6 +34,15 @@ _**dbname**_ should be the same as the database name that you had set in your lo
 
 At this point user 'admin' now exists with password 'admin'.
 
+Unit Testing
+------------
+
+To run the tests:
+
+```
+$ ./manage.py test schemanizer
+```
+
 
 Run Server
 ----------
@@ -74,13 +83,13 @@ Dumping and Restoring Data
 Use the following command to dump data:
 
 ```
-./manage.py dumpdata -n --format=yaml auth.User auth.Group sites schemanizer > data.yaml
+$ ./manage.py dumpdata -n --format=yaml auth.User auth.Group sites schemanizer > data.yaml
 ```
 
 To restore:
 
 ```
-./manage.py loaddata data.yaml
+$ ./manage.py loaddata data.yaml
 ```
 
 Dependencies

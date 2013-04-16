@@ -387,6 +387,8 @@ def apply_changeset(schema_version_id, changeset_id):
                     if mysql_conn:
                         query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
                         utils.execute(mysql_conn, query)
+                        log.debug(u'Database schema \'%s\' was created (if not existed).' % (
+                            database_schema.name,))
 
                         mysql_conn.close()
                         mysql_conn = create_aws_mysql_connection(
