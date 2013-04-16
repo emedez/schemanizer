@@ -452,3 +452,35 @@ class ChangesetDetailApply(models.Model):
                     ret += u', '
                 ret += u'%s=%s' % (k, v)
         return ret
+
+
+class ValidationType(models.Model):
+    name = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    validation_commands = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'validation_types'
+
+    def __unicode__(self):
+        return u'%s' % (self.name,)
+
+
+class ChangesetValidation(models.Model):
+    changeset = models.ForeignKey(
+        Changeset, db_column='changeset_id', null=True, blank=True)
+    validation_type = models.ForeignKey(
+        ValidationType, db_column='validation_type_id', null=True, blank=True)
+    timestamp = models.DateTimeField(null=True, blank=True)
+    result = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'changeset_validations'

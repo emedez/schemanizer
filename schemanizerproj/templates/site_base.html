@@ -54,6 +54,18 @@
             {% endblock %}
         </div>
     {% endblock %}
+    <script type="text/javascript">
+        new_console = {
+            log: function() {},
+            debug: function() {},
+            info: function() {},
+            warn: function() {},
+            error: function() {}
+        }
+        if (typeof console == 'undefined') {
+            console = new_console;
+        }
+    </script>
     <script src="{{ STATIC_URL }}jquery/jquery-1.9.1.min.js"></script>
     <script src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
     {% block scripts_extra %}{% endblock %}

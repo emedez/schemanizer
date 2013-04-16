@@ -1,0 +1,66 @@
+{% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ block.super }} - Validate Changeset{% endblock %}
+
+{% block contents %}
+    {% if user_has_access %}
+        {% if select_schema_version_form %}
+            {% crispy select_schema_version_form select_schema_version_form.helper %}
+        {% endif %}
+        {% if validate_changeset_started %}
+            <div id="validate_changeset_outputs_container">
+                <div id="validate_changeset_outputs">
+                </div>
+                <div id="validate_changeset_outputs_ajax_loader_animation">
+                    <img src="{{ STATIC_URL }}site/img/ajax-loader.gif"/>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ block.super }}
+    {% if validate_changeset_started %}
+        <script type="text/javascript">
+            $(function() {
+                var status_url = "{% url 'schemanizer_changeset_validate_status' request_id %}";
+
+                // check frequency in seconds
+                var check_freq = 2;
+
+                function getValidateChangesetStatus() {
+                    $.get(status_url, function(data) {
+                        console.log(data);
+                        if ('error' in data) {
+                            alert(data['error']);
+                        }
+                        else {
+                            if ('thread_messages_html' in data) {
+                                $('#validate_changeset_outputs').html(data['thread_messages_html']);
+                            }
+                            if ('thread_is_alive' in data) {
+                                if (data['thread_is_alive']) {
+                                    // resched check again if thread is still alive
+                                    setTimeout(getValidateChangesetStatus, check_freq * 1000);
+                                }
+                                else {
+                                    $('#validate_changeset_outputs_ajax_loader_animation').hide();
+                                    if (('thread_changeset_was_validated' in data) && (data['thread_changeset_was_validated'])) {
+                                        alert('Changeset validation was successful.');
+                                    }
+                                    else {
+                                        alert('Changeset validation failed.');
+                                    }
+                                }
+                            }
+                        }
+                    });
+                };
+
+                setTimeout(getValidateChangesetStatus, check_freq * 1000);
+            });
+        </script>
+    {% endif %}
+{% endblock %}

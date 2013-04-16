@@ -60,6 +60,16 @@ class SchemaVersionAdmin(admin.ModelAdmin):
         'id', 'database_schema', 'ddl', 'checksum', 'created_at', 'updated_at')
 
 
+class ValidationTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'name', 'description', 'validation_commands', 'created_at',
+        'updated_at')
+
+class ChangesetValidationAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'changeset', 'validation_type', 'timestamp', 'result',
+        'created_at', 'updated_at')
+
 admin.site.register(models.Role, RoleAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Changeset, ChangesetAdmin)
@@ -68,3 +78,5 @@ admin.site.register(models.Server, ServerAdmin)
 admin.site.register(models.ChangesetDetailApply, ChangesetDetailApplyAdmin)
 admin.site.register(models.DatabaseSchema, DatabaseSchemaAdmin)
 admin.site.register(models.SchemaVersion, SchemaVersionAdmin)
+admin.site.register(models.ValidationType, ValidationTypeAdmin)
+admin.site.register(models.ChangesetValidation, ChangesetValidationAdmin)

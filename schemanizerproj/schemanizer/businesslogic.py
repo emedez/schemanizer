@@ -1,10 +1,10 @@
 import logging
+import threading
 import time
 
 import MySQLdb
 
 from django.conf import settings
-from django.contrib import messages
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
@@ -14,9 +14,7 @@ from django.utils import timezone
 
 import boto.ec2
 
-
-from schemanizer import models
-from schemanizer import utils
+from schemanizer import models, utils
 
 log = logging.getLogger(__name__)
 
@@ -455,7 +453,6 @@ def apply_changeset(schema_version_id, changeset_id):
 
 def create_aws_mysql_connection(db=None, host=None, wait=False):
     """Creates connection to MySQL on EC2 instance."""
-    import time
     conn = None
     connection_options = {}
     if settings.AWS_MYSQL_HOST:
@@ -505,3 +502,290 @@ def get_applied_changesets(schema_version):
             selected_changesets.append(changeset)
 
     return selected_changesets
+
+
+def user_can_validate_changeset(user, changeset):
+    """Returns True, if user can validate changeset, otherwise False."""
+
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+
+    if (changeset.review_status == models.Changeset.REVIEW_STATUS_APPROVED and
+            user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)):
+        return True
+    else:
+        return False
+
+
+def validate_changeset(changeset, schema_version, request_id):
+    """Validates changeset."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(schema_version) in (int, long):
+        schema_version = models.SchemaVersion.objects.get(pk=schema_version)
+    thread = ValidateChangesetThread(changeset, schema_version, request_id)
+    thread.start()
+    ret = dict(thread=thread)
+    return ret
+
+
+class ValidateChangesetThread(threading.Thread):
+    def __init__(self, changeset, schema_version, request_id):
+        super(ValidateChangesetThread, self).__init__()
+        self.daemon = True
+
+        self.changeset = changeset
+        self.schema_version = schema_version
+        self.request_id = request_id
+        self.changeset_was_validated = False
+
+        self.errors = []
+        self.messages = []
+        self.validation_results = []
+
+    def create_aws_mysql_connection(self, db=None, host=None, wait=False):
+        """Creates connection to MySQL on EC2 instance."""
+        conn = None
+        connection_options = {}
+        if settings.AWS_MYSQL_HOST:
+            connection_options['host'] = settings.AWS_MYSQL_HOST
+        elif host:
+            connection_options['host'] = host
+        if settings.AWS_MYSQL_PORT:
+            connection_options['port'] = settings.AWS_MYSQL_PORT
+        if settings.AWS_MYSQL_USER:
+            connection_options['user'] = settings.AWS_MYSQL_USER
+        if settings.AWS_MYSQL_PASSWORD:
+            connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
+        if db:
+            connection_options['db'] = db
+        if wait:
+            msg = u'Sleeping for %s second(s) to give time for MySQL server on EC2 instance to start.' % (
+                settings.AWS_EC2_INSTANCE_START_WAIT,)
+            log.info(u'[%s] %s' % (self.request_id, msg))
+            self.messages.append((u'info', msg))
+            time.sleep(settings.AWS_MYSQL_START_WAIT)
+        tries = 0
+        start_time = time.time()
+        while True:
+            try:
+                tries += 1
+                msg = u'Connecting to MySQL server on EC2 instance... (tries=%s)' % (tries,)
+                log.info(u'[%s] %s' % (self.request_id, msg))
+                self.messages.append((u'info', msg))
+                conn = MySQLdb.connect(**connection_options)
+                msg = u'Connected to MySQL server on EC2 instance.'
+                log.info(u'[%s] %s' % (self.request_id, msg))
+                self.messages.append((u'success', msg))
+                break
+            except Exception, e:
+                log.exception(u'[%s] EXCEPTION' % (self.request_id, ))
+                msg = u'%s' % (e,)
+                self.messages.append((u'error', msg))
+                time.sleep(1)
+                elapsed_time = time.time() - start_time
+                if elapsed_time > settings.AWS_MYSQL_CONNECT_TIMEOUT:
+                    log.debug(u'[%s] Gave up trying to connect to MySQL server on EC2 instance.' % (self.request_id,))
+                    break
+        return conn
+
+    def run(self):
+        try:
+            msg = u'ValidateChangesetThread started.'
+            self.messages.append((u'info', msg))
+            log.info(u'[%s] %s' % (self.request_id, msg))
+
+            no_ec2 = settings.DEV_NO_EC2_APPLY_CHANGESET
+            if no_ec2:
+                log.info(u'[%s] No EC2 instances will be started.' % (self.request_id,))
+
+            schema_version = self.schema_version
+            database_schema = schema_version.database_schema
+            changeset = self.changeset
+            if changeset.database_schema_id != schema_version.database_schema_id:
+                msg = u'Schema version and changeset do not have the same database schema.'
+                log.error(msg)
+                self.errors.append(msg)
+                self.messages.append((u'error', msg))
+
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+
+            region = settings.AWS_REGION
+            ami_id = settings.AWS_AMI_ID
+            key_name = settings.AWS_KEY_NAME
+            security_groups = settings.AWS_SECURITY_GROUPS
+            instance_type = settings.AWS_INSTANCE_TYPE
+
+            if not no_ec2:
+                conn = boto.ec2.connect_to_region(
+                    region,
+                    aws_access_key_id=aws_access_key_id,
+                    aws_secret_access_key=aws_secret_access_key)
+
+                reservation = conn.run_instances(
+                    ami_id,
+                    key_name=key_name,
+                    instance_type=instance_type,
+                    security_groups=security_groups)
+                log.debug(u'[%s] reservation: %s' % (self.request_id, reservation))
+
+            if no_ec2 or reservation:
+                if not no_ec2:
+                    instances = reservation.instances
+                try:
+                    if not no_ec2:
+                        log.debug(u'[%s] instances: %s' % (self.request_id, instances))
+
+                    if no_ec2 or instances:
+                        if not no_ec2:
+                            instance = instances[0]
+                            msg = u'Sleeping for %s second(s) to give time for EC2 instance to run.' % (
+                                settings.AWS_EC2_INSTANCE_START_WAIT)
+                            log.info(u'[%s] %s' % (self.request_id, msg))
+                            self.messages.append((u'info', msg))
+                            time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
+                            tries = 0
+                            start_time = time.time()
+                            while True:
+                                try:
+                                    tries += 1
+                                    msg = u'Waiting for instance to run... (tries=%s)' % (tries,)
+                                    log.info(u'[%s] %s' % (self.request_id, msg))
+                                    self.messages.append((u'info', msg))
+                                    instance.update()
+                                    if instance.state == 'running':
+                                        break
+                                except Exception, e:
+                                    log.exception(u'[%s] EXCEPTION' % (self.request_id,))
+                                    msg = u'%s' % (e,)
+                                    self.messages.append((u'error', msg))
+                                finally:
+                                    time.sleep(1)
+                                    elapsed_time = time.time() - start_time
+                                    if elapsed_time > settings.AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT:
+                                        msg = u'Gave up trying to wait for EC2 instance to run.'
+                                        log.error(u'[%s] %s' % (self.request_id, msg))
+                                        self.errors.append(msg)
+                                        self.messages.append((u'info', msg))
+                                        break
+
+                        if no_ec2 or (instance.state == 'running'):
+                            if not no_ec2:
+                                msg = u'EC2 instance running.'
+                                log.info(u'[%s] %s]' % (self.request_id, msg))
+                                self.messages.append((u'success', msg))
+                                host = instance.public_dns_name
+                                log.debug(u'[%s] instance.public_dns_name=%s' % (self.request_id, host))
+                            else:
+                                host = None
+                            mysql_conn = self.create_aws_mysql_connection(host=host, wait=True)
+                            if mysql_conn:
+                                query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
+                                utils.execute(mysql_conn, query)
+                                msg = u"Database schema '%s' was created (if not existed)." % (database_schema.name,)
+                                log.debug(u'[%s] %s' % (self.request_id, msg))
+                                self.messages.append((u'info', msg))
+
+                                mysql_conn.close()
+                                mysql_conn = self.create_aws_mysql_connection(
+                                    db=database_schema.name, host=host)
+                                try:
+                                    msg = u'Executing schema version DDL'
+                                    log.info(u'[%s] %s' % (self.request_id, msg))
+                                    self.messages.append((u'info', msg))
+                                    utils.execute(mysql_conn, schema_version.ddl)
+
+                                    for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
+                                        cur = None
+                                        results_log_items = []
+                                        try:
+                                            cur = mysql_conn.cursor()
+                                            msg = u'Validating: %s' % (changeset_detail.apply_sql,)
+                                            log.info(u'[%s] %s' % (self.request_id, msg))
+                                            self.messages.append((u'info', msg))
+                                            affected_rows = cur.execute(changeset_detail.apply_sql)
+                                            #results_log_items.append(u'Affected rows: %s' % (affected_rows,))
+                                            if cur.messages:
+                                                for exc, val in cur.messages:
+                                                    val_str = u'%s' % (val,)
+                                                    if val_str not in results_log_items:
+                                                        results_log_items.append(val_str)
+                                            #if results_log_items:
+                                            #    results_log = u'\n'.join(results_log_items)
+                                            #else:
+                                            #    results_log = ''
+                                            #models.ChangesetDetailApply.objects.create(
+                                            #    changeset_detail=changeset_detail,
+                                            #    before_version=schema_version.id,
+                                            #    results_log=results_log)
+                                        except Exception, e:
+                                            log.exception(u'[%s] EXCEPTION' % (self.request_id,))
+                                            msg = u'%s' % (e,)
+                                            self.errors.append(msg)
+                                            self.messages.append((u'error', msg))
+                                            if cur:
+                                                if cur.messages:
+                                                    log.error(u'[%s] %s' % (self.request_id, cur.messages))
+                                                    for exc, val in cur.messages:
+                                                        val_str = u'%s' % (val,)
+                                                        if val_str not in results_log_items:
+                                                            results_log_items.append(val_str)
+                                            raise
+                                        finally:
+                                            if cur:
+                                                cur.close()
+                                            self.validation_results.extend(results_log_items)
+
+                                    msg = u'Changeset was validated.'
+                                    log.info(u'[%s] %s' % (self.request_id, msg))
+                                    self.messages.append((u'success', msg))
+
+                                    self.changeset_was_validated = True
+
+                                except Exception, e:
+                                    log.message(u'[%s] EXCEPTION' % (self.request_id,))
+                                    msg = u'%s' % (e,)
+                                    self.errors.append(msg)
+                                    self.messages.append((u'error', msg))
+                                    self.validation_results.append(msg)
+                            else:
+                                msg = u'Unable to connect to MySQL server on EC2 instance.'
+                                log.error(u'[%s] %s' % (self.request_id, msg))
+                                raise Exception(msg)
+                        else:
+                            msg = u"Instance state did not reach 'running' state after checking for %s times." % (tries,)
+                            log.error(u'[%s] %s' % (self.request_id, msg))
+                            raise Exception(msg)
+
+                    else:
+                        msg = u'No EC2 instances were returned.'
+                        log.warn(u'[%s] %s' % (self.request_id, msg))
+                        raise Exception(msg)
+                finally:
+                    if not no_ec2:
+                        if instances:
+                            for instance in instances:
+                                instance.terminate()
+                                msg = u'EC2 instance terminated.'
+                                log.info(u'[%s] %s' % (self.request_id, msg))
+                                self.messages.append((u'success', msg))
+            else:
+                msg = u'No AWS reservation was returned.'
+                raise Exception(msg)
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            msg = u'%s' % (e,)
+            self.errors.append(msg)
+            self.messages.append((u'errors', msg))
+
+        finally:
+            msg = u'ValidateChangesetThread ended.'
+            log.info(u'[%s] %s' % (self.request_id, msg))
+            self.messages.append((u'info', msg))
+
+

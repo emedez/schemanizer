@@ -41,8 +41,15 @@ urlpatterns = patterns('schemanizer.views',
         'changeset_view_apply_results',
         name='schemanizer_changeset_view_apply_results'),
 
-    # no $ at the end of pattern so we that we can have GET params
     url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
 
+    url(
+        r'^changeset/validate/(?P<id>\d+)/',
+        'changeset_validate',
+        name='schemanizer_changeset_validate'),
 
+    url(
+        r'^changeset/validate-status/(?P<request_id>.+?)/$',
+        'changeset_validate_status',
+        name='schemanizer_changeset_validate_status'),
 )

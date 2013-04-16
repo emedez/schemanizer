@@ -1,3 +1,4 @@
+import json
 import logging
 import urllib
 import warnings
@@ -10,16 +11,20 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.forms.models import inlineformset_factory
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
+from django.template.loader import render_to_string
 
-from schemanizer import forms, exceptions
-from schemanizer import models
-from schemanizer import businesslogic
+from schemanizer import businesslogic, exceptions, forms, models, utils
 
 log = logging.getLogger(__name__)
 
 MSG_USER_NO_ACCESS = u'You do not have access to this page.'
+MSG_NOT_AJAX = u'Request must be a valid XMLHttpRequest.'
+
+validate_changeset_threads = {}
+
 
 @login_required
 def home(request, template='schemanizer/home.html'):
@@ -308,6 +313,11 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         return redirect(reverse(
                             'schemanizer_confirm_soft_delete_changeset',
                             args=[changeset.id]))
+                    elif u'submit_validate' in request.POST:
+                        return redirect(
+                            reverse(
+                                'schemanizer_changeset_validate',
+                                args=[changeset.id]))
                     else:
                         messages.error(request, u'Unknown command.')
                 except exceptions.NotAllowed, e:
@@ -319,6 +329,8 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             can_approve = changeset.can_be_approved_by(user)
             can_reject = changeset.can_be_rejected_by(user)
             can_soft_delete = changeset.can_be_soft_deleted_by(user)
+            can_validate = businesslogic.user_can_validate_changeset(
+                user, changeset)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
@@ -511,3 +523,82 @@ def changeset_view_apply_results(request, template='schemanizer/changeset_view_a
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def changeset_validate(request, id, template='schemanizer/changeset_validate.html'):
+    user_has_access = False
+    try:
+        request_id = utils.generate_request_id(request)
+        changeset = models.Changeset.objects.get(pk=int(id))
+        user_has_access = businesslogic.user_can_validate_changeset(
+            request.user.schemanizer_user, changeset)
+
+        schema_version = request.GET.get('schema_version', None)
+        if schema_version:
+            schema_version = models.SchemaVersion.objects.get(pk=int(schema_version))
+
+        if user_has_access:
+            if request.method == 'POST':
+                if u'select_schema_version_form_submit' in request.POST:
+                    select_schema_version_form = forms.SelectSchemaVersionForm(
+                        request.POST, database_schema=changeset.database_schema)
+                    if select_schema_version_form.is_valid():
+                        schema_version = int(select_schema_version_form.cleaned_data['schema_version'])
+                        url = reverse(
+                            'schemanizer_changeset_validate',
+                            args=[changeset.id])
+                        query_string = urllib.urlencode(dict(
+                            schema_version=schema_version))
+                        return redirect('%s?%s' % (url, query_string))
+                else:
+                    messages.error(request, u'Unknown command.')
+            else:
+                if schema_version:
+                    ret = businesslogic.validate_changeset(
+                        changeset, schema_version, request_id)
+                    validate_changeset_threads[request_id] = ret['thread']
+                    validate_changeset_started = True
+                else:
+                    select_schema_version_form = forms.SelectSchemaVersionForm(
+                        database_schema=changeset.database_schema)
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
+
+
+def changeset_validate_status(
+        request, request_id,
+        messages_template='schemanizer/changeset_validate_status_messages.html'):
+
+    if not request.is_ajax():
+        return HttpResponseForbidden(MSG_NOT_AJAX)
+
+    data = {}
+    try:
+        t = validate_changeset_threads.get(request_id, None)
+        if not t:
+            data['error'] = u'Invalid request ID.'
+        else:
+            data['thread_is_alive'] = t.is_alive()
+            data['thread_errors'] = t.errors
+            data['thread_messages'] = t.messages
+            data['thread_messages_html'] = render_to_string(
+                messages_template, {'thread_messages': t.messages},
+                context_instance=RequestContext(request))
+            data['thread_changeset_was_validated'] = t.changeset_was_validated
+            if not t.is_alive():
+                # remove it from dict if it is dead already
+                validate_changeset_threads.pop(request_id, None)
+        data_json = json.dumps(data)
+    except Exception, e:
+        log.exception('EXCEPTION')
+        data = dict(error=u'%s' % (e,))
+        data_json = json.dumps(data)
+
+    return HttpResponse(data_json, mimetype='application/json')
+

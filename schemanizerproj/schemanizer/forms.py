@@ -47,6 +47,9 @@ class SelectSchemaVersionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         database_schema = kwargs.pop('database_schema')
+        if type(database_schema) in (int, long):
+            database_schema = models.DatabaseSchema.objects.get(
+                pk=database_schema)
         super(SelectSchemaVersionForm, self).__init__(*args, **kwargs)
 
         choices = []
