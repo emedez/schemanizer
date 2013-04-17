@@ -3,6 +3,9 @@ from django.conf.urls import patterns, url
 urlpatterns = patterns('schemanizer.views',
     url(r'^$', 'home', name='schemanizer_home'),
 
+    #
+    # user
+    #
     url(r'^user/list/$', 'users', name='schemanizer_users'),
     url(r'^user/create/$', 'user_create', name='schemanizer_user_create'),
     url(r'^user/update/(?P<id>\d+)/$', 'update_user', name='schemanizer_update_user'),
@@ -11,6 +14,9 @@ urlpatterns = patterns('schemanizer.views',
         'confirm_delete_user',
         name='schemanizer_confirm_delete_user'),
 
+    #
+    # changeset
+    #
     url(r'^changeset/list/$', 'changeset_list', name='schemanizer_changeset_list'),
     url(
         r'^changeset/(?P<id>\d+)/$',
@@ -40,9 +46,7 @@ urlpatterns = patterns('schemanizer.views',
         r'^changeset/view-apply-results/',
         'changeset_view_apply_results',
         name='schemanizer_changeset_view_apply_results'),
-
     url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
-
     url(
         r'^changeset/validate-syntax/(?P<id>\d+)/',
         'changeset_validate_syntax',
@@ -57,4 +61,13 @@ urlpatterns = patterns('schemanizer.views',
         r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$',
         'changeset_validate_no_update_with_where_clause',
         name='schemanizer_changeset_validate_no_update_with_where_clause'),
+
+    #
+    # server
+    #
+    url(r'^server/list/$', 'server_list', name='schemanizer_server_list'),
+    url(r'^server/create/$', 'server_update', name='schemanizer_server_create'),
+    url(r'^server/update/(?P<id>\d+)/$', 'server_update', name='schemanizer_server_update'),
+    url(r'^server/delete/(?P<id>\d+)/$', 'server_delete', name='schemanizer_server_delete'),
+
 )

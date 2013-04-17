@@ -212,3 +212,20 @@ class ChangesetActionsForm(forms.Form):
         if can_reject:
             helper.add_input(Submit(u'submit_reject', u'Reject'))
         self.helper = helper
+
+
+class ServerForm(forms.ModelForm):
+    """Server form."""
+
+    class Meta:
+        model = models.Server
+
+    def __init__(self, *args, **kwargs):
+        super(ServerForm, self).__init__(*args, **kwargs)
+
+        self.fields['name'].required = True
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit(u'server_form_submit', u'Submit'))
+        self.helper = helper

@@ -701,3 +701,100 @@ def changeset_validate_syntax_status(
 
     return HttpResponse(data_json, mimetype='application/json')
 
+
+@login_required
+def server_list(request, template='schemanizer/server_list.html'):
+    """Server list view."""
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            servers = models.Server.objects.all()
+
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def server_update(request, id=None, template='schemanizer/server_update.html'):
+    """Server update view."""
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            if id:
+                server = models.Server.objects.get(pk=int(id))
+            else:
+                server = models.Server()
+            if request.method == 'POST':
+                form = forms.ServerForm(request.POST, instance=server)
+                if form.is_valid():
+                    server = form.save()
+                    msg = u'Server [id=%s] was %s.' % (
+                        server.id, u'updated' if id else u'created')
+                    messages.success(request, msg)
+                    log.info(msg)
+                    return redirect('schemanizer_server_list')
+            else:
+                form = forms.ServerForm(instance=server)
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def server_delete(request, id, template='schemanizer/server_delete.html'):
+    """Server delete view."""
+
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            server = models.Server.objects.get(pk=int(id))
+            if request.method == 'POST':
+                with transaction.commit_on_success():
+                    server.delete()
+                msg = u'Server [id=%s] was deleted.' % (id,)
+                messages.success(request, msg)
+                log.info(msg)
+                return redirect('schemanizer_server_list')
+            else:
+                form = forms.ContinueForm()
+
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
