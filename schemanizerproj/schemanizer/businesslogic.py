@@ -519,22 +519,23 @@ def user_can_validate_changeset(user, changeset):
         return False
 
 
-def validate_changeset(changeset, schema_version, request_id):
+def validate_changeset_syntax(changeset, schema_version, request_id):
     """Validates changeset."""
 
     if type(changeset) in (int, long):
         changeset = models.Changeset.objects.get(pk=changeset)
     if type(schema_version) in (int, long):
         schema_version = models.SchemaVersion.objects.get(pk=schema_version)
-    thread = ValidateChangesetThread(changeset, schema_version, request_id)
+    thread = ValidateChangesetSyntaxThread(changeset, schema_version, request_id)
     thread.start()
-    ret = dict(thread=thread)
-    return ret
+    return thread
 
 
-class ValidateChangesetThread(threading.Thread):
+class ValidateChangesetSyntaxThread(threading.Thread):
+    """Thread for validating changeset syntax."""
+
     def __init__(self, changeset, schema_version, request_id):
-        super(ValidateChangesetThread, self).__init__()
+        super(ValidateChangesetSyntaxThread, self).__init__()
         self.daemon = True
 
         self.changeset = changeset
@@ -562,12 +563,22 @@ class ValidateChangesetThread(threading.Thread):
             connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
         if db:
             connection_options['db'] = db
+
         if wait:
+            #
+            # Sleep, to give time for MySQL server on EC2 instance to start,
+            # before attempting to connect to it.
+            #
             msg = u'Sleeping for %s second(s) to give time for MySQL server on EC2 instance to start.' % (
                 settings.AWS_EC2_INSTANCE_START_WAIT,)
             log.info(u'[%s] %s' % (self.request_id, msg))
             self.messages.append((u'info', msg))
             time.sleep(settings.AWS_MYSQL_START_WAIT)
+
+        #
+        # Attempt to connect to MySQL server on EC2 instance,
+        # until connected successfully or timed out.
+        #
         tries = 0
         start_time = time.time()
         while True:
@@ -594,7 +605,7 @@ class ValidateChangesetThread(threading.Thread):
 
     def run(self):
         try:
-            msg = u'ValidateChangesetThread started.'
+            msg = u'ValidateChangesetSyntaxThread started.'
             self.messages.append((u'info', msg))
             log.info(u'[%s] %s' % (self.request_id, msg))
 
@@ -643,11 +654,21 @@ class ValidateChangesetThread(threading.Thread):
                     if no_ec2 or instances:
                         if not no_ec2:
                             instance = instances[0]
+
+                            #
+                            # Sleep, to give time for EC2 instance to reach running state,
+                            # before attempting to access it.
+                            #
                             msg = u'Sleeping for %s second(s) to give time for EC2 instance to run.' % (
                                 settings.AWS_EC2_INSTANCE_START_WAIT)
                             log.info(u'[%s] %s' % (self.request_id, msg))
                             self.messages.append((u'info', msg))
                             time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
+
+                            #
+                            # Poll EC2 instance state until instance state becomes running,
+                            # or timed out.
+                            #
                             tries = 0
                             start_time = time.time()
                             while True:
@@ -682,23 +703,34 @@ class ValidateChangesetThread(threading.Thread):
                                 log.debug(u'[%s] instance.public_dns_name=%s' % (self.request_id, host))
                             else:
                                 host = None
+
                             mysql_conn = self.create_aws_mysql_connection(host=host, wait=True)
                             if mysql_conn:
+                                #
+                                # Create schema if not exists
+                                #
                                 query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
                                 utils.execute(mysql_conn, query)
                                 msg = u"Database schema '%s' was created (if not existed)." % (database_schema.name,)
                                 log.debug(u'[%s] %s' % (self.request_id, msg))
                                 self.messages.append((u'info', msg))
-
                                 mysql_conn.close()
+
+                                # Reconnect again using the newly created schema.
                                 mysql_conn = self.create_aws_mysql_connection(
                                     db=database_schema.name, host=host)
                                 try:
+                                    #
+                                    # Execute schema_version.ddl
+                                    #
                                     msg = u'Executing schema version DDL'
                                     log.info(u'[%s] %s' % (self.request_id, msg))
                                     self.messages.append((u'info', msg))
                                     utils.execute(mysql_conn, schema_version.ddl)
 
+                                    #
+                                    # Apply all changeset details.
+                                    #
                                     for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
                                         cur = None
                                         results_log_items = []
@@ -708,20 +740,11 @@ class ValidateChangesetThread(threading.Thread):
                                             log.info(u'[%s] %s' % (self.request_id, msg))
                                             self.messages.append((u'info', msg))
                                             affected_rows = cur.execute(changeset_detail.apply_sql)
-                                            #results_log_items.append(u'Affected rows: %s' % (affected_rows,))
                                             if cur.messages:
                                                 for exc, val in cur.messages:
                                                     val_str = u'%s' % (val,)
                                                     if val_str not in results_log_items:
                                                         results_log_items.append(val_str)
-                                            #if results_log_items:
-                                            #    results_log = u'\n'.join(results_log_items)
-                                            #else:
-                                            #    results_log = ''
-                                            #models.ChangesetDetailApply.objects.create(
-                                            #    changeset_detail=changeset_detail,
-                                            #    before_version=schema_version.id,
-                                            #    results_log=results_log)
                                         except Exception, e:
                                             log.exception(u'[%s] EXCEPTION' % (self.request_id,))
                                             msg = u'%s' % (e,)
@@ -740,18 +763,38 @@ class ValidateChangesetThread(threading.Thread):
                                                 cur.close()
                                             self.validation_results.extend(results_log_items)
 
-                                    msg = u'Changeset was validated.'
-                                    log.info(u'[%s] %s' % (self.request_id, msg))
-                                    self.messages.append((u'success', msg))
-
-                                    self.changeset_was_validated = True
-
                                 except Exception, e:
                                     log.message(u'[%s] EXCEPTION' % (self.request_id,))
                                     msg = u'%s' % (e,)
                                     self.errors.append(msg)
                                     self.messages.append((u'error', msg))
                                     self.validation_results.append(msg)
+
+                                #
+                                # Save results
+                                #
+                                validation_results_text = u''
+                                if self.validation_results:
+                                    validation_results_text = u'\n'.join(self.validation_results)
+                                validation_type = models.ValidationType.objects.get(name=u'syntax')
+                                models.ChangesetValidation.objects.create(
+                                    changeset=changeset,
+                                    validation_type=validation_type,
+                                    timestamp=timezone.now(),
+                                    result=validation_results_text)
+
+                                msg = u'Changeset syntax validation was completed.'
+                                log.info(u'[%s] %s' % (self.request_id, msg))
+                                self.messages.append((u'info', msg))
+
+                                if len(validation_results_text) <= 0:
+                                    validation_results_text = '< No Errors >'
+                                msg = u'Results:\n%s' % (validation_results_text,)
+                                log.info(u'[%s] %s' % (self.request_id, msg))
+                                self.messages.append((u'info', msg))
+
+                                self.changeset_syntax_validation_completed = True
+
                             else:
                                 msg = u'Unable to connect to MySQL server on EC2 instance.'
                                 log.error(u'[%s] %s' % (self.request_id, msg))
@@ -772,7 +815,7 @@ class ValidateChangesetThread(threading.Thread):
                                 instance.terminate()
                                 msg = u'EC2 instance terminated.'
                                 log.info(u'[%s] %s' % (self.request_id, msg))
-                                self.messages.append((u'success', msg))
+                                self.messages.append((u'info', msg))
             else:
                 msg = u'No AWS reservation was returned.'
                 raise Exception(msg)
@@ -784,7 +827,7 @@ class ValidateChangesetThread(threading.Thread):
             self.messages.append((u'errors', msg))
 
         finally:
-            msg = u'ValidateChangesetThread ended.'
+            msg = u'ValidateChangesetSyntaxThread ended.'
             log.info(u'[%s] %s' % (self.request_id, msg))
             self.messages.append((u'info', msg))
 

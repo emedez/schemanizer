@@ -10,3 +10,4 @@ django-debug-toolbar
 nose
 django-nose
 coverage
+sqlparse

@@ -147,7 +147,8 @@
                     <input type="submit" class="btn" name="submit_reject" value="Reject" />
                 {% endif %}
                 {% if can_validate %}
-                    <input type="submit" class="btn" name="submit_validate" value="Validate"/>
+                    <input type="submit" class="btn" name="submit_validate_syntax" value="Validate Syntax"/>
+                    <input type="submit" class="btn" name="submit_validate_no_update_with_where_clause" value="Validate No Update with Where Clause"/>
                 {% endif %}
                 {% if can_soft_delete %}
                     <input type="submit" class="btn btn-warning" name="submit_delete" value="Delete" />

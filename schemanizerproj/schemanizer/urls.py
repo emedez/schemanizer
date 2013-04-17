@@ -44,12 +44,17 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
 
     url(
-        r'^changeset/validate/(?P<id>\d+)/',
-        'changeset_validate',
-        name='schemanizer_changeset_validate'),
+        r'^changeset/validate-syntax/(?P<id>\d+)/',
+        'changeset_validate_syntax',
+        name='schemanizer_changeset_validate_syntax'),
 
     url(
-        r'^changeset/validate-status/(?P<request_id>.+?)/$',
-        'changeset_validate_status',
-        name='schemanizer_changeset_validate_status'),
+        r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$',
+        'changeset_validate_syntax_status',
+        name='schemanizer_changeset_validate_syntax_status'),
+
+    url(
+        r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$',
+        'changeset_validate_no_update_with_where_clause',
+        name='schemanizer_changeset_validate_no_update_with_where_clause'),
 )
