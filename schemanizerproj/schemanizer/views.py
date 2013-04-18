@@ -7,6 +7,7 @@ import MySQLdb
 warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 import sqlparse
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
@@ -791,6 +792,85 @@ def server_delete(request, id, template='schemanizer/server_delete.html'):
             else:
                 form = forms.ContinueForm()
 
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def schema_version_create(
+        request, server_id,
+        template='schemanizer/schema_version_create.html'):
+    """View for selecting schema to save."""
+
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            server = models.Server.objects.get(pk=int(server_id))
+            conn_opts = {}
+            conn_opts['host'] = server.name
+            if settings.AWS_MYSQL_PORT:
+                conn_opts['port'] = settings.AWS_MYSQL_PORT
+            if settings.AWS_MYSQL_USER:
+                conn_opts['user'] = settings.AWS_MYSQL_USER
+            if settings.AWS_MYSQL_PASSWORD:
+                conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
+            conn = MySQLdb.connect(**conn_opts)
+            schema_choices = []
+            with conn as cur:
+                cur.execute('SHOW DATABASES');
+                rows = cur.fetchall()
+                for row in rows:
+                    schema_choices.append((row[0], row[0]))
+
+            if request.method == 'POST':
+                form = forms.SelectRemoteSchemaForm(request.POST)
+                form.fields['schema'].choices = schema_choices
+
+                if form.is_valid():
+                    schema = form.cleaned_data['schema']
+
+                    #
+                    # dump structure
+                    #
+                    data = ''
+                    with conn as cur:
+                        cur.execute('USE `%s`' % (schema,))
+                        cur.execute('SHOW TABLES')
+                        tables = []
+                        for table in cur.fetchall():
+                            tables.append(table[0])
+                        for table in tables:
+                            data += 'DROP TABLE IF EXISTS `%s`;' % (table,)
+                            cur.execute('SHOW CREATE TABLE `%s`' % (table,))
+                            data += '\n%s;\n\n' % (cur.fetchone()[1])
+
+                    #
+                    # Save dump as latest version for the schema
+                    #
+                    database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=schema)
+                    models.SchemaVersion.objects.create(database_schema=database_schema, ddl=data)
+
+                    msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
+                    log.info(msg)
+                    messages.success(request, msg)
+                    return redirect('schemanizer_server_list')
+
+            else:
+                form = forms.SelectRemoteSchemaForm()
+                form.fields['schema'].choices = schema_choices
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 

@@ -33,6 +33,7 @@
                             <td>
                                 <a class="btn btn-small" href="{% url 'schemanizer_server_update' server.id %}">Update</a>
                                 <a class="btn btn-small" href="{% url 'schemanizer_server_delete' server.id %}">Delete</a>
+                                <a class="btn btn-small" href="{% url 'schemanizer_schema_version_create' server.id %}">Create schema version</a>
                             </td>
                         </tr>
                     {% endfor %}

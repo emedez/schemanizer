@@ -229,3 +229,17 @@ class ServerForm(forms.ModelForm):
         helper.form_class = 'form-inline'
         helper.add_input(Submit(u'server_form_submit', u'Submit'))
         self.helper = helper
+
+
+class SelectRemoteSchemaForm(forms.Form):
+    """Form for selecting remote schema."""
+
+    schema = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(SelectRemoteSchemaForm, self).__init__(*args, **kwargs)
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('select_remote_schema_form_submit', 'Submit'))
+        self.helper = helper

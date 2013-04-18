@@ -70,4 +70,11 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^server/update/(?P<id>\d+)/$', 'server_update', name='schemanizer_server_update'),
     url(r'^server/delete/(?P<id>\d+)/$', 'server_delete', name='schemanizer_server_delete'),
 
+    #
+    # schema version
+    #
+    url(
+        r'^schema_version/create/(?P<server_id>\d+)/$',
+        'schema_version_create',
+        name='schemanizer_schema_version_create'),
 )
