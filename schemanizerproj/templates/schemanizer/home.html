@@ -41,12 +41,13 @@
     <p><strong>Other Tasks</strong></p>
     <ul>
         <li><a href="{% url 'schemanizer_changeset_submit' %}">Submit changeset</a></li>
+        {% comment %}
         {% if can_apply_changesets %}
             <li>
                 <a href="{% url 'schemanizer_changeset_apply' %}">Apply changeset</a> - spin up an EC2 instance with MySQL installed, apply changeset and record output.
             </li>
         {% endif %}
         <li><a href="{% url 'schemanizer_changeset_view_apply_results' %}">View changeset apply results</a></li>
-        <li><a href="{% url 'schemanizer_server_list' %}">Browse/update servers</a></li>
+        {% endcomment %}
     </ul>
 {% endblock %}

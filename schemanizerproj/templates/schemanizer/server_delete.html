@@ -4,14 +4,16 @@
 
 {% block contents %}
     {% if user_has_access %}
+        <div class="alert">
+            <h3>Warning!</h3>
+            <p>The following server will be deleted:</p>
+            <p>{{ server }}</p>
+            <p>Other related records will also be deleted.</p>
+        </div>
+
         {% if form %}
-            <div class="alert">
-                <h3>Warning!</h3>
-                <p>The following server will be deleted:</p>
-                <p>{{ server }}</p>
-                <p>Other related records will also be deleted.</p>
-            </div>
             {% crispy form form.helper %}
         {% endif %}
+
     {% endif %}
 {% endblock %}

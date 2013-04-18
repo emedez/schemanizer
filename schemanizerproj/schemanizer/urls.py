@@ -9,58 +9,26 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^user/list/$', 'users', name='schemanizer_users'),
     url(r'^user/create/$', 'user_create', name='schemanizer_user_create'),
     url(r'^user/update/(?P<id>\d+)/$', 'update_user', name='schemanizer_update_user'),
-    url(
-        r'^user/delete/(?P<id>\d+)/$',
-        'confirm_delete_user',
-        name='schemanizer_confirm_delete_user'),
+    url(r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user', name='schemanizer_confirm_delete_user'),
 
     #
     # changeset
     #
     url(r'^changeset/list/$', 'changeset_list', name='schemanizer_changeset_list'),
-    url(
-        r'^changeset/(?P<id>\d+)/$',
-        'changeset_view',
-        name='schemanizer_changeset_view'),
-    url(
-        r'^changeset/submit/$',
-        'changeset_submit',
-        name='schemanizer_changeset_submit'),
-    url(
-        r'^changeset/review/(?P<id>\d+)/$',
-        'changeset_review',
-        name='schemanizer_changeset_review'),
-    url(
-        r'^changeset/soft-delete/(?P<id>\d+)/$',
-        'confirm_soft_delete_changeset',
-        name='schemanizer_confirm_soft_delete_changeset'),
-    url(
-        r'^changeset/update/(?P<id>\d+)/$',
-        'update_changeset',
-        name='schemanizer_update_changeset'),
-    url(
-        r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$',
-        'changeset_apply_results',
-        name='schemanizer_changeset_apply_results'),
-    url(
-        r'^changeset/view-apply-results/',
-        'changeset_view_apply_results',
-        name='schemanizer_changeset_view_apply_results'),
-    url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
-    url(
-        r'^changeset/validate-syntax/(?P<id>\d+)/',
-        'changeset_validate_syntax',
-        name='schemanizer_changeset_validate_syntax'),
-
-    url(
-        r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$',
-        'changeset_validate_syntax_status',
-        name='schemanizer_changeset_validate_syntax_status'),
-
-    url(
-        r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$',
-        'changeset_validate_no_update_with_where_clause',
-        name='schemanizer_changeset_validate_no_update_with_where_clause'),
+    url(r'^changeset/(?P<id>\d+)/$', 'changeset_view', name='schemanizer_changeset_view'),
+    url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
+#    url(
+#        r'^changeset/review/(?P<id>\d+)/$',
+#        'changeset_review',
+#        name='schemanizer_changeset_review'),
+    url(r'^changeset/delete/(?P<id>\d+)/$', 'changeset_soft_delete', name='schemanizer_changeset_soft_delete'),
+    url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
+#    url(r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$', 'changeset_apply_results', name='schemanizer_changeset_apply_results'),
+#    url(r'^changeset/view-apply-results/', 'changeset_view_apply_results', name='schemanizer_changeset_view_apply_results'),
+#    url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
+    url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
+    url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
+    url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
 
     #
     # server
@@ -73,8 +41,5 @@ urlpatterns = patterns('schemanizer.views',
     #
     # schema version
     #
-    url(
-        r'^schema_version/create/(?P<server_id>\d+)/$',
-        'schema_version_create',
-        name='schemanizer_schema_version_create'),
+    url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
 )

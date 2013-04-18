@@ -7,14 +7,15 @@ import MySQLdb
 from django.conf import settings
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.sites.models import Site
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.db import transaction
 
 from django.utils import timezone
 
 import boto.ec2
 
-from schemanizer import models, utils
+from schemanizer import exceptions, models, utils
 
 log = logging.getLogger(__name__)
 
@@ -54,13 +55,11 @@ def delete_user(user):
     auth_user.delete()
     log.info(u'User [id=%s] was deleted.' % (user_id,))
 
-
 def send_mail(
         subject='', body='', from_email=None, to=None, bcc=None,
-        connection=None, attachments=None, headers=None, alternatives=None,
+        connection=None, attachments=None, headers=None,
         cc=None):
     text_content = body
-    html_content = body
 
     if to and not isinstance(to, list) and not isinstance(to, tuple):
         to = [to]
@@ -68,15 +67,13 @@ def send_mail(
         bcc = [bcc]
     if cc and not isinstance(cc, list) and not isinstance(cc, tuple):
         cc = [cc]
-    msg = EmailMultiAlternatives(
+    msg = EmailMessage(
         subject, text_content, from_email, to,
         bcc=bcc,
         connection=connection,
         attachments=attachments,
         headers=headers,
-        alternatives=alternatives,
         cc=cc)
-    msg.attach_alternative(html_content, 'text/html')
     msg.send()
 
 
@@ -100,67 +97,28 @@ def send_changeset_submitted_mail(changeset):
         log.warn(u'No email recipients.')
 
 
-def send_changeset_reviewed_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    #to = list((
-    #    models.User.objects.values_list('email', flat=True)
-    #    .filter(role__name=models.Role.ROLE_DBA)))
-    to = [changeset.reviewed_by.email]
+def changeset_can_be_soft_deleted_by_user(changeset, user):
+    """Checks if the changeset can be soft deleted by user."""
 
-    if to:
-        subject = u'Changeset reviewed'
-        body = (
-            u'Changeset was reviewed by %s: \n'
-            u'%s') % (changeset.reviewed_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info('Reviewed changeset email sent to: %s' % (to,))
-    else:
-        log.warn('No email recipients.')
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
 
+    if not changeset.pk:
+        # Cannot soft delete unsaved changeset.
+        return False
 
-def send_changeset_approved_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    #to = list((
-    #    models.User.objects.values_list('email', flat=True)
-    #    .filter(role__name=models.Role.ROLE_DBA)))
-    to = [changeset.approved_by.email]
+    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        # dbas and admins can soft delete changeset
+        return True
 
-    if to:
-        subject = u'Changeset approved'
-        body = (
-            u'Changeset was approved by %s: \n'
-            u'%s') % (changeset.approved_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info('Approved changeset email sent to: %s' % (to,))
-    else:
-        log.warn('No email recipients.')
+    if user.role.name in (models.Role.ROLE_DEVELOPER,):
+        if changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED:
+            # developers can only soft delete changesets that were not yet approved
+            return True
 
-
-def send_changeset_rejected_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    #to = list((
-    #    models.User.objects.values_list('email', flat=True)
-    #    .filter(role__name=models.Role.ROLE_DBA)))
-    to = [changeset.approved_by.email]
-
-    if to:
-        subject = u'Changeset rejected'
-        body = (
-                   u'Changeset was rejected by %s: \n'
-                   u'%s') % (changeset.approved_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info('Rejected changeset email sent to: %s' % (to,))
-    else:
-        log.warn('No email recipients.')
+    return False
 
 
 def soft_delete_changeset(changeset):
@@ -222,7 +180,50 @@ def changeset_submit(**kwargs):
     return changeset
 
 
-def update_changeset(**kwargs):
+def changeset_can_be_updated_by_user(changeset, user):
+    """Checks if this changeset can be updated by user."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if not changeset.pk:
+        # Cannot update unsaved changesets.
+        return False
+
+    if user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+        # dbas and admins can always update changeset.
+        return True
+
+    if user.role.name in [models.Role.ROLE_DEVELOPER]:
+        # developers can update changesets only if it was not yet approved.
+        if changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED:
+            return True
+
+    return False
+
+
+def changeset_send_updated_mail(changeset):
+    """Sends updated changeset email to dbas."""
+    site = Site.objects.get_current()
+    changeset_url = 'http://%s%s' % (
+        site.domain,
+        reverse('schemanizer_changeset_view', args=[changeset.id]))
+    to = list(models.User.objects.values_list('email', flat=True)
+    .filter(role__name=models.Role.ROLE_DBA))
+
+    if to:
+        subject = u'Changeset updated'
+        body = u'The following is the URL for the changeset that was updated: \n%s' % (
+            changeset_url)
+        send_mail(subject=subject, body=body, to=to)
+        log.info(u'Updated changeset email sent to: %s' % (to,))
+    else:
+        log.warn(u'No email recipients.')
+
+
+def changeset_update(**kwargs):
     """Updates changeset.
 
     expected keyword arguments:
@@ -232,81 +233,263 @@ def update_changeset(**kwargs):
     """
     changeset_form = kwargs.get('changeset_form')
     changeset_detail_formset = kwargs.get('changeset_detail_formset')
-    updated_by = kwargs.get('user')
-
-    changeset = changeset_form.save(commit=False)
-    changeset.set_updated_by(updated_by)
-    changeset_form.save_m2m()
-    changeset_detail_formset.save()
-
-    log.info(u'Changeset was updated:\n%s' % (changeset,))
-
-    return changeset
-
-
-def changeset_review(**kwargs):
-    """Reviews changeset.
-
-    expected keyword arguments:
-        changeset_form
-        changeset_detail_formset
-        user
-            - this is used as value for reviewed_by
-    """
-    now = timezone.now()
-
-    changeset_form = kwargs.get('changeset_form')
-    changeset_detail_formset = kwargs.get('changeset_detail_formset')
-    reviewed_by = kwargs.get('user')
-
-    changeset = changeset_form.save(commit=False)
-    changeset.set_reviewed_by(reviewed_by)
-    changeset_form.save_m2m()
-    changeset_detail_formset.save()
-
-    log.info('A changeset was reviewed:\n%s' % (changeset,))
-
-    send_changeset_reviewed_mail(changeset)
-
-    return changeset
-
-
-def changeset_approve(**kwargs):
-    """Approves changeset.
-
-    expected keyword arguments:
-        changeset
-        user
-    """
-    changeset = kwargs.get('changeset')
     user = kwargs.get('user')
 
-    changeset.set_approved_by(user)
+    changeset = changeset_form.save(commit=False)
+    if changeset_can_be_updated_by_user(changeset, user):
+        with transaction.commit_on_success():
+            #
+            # Update changeset
+            #
+            now = timezone.now()
+            changeset.review_status = changeset.REVIEW_STATUS_NEEDS
+            changeset.save()
+            changeset_form.save_m2m()
+            #
+            # Save changeset details
+            changeset_detail_formset.save()
+            #
+            # Create entry on changeset actions
+            models.ChangesetAction.objects.create(
+                changeset=changeset,
+                type=models.ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
 
-    log.info('A changeset was approved:\n%s' % (changeset,))
+        log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-    send_changeset_approved_mail(changeset)
+        changeset_send_updated_mail(changeset)
+
+    else:
+        raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
 
     return changeset
 
 
-def changeset_reject(**kwargs):
-    """Rejects changeset.
+def changeset_can_be_reviewed_by_user(changeset, user):
+    """Checks if changeset review_status can be set to 'in_progress' by user."""
 
-    expected keyword arguments:
-        changeset
-        user
-    """
-    changeset = kwargs.get('changeset')
-    user = kwargs.get('user')
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
 
-    changeset.set_rejected_by(user)
+    # Only DBAs and admins can review changeset
+    if user.role.name not in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        return False
 
-    log.info('A changeset was rejected:\n%s' % (changeset,))
+    if changeset.review_status == models.Changeset.REVIEW_STATUS_IN_PROGRESS:
+        # already in progress
+        return False
 
-    send_changeset_rejected_mail(changeset)
+    return True
 
-    return changeset
+
+def changeset_send_reviewed_mail(changeset):
+    """Sends reviewed changeset email to dbas."""
+    site = Site.objects.get_current()
+    changeset_url = 'http://%s%s' % (
+        site.domain,
+        reverse('schemanizer_changeset_view', args=[changeset.id]))
+    to = list(models.User.objects.values_list('email', flat=True)
+        .filter(role__name=models.Role.ROLE_DBA))
+
+    if to:
+        subject = u'Changeset reviewed'
+        body = u'The following is the URL for the changeset that was reviewed by %s: \n%s' % (
+            changeset.reviewed_by.name, changeset_url)
+        send_mail(subject=subject, body=body, to=to)
+        log.info(u'Reviewed changeset email sent to: %s' % (to,))
+    else:
+        log.warn(u'No email recipients.')
+
+
+def changeset_set_as_reviewed(changeset, user):
+    """Sets changeset as reviewed by user."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset_can_be_reviewed_by_user(changeset, user):
+        now = timezone.now()
+
+        with transaction.commit_on_success():
+            #
+            # Update changeset.
+            #
+            changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
+            changeset.reviewed_by = user
+            changeset.reviewed_at = now
+            changeset.save()
+            #
+            # Create entry on changeset actions.
+            models.ChangesetAction.objects.create(
+                changeset=changeset,
+                type=models.ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
+
+        log.info(u'Changeset [id=%s] was reviewed.' % (changeset.id,))
+
+        changeset_send_reviewed_mail(changeset)
+
+    else:
+        raise exceptions.NotAllowed(u'User is not allowed to set review status to \'in_progress\'.')
+
+
+#def changeset_review(**kwargs):
+#    """Reviews changeset.
+#
+#    expected keyword arguments:
+#        changeset_form
+#        changeset_detail_formset
+#        user
+#            - this is used as value for reviewed_by
+#    """
+#    now = timezone.now()
+#
+#    changeset_form = kwargs.get('changeset_form')
+#    changeset_detail_formset = kwargs.get('changeset_detail_formset')
+#    reviewed_by = kwargs.get('user')
+#
+#    changeset = changeset_form.save(commit=False)
+#    changeset.set_reviewed_by(reviewed_by)
+#    changeset_form.save_m2m()
+#    changeset_detail_formset.save()
+#
+#    log.info('A changeset was reviewed:\n%s' % (changeset,))
+#
+#    changeset_send_reviewed_mail(changeset)
+#
+#    return changeset
+
+def changeset_can_be_approved_by_user(changeset, user):
+    """Checks if this changeset can be approved by user."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if not changeset.pk:
+        # Cannot approve unsaved changeset.
+        return False
+
+    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        if changeset.review_status not in (
+                models.Changeset.REVIEW_STATUS_APPROVED,
+                models.Changeset.REVIEW_STATUS_REJECTED):
+            return True
+    else:
+        return False
+
+
+changeset_can_be_rejected_by_user = changeset_can_be_approved_by_user
+
+
+def changeset_send_approved_mail(changeset):
+    """Send email to dbas."""
+
+    site = Site.objects.get_current()
+    changeset_url = 'http://%s%s' % (
+        site.domain,
+        reverse('schemanizer_changeset_view', args=[changeset.id]))
+    to = list(models.User.objects.values_list('email', flat=True)
+        .filter(role__name=models.Role.ROLE_DBA))
+
+    if to:
+        subject = u'Changeset approved'
+        body = u'The following is the URL of the changeset that was approved by %s: \n%s' % (
+            changeset.approved_by.name, changeset_url,)
+        send_mail(subject=subject, body=body, to=to)
+        log.info(u'Approved changeset email sent to: %s' % (to,))
+    else:
+        log.warn(u'No email recipients.')
+
+
+def changeset_approve(changeset, user):
+    """Approves changeset."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset_can_be_approved_by_user(changeset, user):
+        now = timezone.now()
+        with transaction.commit_on_success():
+            #
+            # Update changeset
+            #
+            changeset.review_status = models.Changeset.REVIEW_STATUS_APPROVED
+            changeset.approved_by = user
+            changeset.approved_at = now
+            changeset.save()
+            #
+            # Create changeset action entry.
+            models.ChangesetAction.objects.create(
+                changeset=changeset,
+                type=models.ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
+
+        log.info(u'Changeset [id=%s] was approved.' % (changeset.id,))
+
+        changeset_send_approved_mail(changeset)
+
+    else:
+        raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
+
+
+def changeset_send_rejected_mail(changeset):
+    site = Site.objects.get_current()
+    changeset_url = 'http://%s%s' % (
+        site.domain,
+        reverse('schemanizer_changeset_view', args=[changeset.id]))
+    to = list(models.User.objects.values_list('email', flat=True)
+        .filter(role__name=models.Role.ROLE_DBA))
+
+    if to:
+        subject = u'Changeset rejected'
+        body = u'The following is the URL of the changeset that was rejected by %s: \n%s' % (
+            changeset.approved_by.name, changeset_url,)
+        send_mail(subject=subject, body=body, to=to)
+        log.info(u'Rejected changeset email sent to: %s' % (to,))
+    else:
+        log.warn(u'No email recipients.')
+
+
+def changeset_reject(changeset, user):
+    """Rejects changeset."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset_can_be_rejected_by_user(changeset, user):
+        now = timezone.now()
+        with transaction.commit_on_success():
+            #
+            # Update changeset.
+            #
+            changeset.review_status = models.Changeset.REVIEW_STATUS_REJECTED
+            changeset.approved_by = user
+            changeset.approved_at = now
+            changeset.save()
+            #
+            # Create changeset actions entry.
+            models.ChangesetAction.objects.create(
+                changeset=changeset,
+                type=models.ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
+
+        log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
+
+        changeset_send_rejected_mail(changeset)
+
+    else:
+        log.debug(u'changeset:\n%s\n\nuser=%s' % (changeset, user.name))
+        raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
 
 
 def apply_changeset(schema_version_id, changeset_id):

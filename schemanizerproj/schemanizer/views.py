@@ -151,20 +151,20 @@ def users(request, template='schemanizer/users.html'):
 
 
 @login_required
-def confirm_soft_delete_changeset(
-        request, id, template='schemanizer/confirm_soft_delete_changeset.html'):
+def changeset_soft_delete(
+        request, id, template='schemanizer/changeset_soft_delete.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
         changeset = models.Changeset.objects.get(pk=int(id))
-        user_has_access = changeset.can_be_soft_deleted_by(user)
+        user_has_access = businesslogic.changeset_can_be_soft_deleted_by_user(
+            changeset, user)
         if user_has_access:
             if request.method == 'POST':
-                if 'confirm_soft_delete' in request.POST:
-                    with transaction.commit_on_success():
-                        businesslogic.soft_delete_changeset(changeset)
-                    messages.success(request, 'Changeset [id=%s] was soft deleted.' % (id,))
-                    return redirect('schemanizer_changeset_list')
+                with transaction.commit_on_success():
+                    businesslogic.soft_delete_changeset(changeset)
+                messages.success(request, 'Changeset [id=%s] was soft deleted.' % (id,))
+                return redirect('schemanizer_changeset_list')
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
@@ -174,7 +174,7 @@ def confirm_soft_delete_changeset(
 
 
 @login_required
-def changeset_submit(request, template='schemanizer/changeset_edit.html'):
+def changeset_submit(request, template='schemanizer/changeset_update.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -208,16 +208,20 @@ def changeset_submit(request, template='schemanizer/changeset_edit.html'):
 
 
 @login_required
-def update_changeset(request, id, template='schemanizer/changeset_edit.html'):
+def changeset_update(request, id, template='schemanizer/changeset_update.html'):
     """Update changeset page."""
+
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DEVELOPER,
+            models.Role.ROLE_DBA,
+            models.Role.ROLE_ADMIN)
+
         if user_has_access:
-            id = int(id)
-            changeset = models.Changeset.objects.get(id=id)
-            if changeset.can_be_updated_by(user):
+            changeset = models.Changeset.objects.get(pk=int(id))
+            if businesslogic.changeset_can_be_updated_by_user(changeset, user):
                 ChangesetDetailFormSet = inlineformset_factory(
                     models.Changeset, models.ChangesetDetail,
                     form=forms.ChangesetDetailForm,
@@ -227,7 +231,7 @@ def update_changeset(request, id, template='schemanizer/changeset_edit.html'):
                     changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset =businesslogic.update_changeset(
+                            changeset =businesslogic.changeset_update(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
@@ -246,43 +250,43 @@ def update_changeset(request, id, template='schemanizer/changeset_edit.html'):
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def changeset_review(request, id, template='schemanizer/changeset_edit.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
-        if user_has_access:
-            id = int(id)
-            changeset = models.Changeset.objects.get(id=id)
-            ChangesetDetailFormSet = inlineformset_factory(
-                models.Changeset, models.ChangesetDetail,
-                form=forms.ChangesetDetailForm,
-                extra=1, can_delete=False)
-            if request.method == 'POST':
-                changeset_form = forms.ChangesetForm(
-                    request.POST, instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(
-                    request.POST, instance=changeset)
-                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
-                    with transaction.commit_on_success():
-                        changeset = businesslogic.changeset_review(
-                            changeset_form=changeset_form,
-                            changeset_detail_formset=changeset_detail_formset,
-                            user=user)
-                    messages.success(request, u'Changeset reviewed.')
-                    return redirect('schemanizer_changeset_view', changeset.id)
-            else:
-                changeset_form = forms.ChangesetForm(instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(
-                    instance=changeset)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+#@login_required
+#def changeset_review(request, id, template='schemanizer/changeset_update.html'):
+#    user_has_access = False
+#    try:
+#        user = request.user.schemanizer_user
+#        user_has_access = user.role.name in (
+#            models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
+#        if user_has_access:
+#            id = int(id)
+#            changeset = models.Changeset.objects.get(id=id)
+#            ChangesetDetailFormSet = inlineformset_factory(
+#                models.Changeset, models.ChangesetDetail,
+#                form=forms.ChangesetDetailForm,
+#                extra=1, can_delete=False)
+#            if request.method == 'POST':
+#                changeset_form = forms.ChangesetForm(
+#                    request.POST, instance=changeset)
+#                changeset_detail_formset = ChangesetDetailFormSet(
+#                    request.POST, instance=changeset)
+#                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
+#                    with transaction.commit_on_success():
+#                        changeset = businesslogic.changeset_review(
+#                            changeset_form=changeset_form,
+#                            changeset_detail_formset=changeset_detail_formset,
+#                            user=user)
+#                    messages.success(request, u'Changeset reviewed.')
+#                    return redirect('schemanizer_changeset_view', changeset.id)
+#            else:
+#                changeset_form = forms.ChangesetForm(instance=changeset)
+#                changeset_detail_formset = ChangesetDetailFormSet(
+#                    instance=changeset)
+#        else:
+#            messages.error(request, MSG_USER_NO_ACCESS)
+#    except Exception, e:
+#        log.exception('EXCEPTION')
+#        messages.error(request, u'%s' % (e,))
+#    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -290,51 +294,92 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DEVELOPER,
+            models.Role.ROLE_DBA,
+            models.Role.ROLE_ADMIN)
+
         if user_has_access:
             id = int(id)
             changeset = models.Changeset.objects.select_related().get(id=id)
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:
+                        #
+                        # Update changeset
+                        #
                         return redirect(
-                            'schemanizer_update_changeset', changeset.id)
-                    elif u'submit_review' in request.POST:
+                            'schemanizer_changeset_update', changeset.id)
+
+                    elif u'submit_set_as_reviewed' in request.POST:
+                        #
+                        # Set changeset review status to 'in_progress'
+                        #
+                        businesslogic.changeset_set_as_reviewed(
+                            changeset, user)
+                        messages.success(request, u'Changeset [id=%s] was reviewed.' % (changeset.id,))
                         return redirect(
-                            'schemanizer_changeset_review', changeset.id)
+                            'schemanizer_changeset_view', changeset.id)
+
                     elif u'submit_approve' in request.POST:
+                        #
+                        # Approve changeset.
+                        #
                         with transaction.commit_on_success():
                             businesslogic.changeset_approve(
                                 changeset=changeset, user=user)
-                        messages.success(request, u'Changeset approved.')
+                        messages.success(request, u'Changeset [id=%s] was approved.' % (changeset.id,))
+
                     elif u'submit_reject' in request.POST:
+                        #
+                        # Reject changeset.
+                        #
                         with transaction.commit_on_success():
                             businesslogic.changeset_reject(
                                 changeset=changeset, user=user)
-                        messages.success(request, u'Changeset rejected.')
+                        messages.success(request, u'Changeset [id=%s] was rejected.' % (changeset.id,))
+
                     elif u'submit_delete' in request.POST:
+                        #
+                        # Delete changeset.
+                        #
                         return redirect(reverse(
-                            'schemanizer_confirm_soft_delete_changeset',
+                            'schemanizer_changeset_soft_delete',
                             args=[changeset.id]))
+
                     elif u'submit_validate_syntax' in request.POST:
+                        #
+                        # Validate changeset syntax.
+                        #
                         return redirect(reverse(
                             'schemanizer_changeset_validate_syntax',
                             args=[changeset.id]))
+
                     elif u'submit_validate_no_update_with_where_clause' in request.POST:
+                        #
+                        # Validate no updates with WHERE clause.
+                        #
                         return redirect(reverse(
                             'schemanizer_changeset_validate_no_update_with_where_clause',
                             args=[changeset.id]))
+
                     else:
                         messages.error(request, u'Unknown command.')
+
                 except exceptions.NotAllowed, e:
                     log.exception('EXCEPTION')
-                    messages.error(request, e.message)
+                    messages.error(request, u'%s' % (e,))
 
-            can_update = changeset.can_be_updated_by(user)
-            can_review = changeset.can_be_reviewed_by(user)
-            can_approve = changeset.can_be_approved_by(user)
-            can_reject = changeset.can_be_rejected_by(user)
-            can_soft_delete = changeset.can_be_soft_deleted_by(user)
+            can_update = businesslogic.changeset_can_be_updated_by_user(
+                changeset, user)
+            can_set_review_status_to_in_progress = businesslogic.changeset_can_be_reviewed_by_user(
+                changeset, user)
+            can_approve = businesslogic.changeset_can_be_approved_by_user(
+                changeset, user)
+            can_reject = businesslogic.changeset_can_be_rejected_by_user(
+                changeset, user)
+            can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
+                changeset, user)
             can_validate = businesslogic.user_can_validate_changeset(
                 user, changeset)
         else:
@@ -362,173 +407,173 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def changeset_apply_results(
-        request, schema_version_id=None, changeset_id=None,
-        template='schemanizer/changeset_apply_results.html'):
-    """Changeset apply results page."""
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
-        if user_has_access:
-            schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
-            changeset = models.Changeset.objects.get(pk=changeset_id)
-            if schema_version.database_schema_id != changeset.database_schema_id:
-                msg = u'Schema version and changeset are not for the same database schema.'
-                log.error(
-                    msg +
-                    (u' schema_version_id=%s, changeset_id=%s' % (schema_version_id, changeset_id)))
-                messages.error(request, msg)
-            else:
-                changeset_detail_applies = (
-                    models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
-                        schema_version_id, changeset_id))
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+#@login_required
+#def changeset_apply_results(
+#        request, schema_version_id=None, changeset_id=None,
+#        template='schemanizer/changeset_apply_results.html'):
+#    """Changeset apply results page."""
+#    user_has_access = False
+#    try:
+#        user = request.user.schemanizer_user
+#        user_has_access = user.role.name in models.Role.ROLE_LIST
+#        if user_has_access:
+#            schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
+#            changeset = models.Changeset.objects.get(pk=changeset_id)
+#            if schema_version.database_schema_id != changeset.database_schema_id:
+#                msg = u'Schema version and changeset are not for the same database schema.'
+#                log.error(
+#                    msg +
+#                    (u' schema_version_id=%s, changeset_id=%s' % (schema_version_id, changeset_id)))
+#                messages.error(request, msg)
+#            else:
+#                changeset_detail_applies = (
+#                    models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
+#                        schema_version_id, changeset_id))
+#        else:
+#            messages.error(request, MSG_USER_NO_ACCESS)
+#    except Exception, e:
+#        log.exception('EXCEPTION')
+#        messages.error(request, u'%s' % (e,))
+#    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def changeset_apply(request, template='schemanizer/changeset_apply.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
-        if user_has_access:
+#@login_required
+#def changeset_apply(request, template='schemanizer/changeset_apply.html'):
+#    user_has_access = False
+#    try:
+#        user = request.user.schemanizer_user
+#        user_has_access = user.role.name in (
+#            models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+#        if user_has_access:
+#
+#            # query string variables
+#            database_schema_id = request.GET.get('database_schema_id', None)
+#            if database_schema_id:
+#                database_schema_id = int(database_schema_id)
+#            schema_version_id = request.GET.get('schema_version_id', None)
+#            if schema_version_id:
+#                schema_version_id = int(schema_version_id)
+#            changeset_id = request.GET.get('changeset_id', None)
+#            if changeset_id:
+#                changeset_id = int(changeset_id)
+#
+#            if request.method == 'POST':
+#                if u'select_database_schema_form_submit' in request.POST:
+#                    form = forms.SelectDatabaseSchemaForm(request.POST)
+#                    if form.is_valid():
+#                        database_schema_id = int(form.cleaned_data['database_schema'])
+#                        url = reverse('schemanizer_changeset_apply')
+#                        query_string = urllib.urlencode(dict(database_schema_id=database_schema_id))
+#                        return redirect('%s?%s' % (url, query_string))
+#                elif u'apply_changeset_form_submit' in request.POST:
+#                    database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
+#                    form = forms.ApplyChangesetForm(request.POST, database_schema=database_schema)
+#                    if form.is_valid():
+#                        schema_version_id = int(form.cleaned_data['schema_version'])
+#                        changeset_id = int(form.cleaned_data['changeset'])
+#                        url = reverse('schemanizer_changeset_apply')
+#                        query_string = urllib.urlencode(dict(
+#                            database_schema_id=database_schema_id,
+#                            schema_version_id=schema_version_id,
+#                            changeset_id=changeset_id))
+#                        return redirect('%s?%s' % (url, query_string))
+#                elif u'continue_form_submit' in request.POST:
+#                    form = forms.ContinueForm(request.POST)
+#                    if form.is_valid():
+#                        with transaction.commit_on_success():
+#                            businesslogic.apply_changeset(
+#                                schema_version_id, changeset_id)
+#                        msg = u'Changeset was applied.'
+#                        log.info(msg)
+#                        messages.success(request, msg)
+#                        return redirect(reverse(
+#                            'schemanizer_changeset_apply_results',
+#                            args=[schema_version_id, changeset_id]))
+#                else:
+#                    msg = u'Unknown command.'
+#                    log.error(msg)
+#                    messages.error(request, msg)
+#            else:
+#                if not database_schema_id:
+#                    # No selected database schema yet? Ask one from user.
+#                    form = forms.SelectDatabaseSchemaForm()
+#                elif database_schema_id and schema_version_id and changeset_id:
+#                    # Everything is set, needs confirmation from user only.
+#                    schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
+#                    changeset = models.Changeset.objects.get(pk=changeset_id)
+#                    if schema_version.database_schema_id != changeset.database_schema_id:
+#                        messages.error(u'Schema version and changeset do not have the same database schema.')
+#                        url = reverse('schemanizer_changeset_apply')
+#                        query_string = urllib.urlencode(dict(
+#                            database_schema_id=database_schema_id))
+#                        return redirect('%s?%s' % (url, query_string))
+#                    else:
+#                        form = forms.ContinueForm()
+#                else:
+#                    # Have user select schema version and changeset
+#                    database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
+#                    form = forms.ApplyChangesetForm(database_schema=database_schema)
+#
+#        else:
+#            messages.error(request, MSG_USER_NO_ACCESS)
+#    except Exception, e:
+#        log.exception('EXCEPTION')
+#        messages.error(request, u'%s' % (e,))
+#    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
-            # query string variables
-            database_schema_id = request.GET.get('database_schema_id', None)
-            if database_schema_id:
-                database_schema_id = int(database_schema_id)
-            schema_version_id = request.GET.get('schema_version_id', None)
-            if schema_version_id:
-                schema_version_id = int(schema_version_id)
-            changeset_id = request.GET.get('changeset_id', None)
-            if changeset_id:
-                changeset_id = int(changeset_id)
 
-            if request.method == 'POST':
-                if u'select_database_schema_form_submit' in request.POST:
-                    form = forms.SelectDatabaseSchemaForm(request.POST)
-                    if form.is_valid():
-                        database_schema_id = int(form.cleaned_data['database_schema'])
-                        url = reverse('schemanizer_changeset_apply')
-                        query_string = urllib.urlencode(dict(database_schema_id=database_schema_id))
-                        return redirect('%s?%s' % (url, query_string))
-                elif u'apply_changeset_form_submit' in request.POST:
-                    database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
-                    form = forms.ApplyChangesetForm(request.POST, database_schema=database_schema)
-                    if form.is_valid():
-                        schema_version_id = int(form.cleaned_data['schema_version'])
-                        changeset_id = int(form.cleaned_data['changeset'])
-                        url = reverse('schemanizer_changeset_apply')
-                        query_string = urllib.urlencode(dict(
-                            database_schema_id=database_schema_id,
-                            schema_version_id=schema_version_id,
-                            changeset_id=changeset_id))
-                        return redirect('%s?%s' % (url, query_string))
-                elif u'continue_form_submit' in request.POST:
-                    form = forms.ContinueForm(request.POST)
-                    if form.is_valid():
-                        with transaction.commit_on_success():
-                            businesslogic.apply_changeset(
-                                schema_version_id, changeset_id)
-                        msg = u'Changeset was applied.'
-                        log.info(msg)
-                        messages.success(request, msg)
-                        return redirect(reverse(
-                            'schemanizer_changeset_apply_results',
-                            args=[schema_version_id, changeset_id]))
-                else:
-                    msg = u'Unknown command.'
-                    log.error(msg)
-                    messages.error(request, msg)
-            else:
-                if not database_schema_id:
-                    # No selected database schema yet? Ask one from user.
-                    form = forms.SelectDatabaseSchemaForm()
-                elif database_schema_id and schema_version_id and changeset_id:
-                    # Everything is set, needs confirmation from user only.
-                    schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
-                    changeset = models.Changeset.objects.get(pk=changeset_id)
-                    if schema_version.database_schema_id != changeset.database_schema_id:
-                        messages.error(u'Schema version and changeset do not have the same database schema.')
-                        url = reverse('schemanizer_changeset_apply')
-                        query_string = urllib.urlencode(dict(
-                            database_schema_id=database_schema_id))
-                        return redirect('%s?%s' % (url, query_string))
-                    else:
-                        form = forms.ContinueForm()
-                else:
-                    # Have user select schema version and changeset
-                    database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
-                    form = forms.ApplyChangesetForm(database_schema=database_schema)
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_view_apply_results(request, template='schemanizer/changeset_view_apply_results.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
-
-        if user_has_access:
-
-            database_schema_id = request.GET.get('database_schema_id', None)
-            if database_schema_id:
-                database_schema_id = int(database_schema_id)
-                database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
-
-            schema_version_id = request.GET.get('schema_version_id', None)
-            if schema_version_id:
-                schema_version_id = int(schema_version_id)
-                schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
-
-            if request.method == 'POST':
-                if u'select_database_schema_form_submit' in request.POST:
-                    form = forms.SelectDatabaseSchemaForm(request.POST)
-                    if form.is_valid():
-                        database_schema_id = int(form.cleaned_data['database_schema'])
-                        url = reverse('schemanizer_changeset_view_apply_results')
-                        query_string = urllib.urlencode(dict(
-                            database_schema_id=database_schema_id))
-                        return redirect('%s?%s' % (url, query_string))
-                elif u'select_schema_version_form_submit' in request.POST:
-                    form = forms.SelectSchemaVersionForm(request.POST, database_schema=database_schema)
-                    if form.is_valid():
-                        schema_version_id = int(form.cleaned_data['schema_version'])
-                        url = reverse('schemanizer_changeset_view_apply_results')
-                        query_string = urllib.urlencode(dict(
-                            database_schema_id=database_schema_id,
-                            schema_version_id=schema_version_id))
-                        return redirect('%s?%s' % (url, query_string))
-                else:
-                    messages.error(request, u'Unknown command.')
-            else:
-                if database_schema_id and schema_version_id:
-                    applied_changesets = businesslogic.get_applied_changesets(schema_version)
-                elif database_schema_id:
-                    form = forms.SelectSchemaVersionForm(database_schema=database_schema)
-                else:
-                    form = forms.SelectDatabaseSchemaForm()
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+#@login_required
+#def changeset_view_apply_results(request, template='schemanizer/changeset_view_apply_results.html'):
+#    user_has_access = False
+#    try:
+#        user = request.user.schemanizer_user
+#        user_has_access = user.role.name in models.Role.ROLE_LIST
+#
+#        if user_has_access:
+#
+#            database_schema_id = request.GET.get('database_schema_id', None)
+#            if database_schema_id:
+#                database_schema_id = int(database_schema_id)
+#                database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
+#
+#            schema_version_id = request.GET.get('schema_version_id', None)
+#            if schema_version_id:
+#                schema_version_id = int(schema_version_id)
+#                schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
+#
+#            if request.method == 'POST':
+#                if u'select_database_schema_form_submit' in request.POST:
+#                    form = forms.SelectDatabaseSchemaForm(request.POST)
+#                    if form.is_valid():
+#                        database_schema_id = int(form.cleaned_data['database_schema'])
+#                        url = reverse('schemanizer_changeset_view_apply_results')
+#                        query_string = urllib.urlencode(dict(
+#                            database_schema_id=database_schema_id))
+#                        return redirect('%s?%s' % (url, query_string))
+#                elif u'select_schema_version_form_submit' in request.POST:
+#                    form = forms.SelectSchemaVersionForm(request.POST, database_schema=database_schema)
+#                    if form.is_valid():
+#                        schema_version_id = int(form.cleaned_data['schema_version'])
+#                        url = reverse('schemanizer_changeset_view_apply_results')
+#                        query_string = urllib.urlencode(dict(
+#                            database_schema_id=database_schema_id,
+#                            schema_version_id=schema_version_id))
+#                        return redirect('%s?%s' % (url, query_string))
+#                else:
+#                    messages.error(request, u'Unknown command.')
+#            else:
+#                if database_schema_id and schema_version_id:
+#                    applied_changesets = businesslogic.get_applied_changesets(schema_version)
+#                elif database_schema_id:
+#                    form = forms.SelectSchemaVersionForm(database_schema=database_schema)
+#                else:
+#                    form = forms.SelectDatabaseSchemaForm()
+#        else:
+#            messages.error(request, MSG_USER_NO_ACCESS)
+#    except Exception, e:
+#        log.exception('EXCEPTION')
+#        messages.error(request, u'%s' % (e,))
+#    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -582,6 +627,8 @@ def changeset_validate_no_update_with_where_clause(
                 validation_results_text = '< No Errors >'
             msg = u'Results:\n%s' % (validation_results_text,)
             log.info(msg)
+
+            return redirect(reverse('schemanizer_changeset_view', args=[changeset.id]))
 
     except Exception, e:
         log.exception('EXCEPTION')

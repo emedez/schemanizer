@@ -135,10 +135,10 @@
             {% csrf_token %}
             <div class="form-actions">
                 {% if can_update %}
-                    <input type="submit" class="btn" name="submit_update" value="Update (review status will be set to 'needs')"/>
+                    <input type="submit" class="btn" name="submit_update" value="Update (resets review status to 'needs')"/>
                 {% endif %}
-                {% if can_review %}
-                    <input type="submit" class="btn" name="submit_review" value="Revise/Review" />
+                {% if can_set_review_status_to_in_progress %}
+                    <input type="submit" class="btn" name="submit_set_as_reviewed" value="Set as reviewed" />
                 {% endif %}
                 {% if can_approve %}
                     <input type="submit" class="btn" name="submit_approve" value="Approve" />
@@ -151,7 +151,7 @@
                     <input type="submit" class="btn" name="submit_validate_no_update_with_where_clause" value="Validate No Update with Where Clause"/>
                 {% endif %}
                 {% if can_soft_delete %}
-                    <input type="submit" class="btn btn-warning" name="submit_delete" value="Delete" />
+                    <input type="submit" class="btn" name="submit_delete" value="Delete" />
                 {% endif %}
             </div>
         </form>

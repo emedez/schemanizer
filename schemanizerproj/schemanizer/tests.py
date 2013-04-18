@@ -315,7 +315,7 @@ class PageAccessTestCase(TestCase):
 
                 self.assertTrue(r.context['user_has_access'])
                 self.assertTrue('can_update' in r.context)
-                self.assertTrue('can_review' in r.context)
+                self.assertTrue('can_set_review_status_to_in_progress' in r.context)
                 self.assertTrue('can_approve' in r.context)
                 self.assertTrue('can_reject' in r.context)
                 self.assertTrue('can_soft_delete' in r.context)
@@ -335,28 +335,37 @@ class PageAccessTestCase(TestCase):
             for u, p in self.users:
                 self._login(c, u, p)
                 user = models.User.objects.get(name=u)
-                can_update = changeset.can_be_updated_by(user)
-                can_review = changeset.can_be_reviewed_by(user)
-                can_approve = changeset.can_be_approved_by(user)
-                can_reject = changeset.can_be_rejected_by(user)
-                can_soft_delete = changeset.can_be_soft_deleted_by(user)
+                can_update = businesslogic.changeset_can_be_updated_by_user(changeset, user)
+                can_set_review_status_to_in_progress = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
+                can_approve = businesslogic.changeset_can_be_approved_by_user(changeset, user)
+                can_reject = businesslogic.changeset_can_be_rejected_by_user(changeset, user)
+                can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(changeset, user)
                 if can_update:
                     r = c.post(url, data=dict(submit_update=u'Submit'))
                     self.assertRedirects(
                         r, reverse(
-                            'schemanizer_update_changeset', args=[changeset_id]))
-                if can_review:
-                    r = c.post(url, data=dict(submit_review=u'Submit'))
+                            'schemanizer_changeset_update', args=[changeset_id]))
+                if can_set_review_status_to_in_progress:
+                    changeset = models.Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset.save()
+                    r = c.post(url, data=dict(submit_set_as_reviewed=u'Submit'))
                     self.assertRedirects(
                         r, reverse(
-                            'schemanizer_changeset_review', args=[changeset_id]))
+                            'schemanizer_changeset_view', args=[changeset_id]))
                 if can_approve:
+                    changeset = models.Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset.save()
                     r = c.post(url, data=dict(submit_approve=u'Submit'))
                     tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
                         tmp_changeset.review_status,
                         models.Changeset.REVIEW_STATUS_APPROVED)
                 if can_reject:
+                    changeset = models.Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset.save()
                     r = c.post(url, data=dict(submit_reject=u'Submit'))
                     tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
@@ -366,7 +375,7 @@ class PageAccessTestCase(TestCase):
                     r = c.post(url, data=dict(submit_delete=u'Submit'))
                     self.assertRedirects(
                         r, reverse(
-                            'schemanizer_confirm_soft_delete_changeset',
+                            'schemanizer_changeset_soft_delete',
                             args=[changeset_id]))
 
         finally:
@@ -449,87 +458,87 @@ class PageAccessTestCase(TestCase):
                 if changeset:
                     businesslogic.delete_changeset(changeset)
 
-    def test_changeset_review(self):
-        """Tests changeset review page."""
+#    def test_changeset_review(self):
+#        """Tests changeset review page."""
+#
+#        changeset = self._create_changeset()
+#        changeset_id = changeset.id
+#        try:
+#            url = reverse('schemanizer_changeset_review', args=[changeset_id])
+#            c = Client()
+#
+#            for u, p in self.users:
+#                self._login(c, u, p)
+#                r = c.get(url)
+#
+#                #
+#                # only dbas and admins can review changesets
+#                #
+#                if u in (u'dba', u'admin'):
+#                    self.assertTrue(r.context['user_has_access'])
+#                    self.assertTrue('changeset_form' in r.context)
+#                    self.assertTrue('changeset_detail_formset' in r.context)
+#                else:
+#                    self.assertFalse(r.context['user_has_access'])
+#        finally:
+#            businesslogic.delete_changeset(changeset_id)
 
-        changeset = self._create_changeset()
-        changeset_id = changeset.id
-        try:
-            url = reverse('schemanizer_changeset_review', args=[changeset_id])
-            c = Client()
-
-            for u, p in self.users:
-                self._login(c, u, p)
-                r = c.get(url)
-
-                #
-                # only dbas and admins can review changesets
-                #
-                if u in (u'dba', u'admin'):
-                    self.assertTrue(r.context['user_has_access'])
-                    self.assertTrue('changeset_form' in r.context)
-                    self.assertTrue('changeset_detail_formset' in r.context)
-                else:
-                    self.assertFalse(r.context['user_has_access'])
-        finally:
-            businesslogic.delete_changeset(changeset_id)
-
-    def test_changeset_review_post(self):
-        """Tests changeset review posts."""
-
-        changeset = self._create_changeset()
-        changeset_id = changeset.id
-
-        try:
-            changeset_detail = changeset.changeset_details.all()[0]
-
-            url = reverse('schemanizer_changeset_review', args=[changeset_id])
-            c = Client()
-
-            for u, p in self.users:
-                self._login(c, u, p)
-                data = {}
-                # changeset data
-                data.update(dict(
-                    database_schema=changeset.database_schema_id,
-                    type=changeset.type,
-                    classification=changeset.classification,
-                    version_control_url=changeset.version_control_url,
-                ))
-                # form management data
-                data.update({
-                    'changeset_details-TOTAL_FORMS': 2,
-                    'changeset_details-INITIAL_FORMS': 1,
-                    'changeset_details-MAX_NUM_FORMS': 1000
-                })
-                # changeset details data
-                data.update({
-                    'changeset_details-0-changeset': changeset_id,
-                    'changeset_details-0-type': changeset_detail.type,
-                    'changeset_details-0-description': changeset_detail.description,
-                    'changeset_details-0-apply_sql': changeset_detail.apply_sql,
-                    'changeset_details-0-revert_sql': changeset_detail.revert_sql,
-                    'changeset_details-0-before_checksum': changeset_detail.before_checksum,
-                    'changeset_details-0-after_checksum': changeset_detail.after_checksum,
-                    'changeset_details-0-count_sql': changeset_detail.count_sql,
-                    'changeset_details-0-volumetric_values': changeset_detail.volumetric_values,
-                    'changeset_details-0-id': changeset_detail.id,
-                    'changeset_details-1-changeset': changeset_id,
-                    'changeset_details-1-type': models.ChangesetDetail.TYPE_ADD,
-                })
-                r = c.post(url, data=data)
-                #
-                # only dbas and admins can review changesets
-                #
-                if u in (u'dba', u'admin'):
-                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
-                    self.assertEqual(
-                        tmp_changeset.review_status,
-                        models.Changeset.REVIEW_STATUS_IN_PROGRESS)
-                else:
-                    self.assertFalse(r.context['user_has_access'])
-        finally:
-            businesslogic.delete_changeset(changeset_id)
+#    def test_changeset_review_post(self):
+#        """Tests changeset review posts."""
+#
+#        changeset = self._create_changeset()
+#        changeset_id = changeset.id
+#
+#        try:
+#            changeset_detail = changeset.changeset_details.all()[0]
+#
+#            url = reverse('schemanizer_changeset_review', args=[changeset_id])
+#            c = Client()
+#
+#            for u, p in self.users:
+#                self._login(c, u, p)
+#                data = {}
+#                # changeset data
+#                data.update(dict(
+#                    database_schema=changeset.database_schema_id,
+#                    type=changeset.type,
+#                    classification=changeset.classification,
+#                    version_control_url=changeset.version_control_url,
+#                ))
+#                # form management data
+#                data.update({
+#                    'changeset_details-TOTAL_FORMS': 2,
+#                    'changeset_details-INITIAL_FORMS': 1,
+#                    'changeset_details-MAX_NUM_FORMS': 1000
+#                })
+#                # changeset details data
+#                data.update({
+#                    'changeset_details-0-changeset': changeset_id,
+#                    'changeset_details-0-type': changeset_detail.type,
+#                    'changeset_details-0-description': changeset_detail.description,
+#                    'changeset_details-0-apply_sql': changeset_detail.apply_sql,
+#                    'changeset_details-0-revert_sql': changeset_detail.revert_sql,
+#                    'changeset_details-0-before_checksum': changeset_detail.before_checksum,
+#                    'changeset_details-0-after_checksum': changeset_detail.after_checksum,
+#                    'changeset_details-0-count_sql': changeset_detail.count_sql,
+#                    'changeset_details-0-volumetric_values': changeset_detail.volumetric_values,
+#                    'changeset_details-0-id': changeset_detail.id,
+#                    'changeset_details-1-changeset': changeset_id,
+#                    'changeset_details-1-type': models.ChangesetDetail.TYPE_ADD,
+#                })
+#                r = c.post(url, data=data)
+#                #
+#                # only dbas and admins can review changesets
+#                #
+#                if u in (u'dba', u'admin'):
+#                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+#                    self.assertEqual(
+#                        tmp_changeset.review_status,
+#                        models.Changeset.REVIEW_STATUS_IN_PROGRESS)
+#                else:
+#                    self.assertFalse(r.context['user_has_access'])
+#        finally:
+#            businesslogic.delete_changeset(changeset_id)
 
     def test_confirm_soft_delete_changeset(self):
         """Tests confirm soft delete page."""
@@ -543,7 +552,7 @@ class PageAccessTestCase(TestCase):
             changeset_id = changeset.id
             try:
                 url = reverse(
-                    'schemanizer_confirm_soft_delete_changeset',
+                    'schemanizer_changeset_soft_delete',
                     args=[changeset_id])
                 r = c.get(url)
                 self.assertTrue('user_has_access' in r.context)
@@ -562,9 +571,9 @@ class PageAccessTestCase(TestCase):
             changeset_id = changeset.id
             try:
                 url = reverse(
-                    'schemanizer_confirm_soft_delete_changeset',
+                    'schemanizer_changeset_soft_delete',
                     args=[changeset_id])
-                if changeset.can_be_soft_deleted_by(user):
+                if businesslogic.changeset_can_be_soft_deleted_by_user(changeset, user):
                     r = c.post(url, data=dict(confirm_soft_delete='Submit'))
                     tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                     self.assertTrue(tmp_changeset.is_deleted)
@@ -580,11 +589,11 @@ class PageAccessTestCase(TestCase):
             changeset = self._create_changeset()
             changeset_id = changeset.id
             try:
-                url = reverse('schemanizer_update_changeset', args=[changeset_id])
+                url = reverse('schemanizer_changeset_update', args=[changeset_id])
                 r = c.get(url)
 
                 self.assertTrue(r.context['user_has_access'])
-                if changeset.can_be_updated_by(user):
+                if businesslogic.changeset_can_be_updated_by_user(changeset, user):
                     self.assertTrue('changeset_form' in r.context)
                     self.assertTrue('changeset_detail_formset' in r.context)
             finally:
@@ -600,8 +609,8 @@ class PageAccessTestCase(TestCase):
             changeset_id = changeset.id
             try:
                 changeset_detail = changeset.changeset_details.all()[0]
-                url = reverse('schemanizer_update_changeset', args=[changeset_id])
-                if changeset.can_be_updated_by(user):
+                url = reverse('schemanizer_changeset_update', args=[changeset_id])
+                if businesslogic.changeset_can_be_updated_by_user(changeset, user):
                     data = {}
                     # changeset data
                     data.update(dict(
@@ -640,36 +649,36 @@ class PageAccessTestCase(TestCase):
             finally:
                 businesslogic.delete_changeset(changeset_id)
 
-    def test_changeset_apply_continue_form_submit(self):
-        """Tests changeset apply."""
-
-        database_schema_id = 4
-        schema_version_id = 4
-        changeset_id = 15
-        database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
-        c = Client()
-        for u, p in self.users:
-            self._login(c, u, p)
-            url = reverse('schemanizer_changeset_apply')
-            query_string = urllib.urlencode(dict(
-                database_schema_id=database_schema_id,
-                schema_version_id=schema_version_id,
-                changeset_id=changeset_id))
-            data = dict(continue_form_submit='Submit')
-
-            if u in ('dba',):
-                r = c.post('%s?%s' % (url, query_string), data=data)
-                try:
-                    self.assertTrue(models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
-                        schema_version_id=schema_version_id,
-                        changeset_id=changeset_id).exists())
-                finally:
-                    models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
-                        schema_version_id=schema_version_id,
-                        changeset_id=changeset_id).delete()
-
-                    if settings.DEV_NO_EC2_APPLY_CHANGESET:
-                        conn = businesslogic.create_aws_mysql_connection(
-                            db=database_schema.name)
-                        with conn as cursor:
-                            cursor.execute('drop schema %s;' % (database_schema.name,))
+#    def test_changeset_apply_continue_form_submit(self):
+#        """Tests changeset apply."""
+#
+#        database_schema_id = 4
+#        schema_version_id = 4
+#        changeset_id = 15
+#        database_schema = models.DatabaseSchema.objects.get(pk=database_schema_id)
+#        c = Client()
+#        for u, p in self.users:
+#            self._login(c, u, p)
+#            url = reverse('schemanizer_changeset_apply')
+#            query_string = urllib.urlencode(dict(
+#                database_schema_id=database_schema_id,
+#                schema_version_id=schema_version_id,
+#                changeset_id=changeset_id))
+#            data = dict(continue_form_submit='Submit')
+#
+#            if u in ('dba',):
+#                r = c.post('%s?%s' % (url, query_string), data=data)
+#                try:
+#                    self.assertTrue(models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
+#                        schema_version_id=schema_version_id,
+#                        changeset_id=changeset_id).exists())
+#                finally:
+#                    models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
+#                        schema_version_id=schema_version_id,
+#                        changeset_id=changeset_id).delete()
+#
+#                    if settings.DEV_NO_EC2_APPLY_CHANGESET:
+#                        conn = businesslogic.create_aws_mysql_connection(
+#                            db=database_schema.name)
+#                        with conn as cursor:
+#                            cursor.execute('drop schema %s;' % (database_schema.name,))
