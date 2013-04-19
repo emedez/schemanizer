@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 MSG_USER_NO_ACCESS = u'You do not have access to this page.'
 MSG_NOT_AJAX = u'Request must be a valid XMLHttpRequest.'
 
-validate_changeset_syntax_threads = {}
+review_threads = {}
 
 
 @login_required
@@ -195,7 +195,7 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user)
-                    messages.success(request, u'Changeset submitted.')
+                    messages.success(request, u'Changeset [id=%s] was submitted.' % (changeset.id,))
                     return redirect('schemanizer_changeset_view', changeset.id)
             else:
                 changeset_form = forms.ChangesetForm(instance=changeset)
@@ -232,11 +232,11 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                     changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset =businesslogic.changeset_update(
+                            changeset = businesslogic.changeset_update(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
-                        messages.success(request, u'Changeset updated.')
+                        messages.success(request, u'Changeset [id=%s] was updated.' % (changeset.id,))
                         return redirect('schemanizer_changeset_view', changeset.id)
                 else:
                     changeset_form = forms.ChangesetForm(instance=changeset)
@@ -291,6 +291,36 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
 
 
 @login_required
+def changeset_view_review_results(request, changeset_id, template='schemanizer/changeset_view_review_results.html'):
+    user_has_access = False
+
+    try:
+        user = request.user.schemanizer_user
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DEVELOPER,
+            models.Role.ROLE_DBA,
+            models.Role.ROLE_ADMIN)
+        if user_has_access:
+            changeset = models.Changeset.objects.get(pk=int(changeset_id))
+            changeset_validations = models.ChangesetValidation.objects.filter(changeset=changeset).order_by('id')
+            changeset_validation_ids = request.GET.get('changeset_validation_ids', None)
+            if changeset_validation_ids:
+                changeset_validation_ids = [int(id) for id in changeset_validation_ids.split(',')]
+                changeset_validations = changeset_validations.filter(id__in=changeset_validation_ids)
+            changeset_tests = models.ChangesetTest.objects.filter(changeset_detail__changeset=changeset).order_by('id')
+            changeset_test_ids = request.GET.get('changeset_test_ids', None)
+            if changeset_test_ids:
+                changeset_test_ids = [int(id) for id in changeset_test_ids.split(',')]
+                changeset_tests = changeset_tests.filter(id__in=changeset_test_ids)
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
 def changeset_view(request, id, template='schemanizer/changeset_view.html'):
     user_has_access = False
     try:
@@ -312,15 +342,23 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         return redirect(
                             'schemanizer_changeset_update', changeset.id)
 
-                    elif u'submit_set_as_reviewed' in request.POST:
+                    elif u'submit_review' in request.POST:
                         #
                         # Set changeset review status to 'in_progress'
                         #
-                        businesslogic.changeset_set_as_reviewed(
-                            changeset, user)
-                        messages.success(request, u'Changeset [id=%s] was reviewed.' % (changeset.id,))
+#                        results = businesslogic.changeset_review(
+#                            changeset, user)
+#                        changeset_validation_ids = ','.join([str(changeset_validation.id) for changeset_validation in results['changeset_validations']])
+#                        changeset_test_ids = ','.join([str(changeset_test.id) for changeset_test in results['changeset_tests']])
+#                        messages.success(request, u'Changeset [id=%s] was reviewed.' % (changeset.id,))
+#                        url = reverse('schemanizer_changeset_view_review_results', args=[changeset.id])
+#                        query_string = urllib.urlencode(dict(
+#                            changeset_validation_ids=changeset_validation_ids,
+#                            changeset_test_ids=changeset_test_ids))
+#                        return redirect('%s?%s' % (url, query_string))
                         return redirect(
-                            'schemanizer_changeset_view', changeset.id)
+                            'schemanizer_changeset_review',
+                            changeset.id)
 
                     elif u'submit_approve' in request.POST:
                         #
@@ -348,21 +386,21 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                             'schemanizer_changeset_soft_delete',
                             args=[changeset.id]))
 
-                    elif u'submit_validate_syntax' in request.POST:
-                        #
-                        # Validate changeset syntax.
-                        #
-                        return redirect(reverse(
-                            'schemanizer_changeset_validate_syntax',
-                            args=[changeset.id]))
-
-                    elif u'submit_validate_no_update_with_where_clause' in request.POST:
-                        #
-                        # Validate no updates with WHERE clause.
-                        #
-                        log.debug(u'submit_validate_no_update_with_where_clause')
-                        return redirect('schemanizer_changeset_validate_no_update_with_where_clause',
-                            changeset.id)
+#                    elif u'submit_validate_syntax' in request.POST:
+#                        #
+#                        # Validate changeset syntax.
+#                        #
+#                        return redirect(reverse(
+#                            'schemanizer_changeset_validate_syntax',
+#                            args=[changeset.id]))
+#
+#                    elif u'submit_validate_no_update_with_where_clause' in request.POST:
+#                        #
+#                        # Validate no updates with WHERE clause.
+#                        #
+#                        log.debug(u'submit_validate_no_update_with_where_clause')
+#                        return redirect('schemanizer_changeset_validate_no_update_with_where_clause',
+#                            changeset.id)
 
                     else:
                         messages.error(request, u'Unknown command.')
@@ -382,8 +420,8 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                 changeset, user)
             can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
                 changeset, user)
-            can_validate = businesslogic.user_can_validate_changeset(
-                user, changeset)
+#            can_validate = businesslogic.user_can_validate_changeset(
+#                user, changeset)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
@@ -640,14 +678,17 @@ def changeset_validate_no_update_with_where_clause(
 
 
 @login_required
-def changeset_validate_syntax(request, id, template='schemanizer/changeset_validate_syntax.html'):
-    """Validate changeset syntax view."""
+def changeset_review(
+        request, changeset_id,
+        template='schemanizer/changeset_review.html'):
 
     user_has_access = False
     try:
         request_id = utils.generate_request_id(request)
-        changeset = models.Changeset.objects.get(pk=int(id))
-        user_has_access = businesslogic.user_can_validate_changeset(request.user.schemanizer_user, changeset)
+        changeset = models.Changeset.objects.get(pk=int(changeset_id))
+        user = request.user.schemanizer_user
+        user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
+            changeset, user)
         schema_version = request.GET.get('schema_version', None)
         if schema_version:
             schema_version = models.SchemaVersion.objects.get(pk=int(schema_version))
@@ -663,7 +704,7 @@ def changeset_validate_syntax(request, id, template='schemanizer/changeset_valid
                         request.POST, database_schema=changeset.database_schema)
                     if select_schema_version_form.is_valid():
                         schema_version = int(select_schema_version_form.cleaned_data['schema_version'])
-                        url = reverse('schemanizer_changeset_validate_syntax', args=[changeset.id])
+                        url = reverse('schemanizer_changeset_review', args=[changeset.id])
                         query_string = urllib.urlencode(dict(schema_version=schema_version))
                         #
                         # redirect to actual changeset syntax validation procedure
@@ -685,9 +726,10 @@ def changeset_validate_syntax(request, id, template='schemanizer/changeset_valid
                     # User has selected a schema version already,
                     # proceed with changeset syntax validation.
                     #
-                    thread = businesslogic.validate_changeset_syntax(changeset, schema_version, request_id)
-                    validate_changeset_syntax_threads[request_id] = thread
-                    validate_changeset_syntax_started = True
+                    thread = businesslogic.changeset_review(
+                        changeset, schema_version, request_id, user)
+                    review_threads[request_id] = thread
+                    thread_started = True
 
                 else:
                     #
@@ -707,10 +749,9 @@ def changeset_validate_syntax(request, id, template='schemanizer/changeset_valid
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
-def changeset_validate_syntax_status(
+def changeset_review_status(
         request, request_id,
-        messages_template='schemanizer/changeset_validate_syntax_status_messages.html'):
-    """Checks changeset validate syntax status."""
+        messages_template='schemanizer/changeset_review_status_messages.html'):
 
     if not request.is_ajax():
         return HttpResponseForbidden(MSG_NOT_AJAX)
@@ -720,7 +761,7 @@ def changeset_validate_syntax_status(
         if not request.user.is_authenticated():
             raise Exception('Login is required.')
 
-        t = validate_changeset_syntax_threads.get(request_id, None)
+        t = review_threads.get(request_id, None)
         if not t:
             #
             # There was no running thread associated with the request_id,
@@ -732,17 +773,21 @@ def changeset_validate_syntax_status(
         else:
             data['thread_is_alive'] = t.is_alive()
             data['thread_errors'] = t.errors
-            data['thread_messages'] = t.messages
+            if t.messages:
+                data['thread_messages'] = t.messages[-1:]
+            else:
+                data['thread_messages'] = []
             data['thread_messages_html'] = render_to_string(
-                messages_template, {'thread_messages': t.messages},
+                messages_template, {'thread_messages': data['thread_messages']},
                 context_instance=RequestContext(request))
-            data['thread_changeset_was_validated'] = t.changeset_was_validated
 
             if not t.is_alive():
                 #
                 # Remove dead threads from dictionary.
                 #
-                validate_changeset_syntax_threads.pop(request_id, None)
+                review_threads.pop(request_id, None)
+                if t.review_results_url:
+                    data['thread_review_results_url'] = t.review_results_url
 
         data_json = json.dumps(data)
     except Exception, e:
@@ -928,3 +973,21 @@ def schema_version_create(
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+#@login_required
+#def changeset_review(request, changeset_id, template='schemanizer/changeset_review.html'):
+#    user_has_access = False
+#    try:
+#        changeset = models.Changeset.objects.get(pk=int(changeset_id))
+#        user = request.user.schemanizer_user
+#        user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
+#        if user_has_access:
+#            pass
+#        else:
+#            messages.error(request, MSG_USER_NO_ACCESS)
+#
+#    except Exception, e:
+#        log.exception('EXCEPTION')
+#        messages.error(request, u'%s' % (e,))
+#    return render_to_response(template, locals(), context_instance=RequestContext(request))

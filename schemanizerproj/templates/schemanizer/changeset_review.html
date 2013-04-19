@@ -9,15 +9,11 @@
             {% crispy select_schema_version_form select_schema_version_form.helper %}
         {% endif %}
 
-        {% if validate_changeset_syntax_started %}
-            {% comment %}
-            Changeset syntax validation thread has been started already,
-            show validation outputs.
-            {% endcomment %}
-            <div id="validate_changeset_syntax_outputs_container">
-                <div id="validate_changeset_syntax_outputs">
+        {% if thread_started %}
+            <div id="thread_outputs_container">
+                <div id="thread_outputs">
                 </div>
-                <div id="validate_changeset_syntax_outputs_ajax_loader_animation">
+                <div id="thread_outputs_ajax_loader_animation">
                     <img src="{{ STATIC_URL }}site/img/ajax-loader.gif"/>
                 </div>
             </div>
@@ -27,18 +23,15 @@
 
 {% block scripts_extra %}
     {{ block.super }}
-    {% if validate_changeset_syntax_started %}
-        {% comment %}
-        Validate changeset syntax scripts.
-        {% endcomment %}
+    {% if thread_started %}
         <script type="text/javascript">
             $(function() {
-                var status_url = "{% url 'schemanizer_changeset_validate_syntax_status' request_id %}";
+                var status_url = "{% url 'schemanizer_changeset_review_status' request_id %}";
 
                 // check frequency in seconds
                 var check_freq = 2;
 
-                function getValidateChangesetSyntaxStatus() {
+                function getStatus() {
                     $.get(status_url, function(data) {
                         console.log(data);
                         if ('error' in data) {
@@ -46,22 +39,25 @@
                         }
                         else {
                             if ('thread_messages_html' in data) {
-                                $('#validate_changeset_syntax_outputs').html(data['thread_messages_html']);
+                                $('#thread_outputs').html(data['thread_messages_html']);
                             }
                             if ('thread_is_alive' in data) {
                                 if (data['thread_is_alive']) {
                                     // sched check again if thread is still alive
-                                    setTimeout(getValidateChangesetSyntaxStatus, check_freq * 1000);
+                                    setTimeout(getStatus, check_freq * 1000);
                                 }
                                 else {
-                                    $('#validate_changeset_syntax_outputs_ajax_loader_animation').hide();
+                                    $('#thread_outputs_ajax_loader_animation').hide();
+                                    if ('thread_review_results_url' in data) {
+                                        window.location = data['thread_review_results_url']
+                                    }
                                 }
                             }
                         }
                     });
                 };
 
-                getValidateChangesetSyntaxStatus();
+                getStatus();
             });
         </script>
     {% endif %}

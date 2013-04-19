@@ -294,14 +294,17 @@ class ChangesetDetail(models.Model):
     class Meta:
         db_table = 'changeset_details'
 
+#    def __unicode__(self):
+#        ret = u''
+#        for k, v in vars(self).iteritems():
+#            if not k.startswith('_'):
+#                if ret:
+#                    ret += u', '
+#                ret += u'%s=%s' % (k, v)
+#        return ret
+
     def __unicode__(self):
-        ret = u''
-        for k, v in vars(self).iteritems():
-            if not k.startswith('_'):
-                if ret:
-                    ret += u', '
-                ret += u'%s=%s' % (k, v)
-        return ret
+        return u'<ChangesetDetail id=%s>' % (self.pk,)
 
 
 class ChangesetAction(models.Model):
@@ -484,3 +487,42 @@ class ChangesetValidation(models.Model):
 
     class Meta:
         db_table = 'changeset_validations'
+
+
+class TestType(models.Model):
+    name = models.CharField(max_length=255L, blank=True)
+    description = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'test_types'
+
+    def __unicode__(self):
+        return self.name
+
+
+class ChangesetTest(models.Model):
+    changeset_detail = models.ForeignKey(
+        ChangesetDetail, db_column='changeset_detail_id', null=True, blank=True)
+    test_type = models.ForeignKey(
+        TestType, db_column='test_type_id', null=True, blank=True)
+    environment = models.ForeignKey(
+        Environment, db_column='environment_id', null=True, blank=True)
+    server = models.ForeignKey(
+        Server, db_column='server_id', null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    results_log = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'changeset_tests'
+
+    def __unicode__(self):
+        return u'<ChangesetTest id=%s>' % (self.pk,)

@@ -138,17 +138,13 @@
                     <input type="submit" class="btn" name="submit_update" value="Update (resets review status to 'needs')"/>
                 {% endif %}
                 {% if can_set_review_status_to_in_progress %}
-                    <input type="submit" class="btn" name="submit_set_as_reviewed" value="Set as reviewed" />
+                    <input type="submit" class="btn" name="submit_review" value="Review" />
                 {% endif %}
                 {% if can_approve %}
                     <input type="submit" class="btn" name="submit_approve" value="Approve" />
                 {% endif %}
                 {% if can_reject %}
                     <input type="submit" class="btn" name="submit_reject" value="Reject" />
-                {% endif %}
-                {% if can_validate %}
-                    <input type="submit" class="btn" name="submit_validate_syntax" value="Validate Syntax"/>
-                    <input type="submit" class="btn" name="submit_validate_no_update_with_where_clause" value="Validate No Update with Where Clause"/>
                 {% endif %}
                 {% if can_soft_delete %}
                     <input type="submit" class="btn" name="submit_delete" value="Delete" />
