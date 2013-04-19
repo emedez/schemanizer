@@ -376,15 +376,29 @@ def changeset_can_be_approved_by_user(changeset, user):
         return False
 
     if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
-        if changeset.review_status not in (
-                models.Changeset.REVIEW_STATUS_APPROVED,
-                models.Changeset.REVIEW_STATUS_REJECTED):
+        if changeset.review_status in (models.Changeset.REVIEW_STATUS_IN_PROGRESS,):
             return True
     else:
         return False
 
 
-changeset_can_be_rejected_by_user = changeset_can_be_approved_by_user
+def changeset_can_be_rejected_by_user(changeset, user):
+    """Checks if this changeset can be rejected by user."""
+
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if not changeset.pk:
+        # Cannot approve unsaved changeset.
+        return False
+
+    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        # allow reject regardless of review status
+        return True
+    else:
+        return False
 
 
 def changeset_send_approved_mail(changeset):

@@ -195,7 +195,7 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user)
-                    messages.success(request, u'Changeset submitted.')
+                    messages.success(request, u'Changeset [id=%s] was submitted.' % (changeset.id,))
                     return redirect('schemanizer_changeset_view', changeset.id)
             else:
                 changeset_form = forms.ChangesetForm(instance=changeset)
@@ -232,11 +232,11 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                     changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset =businesslogic.changeset_update(
+                            changeset = businesslogic.changeset_update(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
-                        messages.success(request, u'Changeset updated.')
+                        messages.success(request, u'Changeset [id=%s] was updated.' % (changeset.id,))
                         return redirect('schemanizer_changeset_view', changeset.id)
                 else:
                     changeset_form = forms.ChangesetForm(instance=changeset)
