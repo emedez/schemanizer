@@ -947,7 +947,7 @@ class ValidateChangesetSyntaxThread(threading.Thread):
                                             self.validation_results.extend(results_log_items)
 
                                 except Exception, e:
-                                    log.message(u'[%s] EXCEPTION' % (self.request_id,))
+                                    log.info(u'[%s] EXCEPTION' % (self.request_id,))
                                     msg = u'%s' % (e,)
                                     self.errors.append(msg)
                                     self.messages.append((u'error', msg))

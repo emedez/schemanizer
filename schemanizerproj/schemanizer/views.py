@@ -1,5 +1,6 @@
 import json
 import logging
+from pprint import pformat
 import urllib
 import warnings
 
@@ -359,12 +360,13 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         #
                         # Validate no updates with WHERE clause.
                         #
-                        return redirect(reverse(
-                            'schemanizer_changeset_validate_no_update_with_where_clause',
-                            args=[changeset.id]))
+                        log.debug(u'submit_validate_no_update_with_where_clause')
+                        return redirect('schemanizer_changeset_validate_no_update_with_where_clause',
+                            changeset.id)
 
                     else:
                         messages.error(request, u'Unknown command.')
+                        log.error(u'Invalid post.\nrequest.POST=\n%s' % (pformat(request.POST),))
 
                 except exceptions.NotAllowed, e:
                     log.exception('EXCEPTION')
@@ -591,6 +593,7 @@ def changeset_validate_no_update_with_where_clause(
             validation_results = []
 
             for cd in changeset.changeset_details.all():
+                log.debug(u'changeset detail >>\nid: %s\napply_sql:\n%s' % (cd.id, cd.apply_sql))
                 msg = u"Validating [%s]... " % (cd.apply_sql)
                 parsed = sqlparse.parse(cd.apply_sql)
                 where_clause_found = False
