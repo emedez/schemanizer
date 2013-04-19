@@ -1047,7 +1047,26 @@ class ReviewThread(threading.Thread):
                                         msg = u'Executing schema version DDL.'
                                         log.info(u'[%s] %s' % (self.request_id, msg))
                                         self.messages.append((u'info', msg))
-                                        utils.execute(mysql_conn, schema_version.ddl)
+                                        #utils.execute(mysql_conn, schema_version.ddl)
+                                        ddls = sqlparse.split(schema_version.ddl)
+                                        for ddl in ddls:
+                                            cur = None
+                                            try:
+                                                ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                log.debug(ddl)
+                                                cur = mysql_conn.cursor()
+                                                if ddl:
+                                                    cur.execute(ddl)
+                                            except Exception, e:
+                                                log.exception(u'[%s] EXCEPTION' % (self.request_id,))
+                                                msg = u'%s' % (e,)
+                                                self.errors.append(msg)
+                                                self.messages.append((u'error', msg))
+                                                validation_results.append(u'ERROR: %s' % (e,))
+                                                has_errors = True
+                                            finally:
+                                                if cur:
+                                                    cur.close()
 
                                         #
                                         # Apply all changeset details.
