@@ -11,6 +11,8 @@ def fetchall(conn, query, args=None):
         cur.execute(query, args)
         rows = cur.fetchall()
     finally:
+        while cur.nextset() is not None:
+            pass
         cur.close()
     return rows
 
@@ -23,6 +25,8 @@ def fetchone(conn, query, args=None):
         cur.execute(query, args)
         row = cur.fetchone()
     finally:
+        while cur.nextset() is not None:
+            pass
         cur.close()
     return row
 
@@ -33,6 +37,8 @@ def execute(conn, query, args=None):
     try:
         cur.execute(query, args)
     finally:
+        while cur.nextset() is not None:
+            pass
         cur.close()
 
 

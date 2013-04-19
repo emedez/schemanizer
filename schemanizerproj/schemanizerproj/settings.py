@@ -251,14 +251,14 @@ AWS_MYSQL_USER = 'sandbox'
 AWS_MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.
-AWS_EC2_INSTANCE_START_WAIT = 10
+AWS_EC2_INSTANCE_START_WAIT = 60
 # When checking the state of an instance, this is the
 # number of seconds that should elapse before giving up.
 AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT = 300
 
 # Number of seconds to wait before trying to connect to MySQL server on EC2 instance.
 # This is to give time for it to start completely.
-AWS_MYSQL_START_WAIT = 30
+AWS_MYSQL_START_WAIT = 60
 # When attempting to connect to MySQL server on EC2 instance,
 # this is the number of seconds that should elapse before giving up.
 AWS_MYSQL_CONNECT_TIMEOUT = 300

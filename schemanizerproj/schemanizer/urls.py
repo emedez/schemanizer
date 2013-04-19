@@ -26,9 +26,12 @@ urlpatterns = patterns('schemanizer.views',
 #    url(r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$', 'changeset_apply_results', name='schemanizer_changeset_apply_results'),
 #    url(r'^changeset/view-apply-results/', 'changeset_view_apply_results', name='schemanizer_changeset_view_apply_results'),
 #    url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
-    url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
-    url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
-    url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
+    #url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
+    #url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
+    #url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
+    url(r'^changeset/view-review-results/(?P<changeset_id>\d+)/', 'changeset_view_review_results', name='schemanizer_changeset_view_review_results'),
+    url(r'^changeset/review/(?P<changeset_id>\d+)/', 'changeset_review', name='schemanizer_changeset_review'),
+    url(r'^changeset/review-status/(?P<request_id>.+?)/$', 'changeset_review_status', name='schemanizer_changeset_review_status'),
 
     #
     # server
