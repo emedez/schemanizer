@@ -942,7 +942,10 @@ def schema_version_create(
                     # Save dump as latest version for the schema
                     #
                     database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=schema)
-                    models.SchemaVersion.objects.create(database_schema=database_schema, ddl=structure)
+                    models.SchemaVersion.objects.create(
+                        database_schema=database_schema,
+                        ddl=structure,
+                        checksum=utils.hash_string(structure))
 
                     msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
                     log.info(msg)

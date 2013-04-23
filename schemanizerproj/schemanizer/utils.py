@@ -3,6 +3,9 @@ import hashlib
 import struct
 import time
 
+import mmh3
+
+
 def fetchall(conn, query, args=None):
     """Executes query and returns all rows."""
     rows = None
@@ -58,18 +61,30 @@ def generate_request_id(request):
     return h
 
 
-def dump_structure(conn, schema):
+def dump_structure(conn, schema=None):
     """Dumps database structure."""
 
     structure = ''
     with conn as cur:
-        cur.execute('USE `%s`' % (schema,))
+        if schema:
+            cur.execute('USE `%s`' % (schema,))
         cur.execute('SHOW TABLES')
         tables = []
         for table in cur.fetchall():
             tables.append(table[0])
         for table in tables:
+            if len(structure) > 0:
+                structure += '\n'
             structure += 'DROP TABLE IF EXISTS `%s`;' % (table,)
             cur.execute('SHOW CREATE TABLE `%s`' % (table,))
-            structure += '\n%s;\n\n' % (cur.fetchone()[1])
+            structure += '\n%s;\n' % (cur.fetchone()[1])
     return structure
+
+
+def hash_string(s):
+    """Creates hash for the string."""
+
+    k1, k2 = mmh3.hash64(s)
+    anded = 0xFFFFFFFFFFFFFFFF
+    h = '%016x%016x' % (k1 & anded, k2 & anded)
+    return h

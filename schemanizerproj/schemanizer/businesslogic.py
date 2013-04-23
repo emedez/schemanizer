@@ -1071,7 +1071,23 @@ class ReviewThread(threading.Thread):
                                         #
                                         # Apply all changeset details.
                                         #
+                                        first_run = True
                                         for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
+                                            if first_run:
+                                                # initial before structure and checksum should be the same with schema version
+                                                structure_before = schema_version.ddl
+                                                hash_before = schema_version.checksum
+                                                first_run = False
+                                                log.debug('Structure=\n%s\nChecksum=%s' % (structure_before, hash_before))
+                                            else:
+                                                # for succeeding runs, before structure and checksum is equal
+                                                # to after structure and checksum of the preceeding operation
+                                                structure_before = structure_after
+                                                hash_before = hash_after
+
+                                            structure_after = None
+                                            hash_after = None
+
                                             msg = u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
                                                 changeset_detail.id, changeset_detail.apply_sql)
                                             log.info(u'[%s] %s' % (self.request_id, msg))
@@ -1087,6 +1103,14 @@ class ReviewThread(threading.Thread):
                                                         val_str = u'ERROR: %s' % (val,)
                                                         if val_str not in results_log_items:
                                                             results_log_items.append(val_str)
+
+                                                structure_after = utils.dump_structure(mysql_conn)
+                                                hash_after = utils.hash_string(structure_after)
+                                                log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
+
+                                                changeset_detail.before_checksum = hash_before
+                                                changeset_detail.after_checksum = hash_after
+                                                changeset_detail.save()
                                             except Exception, e:
                                                 log.exception(u'[%s] EXCEPTION' % (self.request_id,))
                                                 msg = u'%s' % (e,)

@@ -181,6 +181,7 @@ class ChangesetForm(forms.ModelForm):
 class ChangesetDetailForm(forms.ModelForm):
     class Meta:
         model = models.ChangesetDetail
+        exclude = ('before_checksum', 'after_checksum')
 
     def __init__(self, *args, **kwargs):
         super(ChangesetDetailForm, self).__init__(*args, **kwargs)
