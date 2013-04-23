@@ -45,4 +45,11 @@ urlpatterns = patterns('schemanizer.views',
     # schema version
     #
     url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
+    url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
+    url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
+    #
+    # database schema
+    #
+    url(r'^database-schema/list/$', 'database_schema_list', name='schemanizer_database_schema_list'),
+
 )

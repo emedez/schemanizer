@@ -45,9 +45,10 @@
                     <td>{{ changeset.created_at }}</td>
                     <td>{{ changeset.updated_at }}</td>
                     <td>
-                        <a class="btn btn-small" href="{% url 'schemanizer_changeset_view' changeset.id %}">View</a>
+                        <a href="{% url 'schemanizer_changeset_view' changeset.id %}">View</a>
+                        | <a href="{% url 'schemanizer_changeset_view_review_results' changeset.id %}">View Review Results</a>
                         {% if can_soft_delete %}
-                            <a class="btn btn-small" href="{% url 'schemanizer_changeset_soft_delete' changeset.id %}">Delete</a>
+                            | <a href="{% url 'schemanizer_changeset_soft_delete' changeset.id %}">Delete</a>
                         {% endif %}
                     </td>
                 </tr>
