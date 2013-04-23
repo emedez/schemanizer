@@ -980,3 +980,76 @@ def schema_version_create(
 #        log.exception('EXCEPTION')
 #        messages.error(request, u'%s' % (e,))
 #    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def database_schema_list(request, template='schemanizer/database_schema_list.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            database_schemas = models.DatabaseSchema.objects.all()
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def schema_version_list(request, template='schemanizer/schema_version_list.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        database_schema = request.GET.get('database_schema', None)
+
+        if user_has_access:
+            schema_versions = models.SchemaVersion.objects.all()
+            if database_schema:
+                schema_versions = schema_versions.filter(database_schema_id=int(database_schema))
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def schema_version_view(request, schema_version_id, template='schemanizer/schema_version_view.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            r = models.SchemaVersion.objects.get(pk=int(schema_version_id))
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))

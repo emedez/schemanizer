@@ -31,9 +31,9 @@
                             <td>{{ server.created_at }}</td>
                             <td>{{ server.updated_at }}</td>
                             <td>
-                                <a class="btn btn-small" href="{% url 'schemanizer_server_update' server.id %}">Update</a>
-                                <a class="btn btn-small" href="{% url 'schemanizer_server_delete' server.id %}">Delete</a>
-                                <a class="btn btn-small" href="{% url 'schemanizer_schema_version_create' server.id %}">Create schema version</a>
+                                <a href="{% url 'schemanizer_server_update' server.id %}">Update</a>
+                                | <a href="{% url 'schemanizer_server_delete' server.id %}">Delete</a>
+                                | <a href="{% url 'schemanizer_schema_version_create' server.id %}">Create schema version</a>
                             </td>
                         </tr>
                     {% endfor %}
