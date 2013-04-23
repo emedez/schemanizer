@@ -936,27 +936,13 @@ def schema_version_create(
 
                 if form.is_valid():
                     schema = form.cleaned_data['schema']
-
-                    #
-                    # dump structure
-                    #
-                    data = ''
-                    with conn as cur:
-                        cur.execute('USE `%s`' % (schema,))
-                        cur.execute('SHOW TABLES')
-                        tables = []
-                        for table in cur.fetchall():
-                            tables.append(table[0])
-                        for table in tables:
-                            data += 'DROP TABLE IF EXISTS `%s`;' % (table,)
-                            cur.execute('SHOW CREATE TABLE `%s`' % (table,))
-                            data += '\n%s;\n\n' % (cur.fetchone()[1])
+                    structure = utils.dump_structure(conn, schema)
 
                     #
                     # Save dump as latest version for the schema
                     #
                     database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=schema)
-                    models.SchemaVersion.objects.create(database_schema=database_schema, ddl=data)
+                    models.SchemaVersion.objects.create(database_schema=database_schema, ddl=structure)
 
                     msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
                     log.info(msg)

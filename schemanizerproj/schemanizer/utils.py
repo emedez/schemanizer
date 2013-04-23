@@ -56,3 +56,20 @@ def generate_request_id(request):
     # shorten ID
     #tag = struct.pack('d', l).encode('base64').replace('\n', '').strip('=')
     return h
+
+
+def dump_structure(conn, schema):
+    """Dumps database structure."""
+
+    structure = ''
+    with conn as cur:
+        cur.execute('USE `%s`' % (schema,))
+        cur.execute('SHOW TABLES')
+        tables = []
+        for table in cur.fetchall():
+            tables.append(table[0])
+        for table in tables:
+            structure += 'DROP TABLE IF EXISTS `%s`;' % (table,)
+            cur.execute('SHOW CREATE TABLE `%s`' % (table,))
+            structure += '\n%s;\n\n' % (cur.fetchone()[1])
+    return structure
