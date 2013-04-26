@@ -335,61 +335,59 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
             log.debug(u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
                 changeset_detail.id, changeset_detail.apply_sql))
             started_at = timezone.now()
-            results_log = u''
-            results_log_items = []
             try:
                 parsed = sqlparse.parse(changeset_detail.apply_sql)
-                where_clause_found = False
+                where_clause_found_on_apply_sql = False
                 for stmt in parsed:
                     if stmt.get_type() in [u'INSERT', u'UPDATE', u'DELETE']:
                         for token in stmt.tokens:
                             if type(token) in [sqlparse.sql.Where]:
-                                where_clause_found = True
+                                where_clause_found_on_apply_sql = True
                                 break
-                    if where_clause_found:
+                    if where_clause_found_on_apply_sql:
                         break
-                if where_clause_found:
-                    results_log_items.append(u'WHERE clause found on apply_sql.')
+                if where_clause_found_on_apply_sql:
+                    validation_results.append(u'WHERE clause found on apply_sql.')
                     where_clause_found = True
 
                 parsed = sqlparse.parse(changeset_detail.revert_sql)
-                where_clause_found = False
+                where_clause_found_on_revert_sql = False
                 for stmt in parsed:
                     if stmt.get_type() in [u'INSERT', u'UPDATE', u'DELETE']:
                         for token in stmt.tokens:
                             if type(token) in [sqlparse.sql.Where]:
-                                where_clause_found = True
+                                where_clause_found_on_revert_sql = True
                                 break
-                    if where_clause_found:
+                    if where_clause_found_on_revert_sql:
                         break
-                if where_clause_found:
-                    results_log_items.append(u'WHERE clause found on revert_sql.')
+                if where_clause_found_on_revert_sql:
+                    validation_results.append(u'WHERE clause found on revert_sql.')
                     where_clause_found = True
             except Exception, e:
                 log.exception('EXCEPTION')
-                results_log_items.append(u'ERROR: %s' % (e,))
+                validation_results.append(u'ERROR: %s' % (e,))
                 changeset_has_errors = True
 
-            results_log = u'\n'.join(results_log_items)
+            #results_log = u'\n'.join(results_log_items)
             ended_at = timezone.now()
-            changeset_test = models.ChangesetTest.objects.create(
-                changeset_detail=changeset_detail,
-                started_at=started_at,
-                ended_at=ended_at,
-                results_log=results_log,
-                server=server
-            )
-            created_changeset_test_ids.append(changeset_test.id)
-            results['changeset_tests'].append(changeset_test)
+            #changeset_test = models.ChangesetTest.objects.create(
+            #    changeset_detail=changeset_detail,
+            #    started_at=started_at,
+            #    ended_at=ended_at,
+            #    results_log=results_log,
+            #    server=server
+            #)
+            #created_changeset_test_ids.append(changeset_test.id)
+            #results['changeset_tests'].append(changeset_test)
 
-        if where_clause_found:
-            validation_results.append(
-                u'One or more statements from changeset details contain WHERE clause.')
-        if changeset_has_errors:
-            validation_results.append(u'Found errors while validating.')
-        created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
-        validation_results.append(
-            u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
+        #if where_clause_found:
+        #    validation_results.append(
+        #        u'One or more statements from changeset details contain WHERE clause.')
+        #if changeset_has_errors:
+        #    validation_results.append(u'Found errors while validating.')
+        #created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
+        #validation_results.append(
+        #    u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
         validation_results_text = u''
         if validation_results:
             validation_results_text = u'\n'.join(validation_results)
