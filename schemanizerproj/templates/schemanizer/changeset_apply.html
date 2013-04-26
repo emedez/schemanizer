@@ -1,87 +1,62 @@
 {% extends 'site_base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}{{ block.super }} - Apply Changesets{% endblock %}
+{% block title %}{{ block.super }} - Apply Changeset{% endblock %}
 
 {% block contents %}
     {% if user_has_access %}
-        {% if schema_version and changeset %}
-            <p class="text-info">Please confirm changeset apply operation by clicking Continue button at the bottom of this page.</p>
+        <h2>Apply Changeset</h2>
+        <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
+        {% crispy form form.helper %}
 
-            <p><strong>Schema</strong></p>
-            <table class="table table-striped table-condensed table-bordered table-hover">
-                <tbody>
-                    <tr>
-                        <th>ID</th>
-                        <td>{{ schema_version.id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Database schema</th>
-                        <td>{{ schema_version.database_schema.name }}</td>
-                    </tr>
-                    <tr>
-                        <th>DDL</th>
-                        <td><pre>{{ schema_version.ddl }}</pre></td>
-                    </tr>
-                    <tr>
-                        <th>Created at</th>
-                        <td>{{ schema_version.created_at }}</td>
-                    </tr>
-                    <tr>
-                        <th>Updated at</th>
-                        <td>{{ schema_version.updated_at }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Changeset</strong></p>
-            <table class="table table-striped table-condensed table-bordered table-hover">
-                <tbody>
-                    <tr>
-                        <th>ID</th>
-                        <td>{{ changeset.id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Type</th>
-                        <td>{{ changeset.type }}</td>
-                    </tr>
-                    <tr>
-                        <th>Classification</th>
-                        <td>{{ changeset.classification }}</td>
-                    </tr>
-                    <tr>
-                        <th>Version control URL</th>
-                        <td>{{ changeset.version_control_url }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Changeset Details</strong></p>
-            <table class="table table-striped table-condensed table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Apply SQL</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cd in changeset.changeset_details.all %}
-                        <tr>
-                            <td>{{ cd.id }}</td>
-                            <td>{{ cd.type }}</td>
-                            <td>{{ cd.description }}</td>
-                            <td><pre>{{ cd.apply_sql }}</pre></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        {% if poll_thread_status %}
+            <div>
+                <div id="thread_output">
+                </div>
+                <div id="ajax_loader_animation">
+                    <img src="{{ STATIC_URL }}site/img/ajax-loader.gif"/>
+                </div>
+            </div>
         {% endif %}
+    {% endif %}
+{% endblock %}
 
-        {% if form %}
-            {% crispy form form.helper %}
-        {% endif %}
+{% block scripts_extra %}
+    {{ block.super }}
+    {% if poll_thread_status %}
+        <script type="text/javascript">
+            $(function() {
+                var status_url = "{% url 'schemanizer_changeset_apply_status' request_id %}";
 
+                // check frequency in seconds
+                var check_freq = 2;
+
+                function getStatus() {
+                    $.get(status_url, function(data) {
+                        console.log(data);
+                        if ('error' in data) {
+                            alert(data['error']);
+                        }
+                        else {
+                            if ('thread_output' in data) {
+                                $('#thread_output').html(data['thread_output']);
+                            }
+                            if ('thread_is_alive' in data) {
+                                if (data['thread_is_alive']) {
+                                    // sched check again if thread is still alive
+                                    setTimeout(getStatus, check_freq * 1000);
+                                }
+                                else {
+                                    $('#ajax_loader_animation').hide();
+                                }
+                            }
+                        }
+                    });
+                };
+
+                console.log(status_url);
+                getStatus();
+            });
+        </script>
     {% endif %}
 {% endblock %}

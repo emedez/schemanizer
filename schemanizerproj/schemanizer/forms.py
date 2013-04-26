@@ -260,3 +260,23 @@ class EnvironmentForm(forms.ModelForm):
         helper.form_class = 'form-inline'
         helper.add_input(Submit(u'environment_form_submit', u'Submit'))
         self.helper = helper
+
+
+class SelectServerForm(forms.Form):
+    """Form for selecting server."""
+
+    server = forms.ChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(SelectServerForm, self).__init__(*args, **kwargs)
+
+        qs = models.Server.objects.all().order_by('name')
+        choices = []
+        for r in qs:
+            choices.append((r.id, u'%s [%s]' % (r.name, r.hostname)))
+        self.fields['server'].choices = choices
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit('select_server_form_submit', 'Submit'))
+        self.helper = helper
