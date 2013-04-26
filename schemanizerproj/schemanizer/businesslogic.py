@@ -1064,7 +1064,7 @@ class ReviewThread(threading.Thread):
                                         db=database_schema.name, host=host)
 
                                     changeset_has_errors = False
-                                    validation_results = []
+                                    #validation_results = []
                                     created_changeset_test_ids = []
                                     try:
                                         #
@@ -1088,7 +1088,7 @@ class ReviewThread(threading.Thread):
                                                 msg = u'%s' % (e,)
                                                 self.errors.append(msg)
                                                 self.messages.append((u'error', msg))
-                                                validation_results.append(u'ERROR: %s' % (e,))
+                                                #validation_results.append(u'ERROR: %s' % (e,))
                                                 changeset_has_errors = True
                                             finally:
                                                 if cur:
@@ -1179,7 +1179,7 @@ class ReviewThread(threading.Thread):
                                                             val_str = u'ERROR: %s' % (val,)
                                                             if val_str not in results_log_items:
                                                                 results_log_items.append(val_str)
-                                                validation_results.append(u'ERROR: %s' % (e,))
+                                                #validation_results.append(u'ERROR: %s' % (e,))
                                                 changeset_has_errors = True
                                             finally:
                                                 if cur:
@@ -1189,8 +1189,10 @@ class ReviewThread(threading.Thread):
 
                                             ended_at = timezone.now()
                                             results_log = u'\n'.join(results_log_items)
+                                            test_type = models.TestType.objects.get_syntax_test_type()
                                             changeset_test = models.ChangesetTest.objects.create(
                                                 changeset_detail=changeset_detail,
+                                                test_type=test_type,
                                                 started_at=started_at,
                                                 ended_at=ended_at,
                                                 results_log=results_log)
@@ -1202,7 +1204,7 @@ class ReviewThread(threading.Thread):
                                         msg = u'%s' % (e,)
                                         self.errors.append(msg)
                                         self.messages.append((u'error', msg))
-                                        validation_results.append(u'ERROR: %s' % (e,))
+                                        #validation_results.append(u'ERROR: %s' % (e,))
                                         changeset_has_errors = True
 
                                     finally:
@@ -1211,21 +1213,21 @@ class ReviewThread(threading.Thread):
                                     #
                                     # Save results
                                     #
-                                    created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
-                                    validation_results.append(
-                                        u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
-                                    validation_results_text = u''
-                                    if validation_results:
-                                        validation_results_text = u'\n'.join(validation_results)
-                                    validation_type = models.ValidationType.objects.get(name=u'syntax')
-                                    changeset_validation = models.ChangesetValidation.objects.create(
-                                        changeset=changeset,
-                                        validation_type=validation_type,
-                                        timestamp=timezone.now(),
-                                        result=validation_results_text)
-                                    self.changeset_validations.append(changeset_validation)
+                                    #created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
+                                    #validation_results.append(
+                                    #    u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
+                                    #validation_results_text = u''
+                                    #if validation_results:
+                                    #    validation_results_text = u'\n'.join(validation_results)
+                                    #validation_type = models.ValidationType.objects.get(name=u'syntax')
+                                    #changeset_validation = models.ChangesetValidation.objects.create(
+                                    #    changeset=changeset,
+                                    #    validation_type=validation_type,
+                                    #    timestamp=timezone.now(),
+                                    #    result=validation_results_text)
+                                    #self.changeset_validations.append(changeset_validation)
 
-                                    msg = u'Changeset syntax validation was completed.'
+                                    msg = u'Changeset syntax test was completed.'
                                     log.info(u'[%s] %s' % (self.request_id, msg))
                                     self.messages.append((u'info', msg))
                                 else:
@@ -1267,7 +1269,7 @@ class ReviewThread(threading.Thread):
                     changeset_has_errors = True
                 if results['changeset_validation']:
                     self.changeset_validations.append(results['changeset_validation'])
-                self.changeset_tests.extend(results['changeset_tests'])
+                #self.changeset_tests.extend(results['changeset_tests'])
 
                 msg = u'No update with WHERE clause validation completed'
                 self.messages.append((u'info', msg))
