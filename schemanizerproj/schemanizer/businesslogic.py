@@ -347,7 +347,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
                     if where_clause_found_on_apply_sql:
                         break
                 if where_clause_found_on_apply_sql:
-                    validation_results.append(u'WHERE clause found on apply_sql.')
+                    validation_results.append(u'WHERE clause found on apply_sql (changeset detail ID: %s).' % (changeset_detail.id,))
                     where_clause_found = True
 
                 parsed = sqlparse.parse(changeset_detail.revert_sql)
@@ -361,7 +361,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
                     if where_clause_found_on_revert_sql:
                         break
                 if where_clause_found_on_revert_sql:
-                    validation_results.append(u'WHERE clause found on revert_sql.')
+                    validation_results.append(u'WHERE clause found on revert_sql. (changeset detail ID: %s).' % (changeset_detail.id,))
                     where_clause_found = True
             except Exception, e:
                 log.exception('EXCEPTION')
