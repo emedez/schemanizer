@@ -321,14 +321,15 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
             u"User '%s' is not allowed to review changeset [id=%s]." % (
                 user.name, changeset.id))
 
+    changeset_has_errors = False
     results = dict(
         changeset_validation=None,
-        changeset_tests=[])
+        changeset_tests=[],
+        changeset_has_errors=changeset_has_errors)
 
     created_changeset_test_ids = []
     validation_results = []
     where_clause_found = False
-    has_errors = False
     with transaction.commit_on_success():
         for changeset_detail in changeset.changeset_details.all():
             log.debug(u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
@@ -354,7 +355,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
             except Exception, e:
                 log.exception('EXCEPTION')
                 results_log = u'ERROR: %s' % (e,)
-                has_errors = True
+                changeset_has_errors = True
 
             ended_at = timezone.now()
             changeset_test = models.ChangesetTest.objects.create(
@@ -370,7 +371,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
         if where_clause_found:
             validation_results.append(
                 u'One or more statements from changeset details contain WHERE clause.')
-        if has_errors:
+        if changeset_has_errors:
             validation_results.append(u'Found errors while validating.')
         created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
         validation_results.append(
@@ -389,6 +390,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
 
     log.info(u'Changeset no update with where clause validation was completed.')
 
+    results['changeset_has_errors'] = changeset_has_errors
     return results
 
 
@@ -1049,7 +1051,7 @@ class ReviewThread(threading.Thread):
                                     mysql_conn = self.create_aws_mysql_connection(
                                         db=database_schema.name, host=host)
 
-                                    has_errors = False
+                                    changeset_has_errors = False
                                     validation_results = []
                                     created_changeset_test_ids = []
                                     try:
@@ -1075,7 +1077,7 @@ class ReviewThread(threading.Thread):
                                                 self.errors.append(msg)
                                                 self.messages.append((u'error', msg))
                                                 validation_results.append(u'ERROR: %s' % (e,))
-                                                has_errors = True
+                                                changeset_has_errors = True
                                             finally:
                                                 if cur:
                                                     cur.close()
@@ -1109,17 +1111,46 @@ class ReviewThread(threading.Thread):
                                             results_log_items = []
                                             try:
                                                 cur = mysql_conn.cursor()
-                                                affected_rows = cur.execute(changeset_detail.apply_sql)
-                                                if cur.messages:
-                                                    for exc, val in cur.messages:
-                                                        val_str = u'ERROR: %s' % (val,)
-                                                        if val_str not in results_log_items:
-                                                            results_log_items.append(val_str)
+                                                #affected_rows = cur.execute(changeset_detail.apply_sql)
+                                                ddls = sqlparse.split(changeset_detail.apply_sql)
+                                                for ddl in ddls:
+                                                    ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                    log.debug(ddl)
+                                                    if ddl:
+                                                        cur.execute(ddl)
+                                                        while cur.nextset() is not None:
+                                                            pass
+
+                                                #if cur.messages:
+                                                #    for exc, val in cur.messages:
+                                                #        val_str = u'ERROR: %s' % (val,)
+                                                #        if val_str not in results_log_items:
+                                                #            results_log_items.append(val_str)
 
                                                 #structure_after = utils.dump_structure(mysql_conn)
                                                 structure_after = utils.mysql_dump(**conn_opts)
                                                 hash_after = utils.hash_string(structure_after)
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
+
+                                                # Test revert_sql
+                                                ddls = sqlparse.split(changeset_detail.revert_sql)
+                                                for ddl in ddls:
+                                                    ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                    log.debug(ddl)
+                                                    if ddl:
+                                                        cur.execute(ddl)
+                                                        while cur.nextset() is not None:
+                                                            pass
+
+                                                # revert_sql worked, reapply appy sql again
+                                                ddls = sqlparse.split(changeset_detail.apply_sql)
+                                                for ddl in ddls:
+                                                    ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                    log.debug(ddl)
+                                                    if ddl:
+                                                        cur.execute(ddl)
+                                                        while cur.nextset() is not None:
+                                                            pass
 
                                                 changeset_detail.before_checksum = hash_before
                                                 changeset_detail.after_checksum = hash_after
@@ -1136,7 +1167,8 @@ class ReviewThread(threading.Thread):
                                                             val_str = u'ERROR: %s' % (val,)
                                                             if val_str not in results_log_items:
                                                                 results_log_items.append(val_str)
-                                                has_errors = True
+                                                validation_results.append(u'ERROR: %s' % (e,))
+                                                changeset_has_errors = True
                                             finally:
                                                 if cur:
                                                     while cur.nextset() is not None:
@@ -1159,7 +1191,7 @@ class ReviewThread(threading.Thread):
                                         self.errors.append(msg)
                                         self.messages.append((u'error', msg))
                                         validation_results.append(u'ERROR: %s' % (e,))
-                                        has_errors = True
+                                        changeset_has_errors = True
 
                                     finally:
                                         mysql_conn.close()
@@ -1219,6 +1251,8 @@ class ReviewThread(threading.Thread):
 
                 results = changeset_validate_no_update_with_where_clause(
                     self.changeset, self.user, server=self.server)
+                if results['changeset_has_errors']:
+                    changeset_has_errors = True
                 if results['changeset_validation']:
                     self.changeset_validations.append(results['changeset_validation'])
                 self.changeset_tests.extend(results['changeset_tests'])
@@ -1230,7 +1264,10 @@ class ReviewThread(threading.Thread):
                 #
                 # Update changeset.
                 #
-                changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
+                if changeset_has_errors:
+                    changeset.review_status = models.Changeset.REVIEW_STATUS_REJECTED
+                else:
+                    changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
                 changeset.reviewed_by = self.user
                 changeset.reviewed_at = timezone.now()
                 changeset.save()
