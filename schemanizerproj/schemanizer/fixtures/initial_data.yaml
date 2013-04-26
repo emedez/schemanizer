@@ -25,7 +25,7 @@
   pk: 2
 - fields:
     date_joined: 2013-04-03 08:57:35+00:00
-    email: EMedez+admin@palominodb.com
+    email: admin@example.com
     first_name: ''
     groups: []
     is_active: true
@@ -39,131 +39,11 @@
   model: auth.user
   pk: 1
 - fields:
-    date_joined: 2013-04-05 05:57:59+00:00
-    email: EMedez+dba@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-19 10:06:06+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$vqBOymDxHIOM$3i+tQEJm7O+lrfjERw4CBrvbVs6kSBP5oyJU6EitGPU=
-    user_permissions: []
-    username: dba
-  model: auth.user
-  pk: 2
-- fields:
-    date_joined: 2013-04-05 05:58:17+00:00
-    email: EMedez+dev@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-18 18:24:05+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$B2sTNTH3uYlb$qAC5jphlxDHraz6WmgiuF0wTNtkValZMInSnoc678Fw=
-    user_permissions: []
-    username: dev
-  model: auth.user
-  pk: 3
-- fields:
-    date_joined: 2013-04-12 16:27:14+00:00
-    email: EMedez+admin2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-12 16:27:14+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$qmKwOpCxvjG7$6I2YdO/xCYvJnUW2wpz1mO6hoVy32MfZh53EQLAXXqU=
-    user_permissions: []
-    username: admin2
-  model: auth.user
-  pk: 4
-- fields:
-    date_joined: 2013-04-12 16:28:23+00:00
-    email: EMedez+dba2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-12 16:28:23+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$FrODaLLeaCxw$22Gje7YyJzhuak8ST0xMaVhBzXutUfonJ1nz2D3lH80=
-    user_permissions: []
-    username: dba2
-  model: auth.user
-  pk: 5
-- fields:
-    date_joined: 2013-04-12 16:29:52+00:00
-    email: EMedez+dev2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-15 10:26:28+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$dCWz1cn26bqy$+VxOeoDoI9+uFw/wvyhm2RN1OyJP4PG2JjpktuXPsYo=
-    user_permissions: []
-    username: dev2
-  model: auth.user
-  pk: 7
-- fields:
     auth_user: [admin]
     created_at: 2013-04-03 09:02:34+00:00
-    email: EMedez+admin@palominodb.com
+    email: admin@example.com
     name: admin
     role: 1
     updated_at: 2013-04-03 09:02:34+00:00
   model: schemanizer.user
   pk: 1
-- fields:
-    auth_user: [dba]
-    created_at: 2013-04-05 05:57:59+00:00
-    email: EMedez+dba@palominodb.com
-    name: dba
-    role: 2
-    updated_at: 2013-04-05 05:57:59+00:00
-  model: schemanizer.user
-  pk: 2
-- fields:
-    auth_user: [dev]
-    created_at: 2013-04-05 05:58:17+00:00
-    email: EMedez+dev@palominodb.com
-    name: dev
-    role: 3
-    updated_at: 2013-04-05 05:58:17+00:00
-  model: schemanizer.user
-  pk: 3
-- fields:
-    auth_user: [admin2]
-    created_at: 2013-04-12 16:27:14+00:00
-    email: EMedez+admin2@palominodb.com
-    name: admin2
-    role: 1
-    updated_at: 2013-04-12 16:27:14+00:00
-  model: schemanizer.user
-  pk: 4
-- fields:
-    auth_user: [dba2]
-    created_at: 2013-04-12 16:28:23+00:00
-    email: EMedez+dba2@palominodb.com
-    name: dba2
-    role: 2
-    updated_at: 2013-04-12 16:28:23+00:00
-  model: schemanizer.user
-  pk: 5
-- fields:
-    auth_user: [dev2]
-    created_at: 2013-04-12 16:29:52+00:00
-    email: EMedez+dev2@palominodb.com
-    name: dev2
-    role: 3
-    updated_at: 2013-04-12 16:29:52+00:00
-  model: schemanizer.user
-  pk: 6
