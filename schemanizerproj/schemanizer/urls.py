@@ -25,7 +25,8 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
 #    url(r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$', 'changeset_apply_results', name='schemanizer_changeset_apply_results'),
 #    url(r'^changeset/view-apply-results/', 'changeset_view_apply_results', name='schemanizer_changeset_view_apply_results'),
-#    url(r'^changeset/apply/', 'changeset_apply', name='schemanizer_changeset_apply'),
+    url(r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply', name='schemanizer_changeset_apply'),
+    url(r'^changeset/apply-status/(?P<request_id>.+?)/$', 'changeset_apply_status', name='schemanizer_changeset_apply_status'),
     #url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
     #url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
     #url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
@@ -47,9 +48,17 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
     url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
     url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
+
     #
     # database schema
     #
     url(r'^database-schema/list/$', 'database_schema_list', name='schemanizer_database_schema_list'),
 
+    #
+    # environments
+    #
+    url(r'^environments/list/$', 'environment_list', name='schemanizer_environment_list'),
+    url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
+    url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
+    url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),
 )

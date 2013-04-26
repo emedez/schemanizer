@@ -28,28 +28,51 @@
                 </tr>
             </thead>
             <tbody>
-            {% for changeset in changesets %}
+            {% for c in changesets %}
                 <tr>
-                    <td>{{ changeset.id }}</td>
-                    <td>{{ changeset.database_schema }}</td>
-                    <td>{{ changeset.type }}</td>
-                    <td>{{ changeset.classification }}</td>
-                    <td>{{ changeset.version_control_url }}</td>
-                    <td>{{ changeset.submitted_by }}</td>
-                    <td>{{ changeset.submitted_at }}</td>
-                    <td>{{ changeset.review_status }}</td>
-                    <td>{{ changeset.reviewed_by|default_if_none:'' }}</td>
-                    <td>{{ changeset.reviewed_at|default_if_none:'' }}</td>
-                    <td>{{ changeset.approved_by|default_if_none:'' }}</td>
-                    <td>{{ changeset.approved_at|default_if_none:'' }}</td>
-                    <td>{{ changeset.created_at }}</td>
-                    <td>{{ changeset.updated_at }}</td>
+                    <td>{{ c.r.id }}</td>
+                    <td>{{ c.r.database_schema }}</td>
+                    <td>{{ c.r.type }}</td>
+                    <td>{{ c.r.classification }}</td>
+                    <td>{{ c.r.version_control_url }}</td>
+                    <td>{{ c.r.submitted_by }}</td>
+                    <td>{{ c.r.submitted_at }}</td>
+                    <td>{{ c.r.review_status }}</td>
+                    <td>{{ c.r.reviewed_by|default_if_none:'' }}</td>
+                    <td>{{ c.r.reviewed_at|default_if_none:'' }}</td>
+                    <td>{{ c.r.approved_by|default_if_none:'' }}</td>
+                    <td>{{ c.r.approved_at|default_if_none:'' }}</td>
+                    <td>{{ c.r.created_at }}</td>
+                    <td>{{ c.r.updated_at }}</td>
+                    {% comment %}
                     <td>
-                        <a href="{% url 'schemanizer_changeset_view' changeset.id %}">View</a>
-                        | <a href="{% url 'schemanizer_changeset_view_review_results' changeset.id %}">View Review Results</a>
+                        <a href="{% url 'schemanizer_changeset_view' c.r.id %}">View</a>&nbsp;&nbsp;
+                        <a href="{% url 'schemanizer_changeset_view_review_results' c.r.id %}">View Review Results</a>&nbsp;&nbsp;
                         {% if can_soft_delete %}
-                            | <a href="{% url 'schemanizer_changeset_soft_delete' changeset.id %}">Delete</a>
+                            <a href="{% url 'schemanizer_changeset_soft_delete' c.r.id %}">Delete</a>&nbsp;&nbsp;
                         {% endif %}
+                        {% if c.extra.can_apply %}
+                            <a href="javascript:void(0)">Apply</a>
+                        {% endif %}
+                    </td>
+                    {% endcomment %}
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                                Action
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{% url 'schemanizer_changeset_view' c.r.id %}">View</a></li>
+                                <li><a href="{% url 'schemanizer_changeset_view_review_results' c.r.id %}">View Review Results</a></li>
+                                {% if can_soft_delete %}
+                                    <li><a href="{% url 'schemanizer_changeset_soft_delete' c.r.id %}">Delete</a></li>
+                                {% endif %}
+                                {% if c.extra.can_apply %}
+                                    <li><a href="{% url 'schemanizer_changeset_apply' c.r.id %}">Apply</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     </td>
                 </tr>
             {% endfor %}

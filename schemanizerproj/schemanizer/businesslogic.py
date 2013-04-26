@@ -1317,3 +1317,56 @@ class ReviewThread(threading.Thread):
             msg = u'Review thread ended.'
             log.info(u'[%s] %s' % (self.request_id, msg))
             self.messages.append((u'info', msg))
+
+
+def user_can_apply_changeset(user, changeset):
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+
+    if user.role.name in (models.Role.ROLE_DEVELOPER,):
+        if changeset.classification in (models.Changeset.CLASSIFICATION_LOWRISK, models.Changeset.CLASSIFICATION_PAINLESS):
+            return True
+    elif user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        return True
+
+    return False
+
+
+def changeset_apply(changeset, user, server):
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+    if type(server) in (int, long):
+        server = models.Server.objects.get(pk=server)
+
+    if not user_can_apply_changeset(user, changeset):
+        raise exceptions.NotAllowed('User is not allowed to apply changeset.')
+
+    thread = ChangesetApplyThread(changeset, user, server)
+    thread.start()
+    return thread
+
+
+class ChangesetApplyThread(threading.Thread):
+
+    def __init__(self, changeset, user, server):
+        super(ChangesetApplyThread, self).__init__()
+        self.daemon = True
+
+        self.changeset = changeset
+        self.user = user
+        self.server = server
+
+        self.messages = []
+
+    def run(self):
+        msg = 'Changeset apply thread started.'
+        log.info(msg)
+        self.messages.append(('info', msg))
+
+        msg = 'Changeset apply thread ended.'
+        log.info(msg)
+        self.messages.append(('info', msg))
