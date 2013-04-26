@@ -336,6 +336,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
                 changeset_detail.id, changeset_detail.apply_sql))
             started_at = timezone.now()
             results_log = u''
+            results_log_items = []
             try:
                 parsed = sqlparse.parse(changeset_detail.apply_sql)
                 where_clause_found = False
@@ -348,15 +349,28 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
                     if where_clause_found:
                         break
                 if where_clause_found:
-                    results_log = u'WHERE clause found.'
+                    results_log_items.append(u'WHERE clause found on apply_sql.')
                     where_clause_found = True
-                else:
-                    results_log = u''
+
+                parsed = sqlparse.parse(changeset_detail.revert_sql)
+                where_clause_found = False
+                for stmt in parsed:
+                    if stmt.get_type() in [u'INSERT', u'UPDATE', u'DELETE']:
+                        for token in stmt.tokens:
+                            if type(token) in [sqlparse.sql.Where]:
+                                where_clause_found = True
+                                break
+                    if where_clause_found:
+                        break
+                if where_clause_found:
+                    results_log_items.append(u'WHERE clause found on revert_sql.')
+                    where_clause_found = True
             except Exception, e:
                 log.exception('EXCEPTION')
-                results_log = u'ERROR: %s' % (e,)
+                results_log_items.append(u'ERROR: %s' % (e,))
                 changeset_has_errors = True
 
+            results_log = u'\n'.join(results_log_items)
             ended_at = timezone.now()
             changeset_test = models.ChangesetTest.objects.create(
                 changeset_detail=changeset_detail,
@@ -390,7 +404,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
 
     log.info(u'Changeset no update with where clause validation was completed.')
 
-    results['changeset_has_errors'] = changeset_has_errors
+    results['changeset_has_errors'] = changeset_has_errors or where_clause_found
     return results
 
 
