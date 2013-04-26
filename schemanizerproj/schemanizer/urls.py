@@ -47,9 +47,17 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
     url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
     url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
+
     #
     # database schema
     #
     url(r'^database-schema/list/$', 'database_schema_list', name='schemanizer_database_schema_list'),
 
+    #
+    # environments
+    #
+    url(r'^environments/list/$', 'environment_list', name='schemanizer_environment_list'),
+    url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
+    url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
+    url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),
 )

@@ -243,3 +243,20 @@ class SelectRemoteSchemaForm(forms.Form):
         helper.form_class = 'form-inline'
         helper.add_input(Submit('select_remote_schema_form_submit', 'Submit'))
         self.helper = helper
+
+
+class EnvironmentForm(forms.ModelForm):
+    """Environment form."""
+
+    class Meta:
+        model = models.Environment
+
+    def __init__(self, *args, **kwargs):
+        super(EnvironmentForm, self).__init__(*args, **kwargs)
+
+        self.fields['name'].required = True
+
+        helper = FormHelper()
+        helper.form_class = 'form-inline'
+        helper.add_input(Submit(u'environment_form_submit', u'Submit'))
+        self.helper = helper

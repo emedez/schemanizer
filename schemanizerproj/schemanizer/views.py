@@ -1054,3 +1054,90 @@ def schema_version_view(request, schema_version_id, template='schemanizer/schema
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def environment_list(request, template='schemanizer/environment_list.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DEVELOPER,
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            qs = models.Environment.objects.all()
+            can_add = can_update = can_delete = role_name in [
+                models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def environment_update(request, environment_id=None, template='schemanizer/environment_update.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            if environment_id:
+                r = models.Environment.objects.get(pk=int(environment_id))
+            else:
+                r = models.Environment()
+            if request.method == 'POST':
+                form = forms.EnvironmentForm(request.POST, instance=r)
+                if form.is_valid():
+                    r = form.save()
+                    if environment_id:
+                        messages.success(request, u'Environment [ID=%s] was updated.' % (r.id,))
+                    else:
+                        messages.success(request, u'Environment [ID=%s] was created.' % (r.id,))
+                    return redirect('schemanizer_environment_list')
+            else:
+                form = forms.EnvironmentForm(instance=r)
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def environment_del(request, environment_id=None, template='schemanizer/environment_del.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        role_name = user.role.name
+        user_has_access = (
+            role_name in [
+                models.Role.ROLE_DBA,
+                models.Role.ROLE_ADMIN])
+
+        if user_has_access:
+            r = models.Environment.objects.get(pk=int(environment_id))
+            if request.method == 'POST':
+                r.delete()
+                messages.success(request, u'Environment [ID=%s] was deleted.' % (environment_id,))
+                return redirect('schemanizer_environment_list')
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
