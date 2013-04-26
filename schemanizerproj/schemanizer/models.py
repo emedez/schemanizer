@@ -398,6 +398,7 @@ class Environment(models.Model):
 
 class Server(models.Model):
     name = models.CharField(max_length=255, unique=True, blank=True)
+    hostname = models.CharField(max_length=255)
     cached_size = models.IntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
