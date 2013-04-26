@@ -1034,6 +1034,18 @@ class ReviewThread(threading.Thread):
                                     mysql_conn.close()
 
                                     # Reconnect again using the newly created schema.
+                                    conn_opts = {}
+                                    if settings.AWS_MYSQL_HOST:
+                                        conn_opts['host'] = settings.AWS_MYSQL_HOST
+                                    elif host:
+                                        conn_opts['host'] = host
+                                    if settings.AWS_MYSQL_PORT:
+                                        conn_opts['port'] = settings.AWS_MYSQL_PORT
+                                    if settings.AWS_MYSQL_USER:
+                                        conn_opts['user'] = settings.AWS_MYSQL_USER
+                                    if settings.AWS_MYSQL_PASSWORD:
+                                        conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
+                                    conn_opts['db'] = database_schema.name
                                     mysql_conn = self.create_aws_mysql_connection(
                                         db=database_schema.name, host=host)
 
@@ -1104,7 +1116,8 @@ class ReviewThread(threading.Thread):
                                                         if val_str not in results_log_items:
                                                             results_log_items.append(val_str)
 
-                                                structure_after = utils.dump_structure(mysql_conn)
+                                                #structure_after = utils.dump_structure(mysql_conn)
+                                                structure_after = utils.mysql_dump(**conn_opts)
                                                 hash_after = utils.hash_string(structure_after)
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
 

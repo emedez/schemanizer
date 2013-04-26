@@ -936,7 +936,8 @@ def schema_version_create(
 
                 if form.is_valid():
                     schema = form.cleaned_data['schema']
-                    structure = utils.dump_structure(conn, schema)
+                    #structure = utils.dump_structure(conn, schema)
+                    structure = utils.mysql_dump(schema, **conn_opts)
 
                     #
                     # Save dump as latest version for the schema
