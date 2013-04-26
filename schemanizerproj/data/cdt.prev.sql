@@ -27,8 +27,6 @@ CREATE TABLE `changeset_actions` (
   `changeset_id` int(11) DEFAULT NULL,
   `type` enum('created','changed','deleted') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -211,6 +209,7 @@ CREATE TABLE `changesets` (
   `updated_at` datetime DEFAULT NULL,
   `submitted_by` int(11) DEFAULT NULL,
   `is_deleted` tinyint(1) DEFAULT NULL,
+  `database_schema_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -904,4 +903,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-04-04 20:47:42
+-- Dump completed on 2013-04-12 22:41:39

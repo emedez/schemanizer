@@ -5,8 +5,17 @@ ALTER TABLE `changesets`
 ADD COLUMN `database_schema_id` INT(11) NULL
 AFTER `is_deleted` ;
 
+
 2013-04-12 GMT+08
+=================
 
 ALTER TABLE `changeset_actions`
 DROP COLUMN `updated_at` , DROP COLUMN `created_at` ;
 
+
+2013-04-26 GMT+08
+=================
+
+ALTER TABLE `servers`
+ADD COLUMN `hostname`
+VARCHAR(255) NULL  AFTER `name` ;

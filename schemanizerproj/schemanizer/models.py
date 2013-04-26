@@ -398,6 +398,7 @@ class Environment(models.Model):
 
 class Server(models.Model):
     name = models.CharField(max_length=255, unique=True, blank=True)
+    hostname = models.CharField(max_length=255)
     cached_size = models.IntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
@@ -489,6 +490,11 @@ class ChangesetValidation(models.Model):
         db_table = 'changeset_validations'
 
 
+class TestTypeManager(models.Manager):
+    def get_syntax_test_type(self):
+        return self.get(name=u'syntax')
+
+
 class TestType(models.Model):
     name = models.CharField(max_length=255L, blank=True)
     description = models.TextField(blank=True)
@@ -496,6 +502,8 @@ class TestType(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    objects = TestTypeManager()
 
     class Meta:
         db_table = 'test_types'

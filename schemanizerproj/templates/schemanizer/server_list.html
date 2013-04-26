@@ -14,6 +14,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Hostname</th>
                         <th>Cached size</th>
                         <th>Environment</th>
                         <th>Created at</th>
@@ -26,6 +27,7 @@
                         <tr>
                             <td>{{ server.id }}</td>
                             <td>{{ server.name }}</td>
+                            <td>{{ server.hostname }}</td>
                             <td>{{ server.cached_size|default_if_none:'' }}</td>
                             <td>{{ server.environment|default_if_none:'' }}</td>
                             <td>{{ server.created_at }}</td>

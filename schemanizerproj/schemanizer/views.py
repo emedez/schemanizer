@@ -915,7 +915,7 @@ def schema_version_create(
         if user_has_access:
             server = models.Server.objects.get(pk=int(server_id))
             conn_opts = {}
-            conn_opts['host'] = server.name
+            conn_opts['host'] = server.hostname
             if settings.AWS_MYSQL_PORT:
                 conn_opts['port'] = settings.AWS_MYSQL_PORT
             if settings.AWS_MYSQL_USER:
@@ -936,7 +936,8 @@ def schema_version_create(
 
                 if form.is_valid():
                     schema = form.cleaned_data['schema']
-                    structure = utils.dump_structure(conn, schema)
+                    #structure = utils.dump_structure(conn, schema)
+                    structure = utils.mysql_dump(schema, **conn_opts)
 
                     #
                     # Save dump as latest version for the schema

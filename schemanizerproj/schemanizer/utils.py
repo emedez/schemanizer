@@ -1,9 +1,15 @@
 """Utility functions."""
 import hashlib
+import logging
+import shlex
+import StringIO
 import struct
+import subprocess
 import time
 
 import mmh3
+
+log = logging.getLogger(__name__)
 
 
 def fetchall(conn, query, args=None):
@@ -79,6 +85,56 @@ def dump_structure(conn, schema=None):
             cur.execute('SHOW CREATE TABLE `%s`' % (table,))
             structure += '\n%s;\n' % (cur.fetchone()[1])
     return structure
+
+
+def mysql_dump(db, host=None, port=None, user=None, passwd=None):
+    cmd = u'mysqldump'
+    if host:
+        cmd += u' -h %s' % (host,)
+    if port:
+        cmd += u' -P %s' % (port,)
+    if user:
+        cmd += u' -u %s' % (user,)
+    if passwd:
+        cmd += u' -p%s' % (passwd,)
+    cmd += u' -d --skip-add-drop-table %s' % (db,)
+    log.debug(cmd)
+    args = shlex.split(str(cmd))
+
+    ret = ''
+    p = subprocess.Popen(args, stdout=subprocess.PIPE)
+    try:
+        while True:
+            ln = p.stdout.readline()
+            ret += ln
+            if ln == '' and p.poll() is not None:
+                break
+    finally:
+        p.wait()
+    return ret
+
+
+def mysql_load(db, query_string, host=None, port=None, user=None, passwd=None):
+    cmd = u'mysqldump'
+    if host:
+        cmd += u' -h %s' % (host,)
+    if port:
+        cmd += u' -P %s' % (port,)
+    if user:
+        cmd += u' -u %s' % (user,)
+    if passwd:
+        cmd += u' -p%s' % (passwd,)
+    cmd += u' %s' % (db,)
+    log.debug(cmd)
+    args = shlex.split(str(cmd))
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout_data = None
+    try:
+        stdout_data = p.communicate(input=query_string)[0]
+    finally:
+        p.wait()
+    return stdout_data
+
 
 
 def hash_string(s):

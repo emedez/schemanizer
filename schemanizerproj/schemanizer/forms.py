@@ -171,7 +171,6 @@ class ChangesetForm(forms.ModelForm):
         self.fields['database_schema'].required = True
         self.fields['type'].required = True
         self.fields['classification'].required = True
-        self.fields['version_control_url'].required = True
 
         helper = FormHelper()
         helper.form_tag = False
