@@ -1,4 +1,5 @@
 import logging
+import string
 import threading
 import time
 import urllib
@@ -58,6 +59,7 @@ def delete_user(user):
     user_id = user.id
     auth_user.delete()
     log.info(u'User [id=%s] was deleted.' % (user_id,))
+
 
 def send_mail(
         subject='', body='', from_email=None, to=None, bcc=None,
@@ -214,8 +216,10 @@ def changeset_send_updated_mail(changeset):
     changeset_url = 'http://%s%s' % (
         site.domain,
         reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-    .filter(role__name=models.Role.ROLE_DBA))
+    to = list(
+        models.User.objects.values_list('email', flat=True)
+            .filter(role__name=models.Role.ROLE_DBA)
+    )
 
     if to:
         subject = u'Changeset updated'
@@ -368,26 +372,8 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
                 validation_results.append(u'ERROR: %s' % (e,))
                 changeset_has_errors = True
 
-            #results_log = u'\n'.join(results_log_items)
             ended_at = timezone.now()
-            #changeset_test = models.ChangesetTest.objects.create(
-            #    changeset_detail=changeset_detail,
-            #    started_at=started_at,
-            #    ended_at=ended_at,
-            #    results_log=results_log,
-            #    server=server
-            #)
-            #created_changeset_test_ids.append(changeset_test.id)
-            #results['changeset_tests'].append(changeset_test)
 
-        #if where_clause_found:
-        #    validation_results.append(
-        #        u'One or more statements from changeset details contain WHERE clause.')
-        #if changeset_has_errors:
-        #    validation_results.append(u'Found errors while validating.')
-        #created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
-        #validation_results.append(
-        #    u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
         validation_results_text = u''
         if validation_results:
             validation_results_text = u'\n'.join(validation_results)
@@ -405,75 +391,6 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
     results['changeset_has_errors'] = changeset_has_errors or where_clause_found
     return results
 
-
-#def changeset_review(changeset, user):
-#    """Review changeset."""
-#
-#    if type(changeset) in (int, long):
-#        changeset = models.Changeset.objects.get(pk=changeset)
-#    if type(user) in (int, long):
-#        user = models.User.objects.get(pk=user)
-#
-#    results_all = dict(changeset_validations=[], changeset_tests=[])
-#
-#    if changeset_can_be_reviewed_by_user(changeset, user):
-#        now = timezone.now()
-#
-#        with transaction.commit_on_success():
-#            results = changeset_validate_no_update_with_where_clause(changeset, user)
-#            if results['changeset_validation']:
-#                results_all['changeset_validations'].append(results['changeset_validation'])
-#            for changeset_test in results['changeset_tests']:
-#                results_all['changeset_tests'].extend(results['changeset_tests'])
-#
-#            #
-#            # Update changeset.
-#            #
-#            changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
-#            changeset.reviewed_by = user
-#            changeset.reviewed_at = now
-#            changeset.save()
-#            #
-#            # Create entry on changeset actions.
-#            models.ChangesetAction.objects.create(
-#                changeset=changeset,
-#                type=models.ChangesetAction.TYPE_CHANGED,
-#                timestamp=now)
-#
-#        log.info(u'Changeset [id=%s] was reviewed.' % (changeset.id,))
-#
-#        changeset_send_reviewed_mail(changeset)
-#
-#    else:
-#        raise exceptions.NotAllowed(u'User is not allowed to set review status to \'in_progress\'.')
-#
-#    return results_all
-
-#def changeset_review(**kwargs):
-#    """Reviews changeset.
-#
-#    expected keyword arguments:
-#        changeset_form
-#        changeset_detail_formset
-#        user
-#            - this is used as value for reviewed_by
-#    """
-#    now = timezone.now()
-#
-#    changeset_form = kwargs.get('changeset_form')
-#    changeset_detail_formset = kwargs.get('changeset_detail_formset')
-#    reviewed_by = kwargs.get('user')
-#
-#    changeset = changeset_form.save(commit=False)
-#    changeset.set_reviewed_by(reviewed_by)
-#    changeset_form.save_m2m()
-#    changeset_detail_formset.save()
-#
-#    log.info('A changeset was reviewed:\n%s' % (changeset,))
-#
-#    changeset_send_reviewed_mail(changeset)
-#
-#    return changeset
 
 def changeset_can_be_approved_by_user(changeset, user):
     """Checks if this changeset can be approved by user."""
@@ -854,7 +771,6 @@ def changeset_review(changeset, schema_version, request_id, user, server=None):
         raise exceptions.NotAllowed(u'User is not allowed to set review status to \'in_progress\'.')
 
 
-#class ValidateChangesetSyntaxThread(threading.Thread):
 class ReviewThread(threading.Thread):
     def __init__(self, changeset, schema_version, request_id, user, server=None):
         super(ReviewThread, self).__init__()
@@ -1210,23 +1126,6 @@ class ReviewThread(threading.Thread):
                                     finally:
                                         mysql_conn.close()
 
-                                    #
-                                    # Save results
-                                    #
-                                    #created_changeset_test_ids_string = u','.join([str(id) for id in created_changeset_test_ids])
-                                    #validation_results.append(
-                                    #    u'Created changeset test IDs: %s' % (created_changeset_test_ids_string,))
-                                    #validation_results_text = u''
-                                    #if validation_results:
-                                    #    validation_results_text = u'\n'.join(validation_results)
-                                    #validation_type = models.ValidationType.objects.get(name=u'syntax')
-                                    #changeset_validation = models.ChangesetValidation.objects.create(
-                                    #    changeset=changeset,
-                                    #    validation_type=validation_type,
-                                    #    timestamp=timezone.now(),
-                                    #    result=validation_results_text)
-                                    #self.changeset_validations.append(changeset_validation)
-
                                     msg = u'Changeset syntax test was completed.'
                                     log.info(u'[%s] %s' % (self.request_id, msg))
                                     self.messages.append((u'info', msg))
@@ -1325,6 +1224,14 @@ def user_can_apply_changeset(user, changeset):
     if type(changeset) in (int, long):
         changeset = models.Changeset.objects.get(pk=changeset)
 
+    if not changeset.pk:
+        # Cannot apply unsaved changeset.
+        return False
+
+    # only approved changesets can be applied
+    if changeset.review_status not in (models.Changeset.REVIEW_STATUS_APPROVED,):
+        return False
+
     if user.role.name in (models.Role.ROLE_DEVELOPER,):
         if changeset.classification in (models.Changeset.CLASSIFICATION_LOWRISK, models.Changeset.CLASSIFICATION_PAINLESS):
             return True
@@ -1352,20 +1259,97 @@ def changeset_apply(changeset, user, server):
 
 class ChangesetApplyThread(threading.Thread):
 
-    def __init__(self, changeset, user, server):
+    def __init__(
+            self, changeset, user, server, db_user=None, db_passwd=None,
+            db_port=None):
         super(ChangesetApplyThread, self).__init__()
         self.daemon = True
 
         self.changeset = changeset
         self.user = user
         self.server = server
+        self.db_user = db_user
+        self.db_passwd = db_passwd
+        self.db_port = db_port
 
+        self.conn = None
+
+        # list of tuples
+        # tuple = (message_type, message_text)
         self.messages = []
+
+        self.has_errors = False
+        self.changeset_detail_applies = []
+
+    def _apply_changeset_detail(self, changeset_detail):
+        has_errors = False
+        changeset_detail_apply = None
+
+        queries = sqlparse.split(changeset_detail.apply_sql)
+        try:
+            results_logs = []
+            self.messages.append(('info', changeset_detail.apply_sql))
+            for query in queries:
+                query = query.rstrip(string.whitespace + ';')
+                cur = self.conn.cursor()
+                try:
+                    cur.execute(query)
+                except Exception, e:
+                    log.exception('EXCEPTION')
+                    self.messages.append(('error', '%s' % (e,)))
+                    results_logs.append('ERROR: %s' % (e,))
+                    has_errors = True
+                    break
+                finally:
+                    while cur.nextset() is not None:
+                        pass
+                    cur.close()
+        finally:
+            results_log = '\n'.join(results_logs)
+            changeset_detail_apply = models.ChangesetDetailApply.objects.create(
+                changeset_detail=changeset_detail,
+                environment=self.server.environment,
+                server=self.server,
+                results_log=results_log)
+
+        return dict(
+            has_errors=has_errors,
+            changeset_detail_apply=changeset_detail_apply
+        )
+
+    def _apply_changeset_details(self):
+        for changeset_detail in self.changeset.changeset_details.all():
+            ret = self._apply_changeset_detail(changeset_detail)
+            if ret['has_errors']:
+                self.has_errors = True
+            self.changeset_detail_applies.append(ret['changeset_detail_apply'])
 
     def run(self):
         msg = 'Changeset apply thread started.'
         log.info(msg)
         self.messages.append(('info', msg))
+
+        try:
+            with transaction.commit_on_success():
+                conn_opts = {}
+                conn_opts['host'] = self.server.hostname
+                if self.db_port:
+                    conn_opts['port'] = self.db_port
+                if self.db_user:
+                    conn_opts['user'] = self.db_user
+                if self.db_passwd:
+                    conn_opts['passwd'] = self.db_passwd
+                conn_opts['db'] = self.changeset.database_schema.name
+                self.conn = MySQLdb.connect(**conn_opts)
+                self._apply_changeset_details()
+        except Exception, e:
+            log.exception('EXCEPTION')
+            msg = 'ERROR: %s' % (e,)
+            self.messages.append(('error', msg))
+            self.has_errors = True
+        finally:
+            if self.conn:
+                self.conn.close()
 
         msg = 'Changeset apply thread ended.'
         log.info(msg)

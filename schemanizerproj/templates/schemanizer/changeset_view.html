@@ -149,6 +149,9 @@
                 {% if can_soft_delete %}
                     <input type="submit" class="btn" name="submit_delete" value="Delete" />
                 {% endif %}
+                {% if can_apply %}
+                    <input type="submit" class="btn" name="submit_apply" value="Apply" />
+                {% endif %}
             </div>
         </form>
     {% endif %}

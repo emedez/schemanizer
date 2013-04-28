@@ -11,7 +11,9 @@
 
         {% if poll_thread_status %}
             <div>
-                <div id="thread_output">
+                <div id="thread_messages_html">
+                </div>
+                <div id="thread_changeset_detail_applies_html">
                 </div>
                 <div id="ajax_loader_animation">
                     <img src="{{ STATIC_URL }}site/img/ajax-loader.gif"/>
@@ -38,8 +40,8 @@
                             alert(data['error']);
                         }
                         else {
-                            if ('thread_output' in data) {
-                                $('#thread_output').html(data['thread_output']);
+                            if ('thread_messages_html' in data) {
+                                $('#thread_messages_html').html(data['thread_messages_html']);
                             }
                             if ('thread_is_alive' in data) {
                                 if (data['thread_is_alive']) {
@@ -47,6 +49,9 @@
                                     setTimeout(getStatus, check_freq * 1000);
                                 }
                                 else {
+                                    if ('thread_changeset_detail_applies_html' in data) {
+                                        $('#thread_changeset_detail_applies_html').html(data['thread_changeset_detail_applies_html']);
+                                    }
                                     $('#ajax_loader_animation').hide();
                                 }
                             }

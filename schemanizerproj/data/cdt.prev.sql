@@ -564,6 +564,7 @@ DROP TABLE IF EXISTS `servers`;
 CREATE TABLE `servers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
+  `hostname` varchar(255) DEFAULT NULL,
   `cached_size` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -903,4 +904,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-04-12 22:41:39
+-- Dump completed on 2013-04-26 20:40:36
