@@ -490,7 +490,8 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
 
 def changeset_apply_status(
         request, request_id,
-        template='schemanizer/changeset_apply_status.html'):
+        template='schemanizer/changeset_apply_status.html',
+        changeset_detail_applies_template='schemanizer/changeset_apply_changeset_detail_applies.html'):
 
     if not request.is_ajax():
         return HttpResponseForbidden(MSG_NOT_AJAX)
@@ -511,7 +512,7 @@ def changeset_apply_status(
 
         else:
             data['thread_is_alive'] = t.is_alive()
-            data['thread_output'] = render_to_string(
+            data['thread_messages_html'] = render_to_string(
                 template,
                 {
                     'messages': t.messages
@@ -523,6 +524,15 @@ def changeset_apply_status(
                 # Remove dead threads from dictionary.
                 #
                 apply_threads.pop(request_id, None)
+
+                data['thread_has_errors'] = t.has_errors
+                data['thread_changeset_detail_applies_html'] = render_to_string(
+                    changeset_detail_applies_template,
+                    dict(
+                        changeset_detail_applies=t.changeset_detail_applies
+                    ),
+                    context_instance=RequestContext(request)
+                )
 
         data_json = json.dumps(data)
     except Exception, e:

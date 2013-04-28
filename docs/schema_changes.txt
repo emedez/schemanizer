@@ -19,3 +19,10 @@ DROP COLUMN `updated_at` , DROP COLUMN `created_at` ;
 ALTER TABLE `servers`
 ADD COLUMN `hostname`
 VARCHAR(255) NULL  AFTER `name` ;
+
+
+2013-04-29 GMT+08
+=================
+
+ALTER TABLE `changeset_detail_applies`
+DROP INDEX `environment_id` ;

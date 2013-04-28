@@ -1,4 +1,5 @@
 import logging
+import string
 import threading
 import time
 import urllib
@@ -1325,6 +1326,10 @@ def user_can_apply_changeset(user, changeset):
     if type(changeset) in (int, long):
         changeset = models.Changeset.objects.get(pk=changeset)
 
+    # only approved changesets can be applied
+    if changeset.review_status not in (models.Changeset.REVIEW_STATUS_APPROVED,):
+        return False
+
     if user.role.name in (models.Role.ROLE_DEVELOPER,):
         if changeset.classification in (models.Changeset.CLASSIFICATION_LOWRISK, models.Changeset.CLASSIFICATION_PAINLESS):
             return True
@@ -1352,20 +1357,97 @@ def changeset_apply(changeset, user, server):
 
 class ChangesetApplyThread(threading.Thread):
 
-    def __init__(self, changeset, user, server):
+    def __init__(
+            self, changeset, user, server, db_user=None, db_passwd=None,
+            db_port=None):
         super(ChangesetApplyThread, self).__init__()
         self.daemon = True
 
         self.changeset = changeset
         self.user = user
         self.server = server
+        self.db_user = db_user
+        self.db_passwd = db_passwd
+        self.db_port = db_port
 
+        self.conn = None
+
+        # list of tuples
+        # tuple = (message_type, message_text)
         self.messages = []
+
+        self.has_errors = False
+        self.changeset_detail_applies = []
+
+    def _apply_changeset_detail(self, changeset_detail):
+        has_errors = False
+        changeset_detail_apply = None
+
+        queries = sqlparse.split(changeset_detail.apply_sql)
+        try:
+            results_logs = []
+            self.messages.append(('info', changeset_detail.apply_sql))
+            for query in queries:
+                query = query.rstrip(string.whitespace + ';')
+                cur = self.conn.cursor()
+                try:
+                    cur.execute(query)
+                except Exception, e:
+                    log.exception('EXCEPTION')
+                    self.messages.append(('error', '%s' % (e,)))
+                    results_logs.append('ERROR: %s' % (e,))
+                    has_errors = True
+                    break
+                finally:
+                    while cur.nextset() is not None:
+                        pass
+                    cur.close()
+        finally:
+            results_log = '\n'.join(results_logs)
+            changeset_detail_apply = models.ChangesetDetailApply.objects.create(
+                changeset_detail=changeset_detail,
+                environment=self.server.environment,
+                server=self.server,
+                results_log=results_log)
+
+        return dict(
+            has_errors=has_errors,
+            changeset_detail_apply=changeset_detail_apply
+        )
+
+    def _apply_changeset_details(self):
+        for changeset_detail in self.changeset.changeset_details.all():
+            ret = self._apply_changeset_detail(changeset_detail)
+            if ret['has_errors']:
+                self.has_errors = True
+            self.changeset_detail_applies.append(ret['changeset_detail_apply'])
 
     def run(self):
         msg = 'Changeset apply thread started.'
         log.info(msg)
         self.messages.append(('info', msg))
+
+        try:
+            with transaction.commit_on_success():
+                conn_opts = {}
+                conn_opts['host'] = self.server.hostname
+                if self.db_port:
+                    conn_opts['port'] = self.db_port
+                if self.db_user:
+                    conn_opts['user'] = self.db_user
+                if self.db_passwd:
+                    conn_opts['passwd'] = self.db_passwd
+                conn_opts['db'] = self.changeset.database_schema.name
+                self.conn = MySQLdb.connect(**conn_opts)
+                self._apply_changeset_details()
+        except Exception, e:
+            log.exception('EXCEPTION')
+            msg = 'ERROR: %s' % (e,)
+            self.messages.append(('error', msg))
+            self.has_errors = True
+        finally:
+            if self.conn:
+                self.conn.close()
 
         msg = 'Changeset apply thread ended.'
         log.info(msg)
