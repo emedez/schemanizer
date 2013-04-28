@@ -252,45 +252,6 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
     return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
-#@login_required
-#def changeset_review(request, id, template='schemanizer/changeset_update.html'):
-#    user_has_access = False
-#    try:
-#        user = request.user.schemanizer_user
-#        user_has_access = user.role.name in (
-#            models.Role.ROLE_ADMIN, models.Role.ROLE_DBA)
-#        if user_has_access:
-#            id = int(id)
-#            changeset = models.Changeset.objects.get(id=id)
-#            ChangesetDetailFormSet = inlineformset_factory(
-#                models.Changeset, models.ChangesetDetail,
-#                form=forms.ChangesetDetailForm,
-#                extra=1, can_delete=False)
-#            if request.method == 'POST':
-#                changeset_form = forms.ChangesetForm(
-#                    request.POST, instance=changeset)
-#                changeset_detail_formset = ChangesetDetailFormSet(
-#                    request.POST, instance=changeset)
-#                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
-#                    with transaction.commit_on_success():
-#                        changeset = businesslogic.changeset_review(
-#                            changeset_form=changeset_form,
-#                            changeset_detail_formset=changeset_detail_formset,
-#                            user=user)
-#                    messages.success(request, u'Changeset reviewed.')
-#                    return redirect('schemanizer_changeset_view', changeset.id)
-#            else:
-#                changeset_form = forms.ChangesetForm(instance=changeset)
-#                changeset_detail_formset = ChangesetDetailFormSet(
-#                    instance=changeset)
-#        else:
-#            messages.error(request, MSG_USER_NO_ACCESS)
-#    except Exception, e:
-#        log.exception('EXCEPTION')
-#        messages.error(request, u'%s' % (e,))
-#    return render_to_response(template, locals(), context_instance=RequestContext(request))
-
-
 @login_required
 def changeset_view_review_results(request, changeset_id, template='schemanizer/changeset_view_review_results.html'):
     user_has_access = False
@@ -347,16 +308,6 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         #
                         # Set changeset review status to 'in_progress'
                         #
-#                        results = businesslogic.changeset_review(
-#                            changeset, user)
-#                        changeset_validation_ids = ','.join([str(changeset_validation.id) for changeset_validation in results['changeset_validations']])
-#                        changeset_test_ids = ','.join([str(changeset_test.id) for changeset_test in results['changeset_tests']])
-#                        messages.success(request, u'Changeset [id=%s] was reviewed.' % (changeset.id,))
-#                        url = reverse('schemanizer_changeset_view_review_results', args=[changeset.id])
-#                        query_string = urllib.urlencode(dict(
-#                            changeset_validation_ids=changeset_validation_ids,
-#                            changeset_test_ids=changeset_test_ids))
-#                        return redirect('%s?%s' % (url, query_string))
                         return redirect(
                             'schemanizer_changeset_review',
                             changeset.id)
@@ -412,8 +363,10 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
                 changeset, user)
             can_apply = businesslogic.user_can_apply_changeset(user, changeset)
+
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
+
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
@@ -530,7 +483,6 @@ def changeset_apply_status(
         data_json = json.dumps(data)
 
     return HttpResponse(data_json, mimetype='application/json')
-
 
 
 @login_required
@@ -853,7 +805,6 @@ def schema_version_create(
 
                 if form.is_valid():
                     schema = form.cleaned_data['schema']
-                    #structure = utils.dump_structure(conn, schema)
                     structure = utils.mysql_dump(schema, **conn_opts)
 
                     #
@@ -880,24 +831,6 @@ def schema_version_create(
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
-
-
-#@login_required
-#def changeset_review(request, changeset_id, template='schemanizer/changeset_review.html'):
-#    user_has_access = False
-#    try:
-#        changeset = models.Changeset.objects.get(pk=int(changeset_id))
-#        user = request.user.schemanizer_user
-#        user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
-#        if user_has_access:
-#            pass
-#        else:
-#            messages.error(request, MSG_USER_NO_ACCESS)
-#
-#    except Exception, e:
-#        log.exception('EXCEPTION')
-#        messages.error(request, u'%s' % (e,))
-#    return render_to_response(template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
