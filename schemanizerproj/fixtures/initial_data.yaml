@@ -1,0 +1,61 @@
+- fields:
+    date_joined: 2013-04-03 08:57:35+00:00
+    email: admin@example.com
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: true
+    is_superuser: true
+    last_login: 2013-04-28 17:38:18+00:00
+    last_name: ''
+    password: pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=
+    user_permissions: []
+    username: admin
+  model: auth.user
+  pk: 1
+- fields: {domain: 'localhost:8000', name: Schemanizer}
+  model: sites.site
+  pk: 1
+- fields: {created_at: !!timestamp '2013-03-31 20:02:25+00:00', name: admin, updated_at: !!timestamp '2013-03-31
+      20:02:25+00:00'}
+  model: schemanizer.role
+  pk: 1
+- fields: {created_at: !!timestamp '2013-03-31 20:02:31+00:00', name: dba, updated_at: !!timestamp '2013-03-31
+      20:02:31+00:00'}
+  model: schemanizer.role
+  pk: 2
+- fields: {created_at: !!timestamp '2013-03-31 20:02:36+00:00', name: developer, updated_at: !!timestamp '2013-03-31
+      20:02:36+00:00'}
+  model: schemanizer.role
+  pk: 3
+- fields:
+    auth_user: [admin]
+    created_at: 2013-04-03 09:02:34+00:00
+    email: admin@example.com
+    name: admin
+    role: 1
+    updated_at: 2013-04-28 17:18:19+00:00
+  model: schemanizer.user
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-26 16:24:40+00:00', name: dev, updated_at: !!timestamp '2013-04-26
+      16:24:40+00:00'}
+  model: schemanizer.environment
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-26 16:24:48+00:00', name: test, updated_at: !!timestamp '2013-04-26
+      16:24:48+00:00'}
+  model: schemanizer.environment
+  pk: 2
+- fields: {created_at: !!timestamp '2013-04-26 16:24:53+00:00', name: prod, updated_at: !!timestamp '2013-04-26
+      16:24:53+00:00'}
+  model: schemanizer.environment
+  pk: 3
+- fields: {created_at: !!timestamp '2013-04-16 01:24:34+00:00', description: verify
+      that update statements do not have a where clause, name: no update with where
+      clause, updated_at: !!timestamp '2013-04-16 01:24:34+00:00', validation_commands: ''}
+  model: schemanizer.validationtype
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-26 15:21:12+00:00', description: 'spin
+      up an instance, verify changes are valid sql and won''t cause errors', name: syntax,
+    updated_at: !!timestamp '2013-04-26 15:22:58+00:00'}
+  model: schemanizer.testtype
+  pk: 1
