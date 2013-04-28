@@ -1252,7 +1252,13 @@ def changeset_apply(changeset, user, server):
     if not user_can_apply_changeset(user, changeset):
         raise exceptions.NotAllowed('User is not allowed to apply changeset.')
 
-    thread = ChangesetApplyThread(changeset, user, server)
+    thread = ChangesetApplyThread(
+        changeset,
+        user,
+        server,
+        db_user=settings.AWS_MYSQL_USER,
+        db_passwd=settings.AWS_MYSQL_PASSWORD,
+        db_port=settings.AWS_MYSQL_PORT)
     thread.start()
     return thread
 
