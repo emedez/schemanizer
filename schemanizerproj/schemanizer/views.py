@@ -387,21 +387,11 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                             'schemanizer_changeset_soft_delete',
                             args=[changeset.id]))
 
-#                    elif u'submit_validate_syntax' in request.POST:
-#                        #
-#                        # Validate changeset syntax.
-#                        #
-#                        return redirect(reverse(
-#                            'schemanizer_changeset_validate_syntax',
-#                            args=[changeset.id]))
-#
-#                    elif u'submit_validate_no_update_with_where_clause' in request.POST:
-#                        #
-#                        # Validate no updates with WHERE clause.
-#                        #
-#                        log.debug(u'submit_validate_no_update_with_where_clause')
-#                        return redirect('schemanizer_changeset_validate_no_update_with_where_clause',
-#                            changeset.id)
+                    elif u'submit_apply' in request.POST:
+                        #
+                        # Apply changeset
+                        #
+                        return redirect('schemanizer_changeset_apply', changeset.id)
 
                     else:
                         messages.error(request, u'Unknown command.')
@@ -421,8 +411,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                 changeset, user)
             can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
                 changeset, user)
-#            can_validate = businesslogic.user_can_validate_changeset(
-#                user, changeset)
+            can_apply = businesslogic.user_can_apply_changeset(user, changeset)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
