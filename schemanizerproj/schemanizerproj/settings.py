@@ -208,7 +208,7 @@ LOGGING = {
 }
 
 #==============================================================================
-# AWS data for launching an EC2 instance (for use in applying changesets)
+# AWS data for launching an EC2 instance (for use in reviewing changesets)
 #==============================================================================
 #
 # AWS Credentials
@@ -244,7 +244,11 @@ AWS_SECURITY_GROUPS = ['quicklaunch-1']
 #   cc2.8xlarge
 AWS_INSTANCE_TYPE = 'm1.small'
 #
-# AWS MySQL user/password
+# MySQL connection options for reviewing changesets
+#
+# If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
+# AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used
+# in changeset apply operations.
 AWS_MYSQL_HOST = None
 AWS_MYSQL_PORT = None
 AWS_MYSQL_USER = 'sandbox'

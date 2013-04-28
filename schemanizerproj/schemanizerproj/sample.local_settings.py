@@ -1,3 +1,10 @@
+#
+# Local Settings
+#
+# Use this file to override the default values provided in settings.py.
+#
+
+
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
@@ -41,7 +48,7 @@ DEFAULT_FROM_EMAIL = 'Schemanizer <schemanizer@localhost.local>'
 
 
 #==============================================================================
-# AWS data for launching an EC2 instance (for use in applying changesets)
+# AWS data for launching an EC2 instance (for use in reviewing changesets)
 #==============================================================================
 #
 # AWS Credentials
@@ -77,15 +84,19 @@ AWS_SECURITY_GROUPS = ['quicklaunch-1']
 #   cc2.8xlarge
 AWS_INSTANCE_TYPE = 'm1.small'
 #
-# AWS MySQL user/password
+# MySQL connection options for reviewing changesets
+#
+# If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
+# AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used
+# in changeset apply operations.
 AWS_MYSQL_HOST = None
 AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = None
-AWS_MYSQL_PASSWORD = None
+AWS_MYSQL_USER = 'sandbox'
+AWS_MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.
-AWS_EC2_INSTANCE_START_WAIT = 10
+AWS_EC2_INSTANCE_START_WAIT = 60
 
 # Number of seconds to wait before trying to connect to MySQL server.
 # This is to give time for it to start completely.
-AWS_MYSQL_START_WAIT = 30
+AWS_MYSQL_START_WAIT = 60
