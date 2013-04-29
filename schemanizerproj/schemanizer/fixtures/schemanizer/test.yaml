@@ -1,3 +1,48 @@
+- fields:
+    date_joined: 2013-04-03 08:57:35+00:00
+    email: admin@example.com
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: true
+    is_superuser: true
+    last_login: 2013-04-29 11:09:14+00:00
+    last_name: ''
+    password: pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=
+    user_permissions: []
+    username: admin
+  model: auth.user
+  pk: 1
+- fields:
+    date_joined: 2013-04-29 11:11:09+00:00
+    email: dba@example.com
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_login: 2013-04-29 11:11:09+00:00
+    last_name: ''
+    password: pbkdf2_sha256$10000$rZOxOXF25Dwz$aTG1jlzo1m/fh40wFAYCbMNH/EIX5jJY4NMUsxbWEPI=
+    user_permissions: []
+    username: dba
+  model: auth.user
+  pk: 2
+- fields:
+    date_joined: 2013-04-29 11:11:37+00:00
+    email: dev@example.com
+    first_name: ''
+    groups: []
+    is_active: true
+    is_staff: false
+    is_superuser: false
+    last_login: 2013-04-29 11:11:37+00:00
+    last_name: ''
+    password: pbkdf2_sha256$10000$fk1RmLk8rxKB$cg4O4g3GRV7SpgUxbtfYENv/d0CX28mVogwKtV2hLIc=
+    user_permissions: []
+    username: dev
+  model: auth.user
+  pk: 3
 - fields: {domain: 'localhost:8000', name: Schemanizer}
   model: sites.site
   pk: 1
@@ -13,211 +58,52 @@
       20:02:36+00:00'}
   model: schemanizer.role
   pk: 3
-- fields: {approved_at: !!timestamp '2013-04-15 10:36:15+00:00', approved_by: 2, classification: painless,
-    created_at: !!timestamp '2013-04-15 10:24:51+00:00', database_schema: 4, is_deleted: 0,
-    review_status: approved, reviewed_at: !!timestamp '2013-04-15 10:32:26+00:00',
-    reviewed_by: 2, submitted_at: !!timestamp '2013-04-15 10:24:51+00:00', submitted_by: 3,
-    type: 'DDL:Table:Create', updated_at: !!timestamp '2013-04-15 10:36:15+00:00',
-    version_control_url: 'http://'}
-  model: schemanizer.changeset
-  pk: 15
-- fields: {approved_at: null, approved_by: null, classification: painless, created_at: !!timestamp '2013-04-15
-      10:28:18+00:00', database_schema: 3, is_deleted: 0, review_status: needs, reviewed_at: null,
-    reviewed_by: null, submitted_at: !!timestamp '2013-04-15 10:28:17+00:00', submitted_by: 6,
-    type: 'DDL:Table:Create', updated_at: !!timestamp '2013-04-15 10:28:18+00:00',
-    version_control_url: 'http://'}
-  model: schemanizer.changeset
-  pk: 16
-- fields: {after_checksum: '', apply_sql: "create table `tables` (\r\n  `id` int primary\
-      \ key auto_increment,\r\n  `schema_id` int,\r\n  `name` varchar(255)\r\n);",
-    before_checksum: '', changeset: 15, count_sql: '', created_at: !!timestamp '2013-04-15
-      10:24:51+00:00', description: create table `tables`, revert_sql: drop table
-      `tables`;, type: add, updated_at: !!timestamp '2013-04-15 10:24:51+00:00', volumetric_values: ''}
-  model: schemanizer.changesetdetail
-  pk: 18
-- fields: {after_checksum: '', apply_sql: "create table `books` (\r\n  `id` int primary\
-      \ key auto_increment\r\n  `name` varchar(255),\r\n  `author` varchar(255));",
-    before_checksum: '', changeset: 16, count_sql: '', created_at: !!timestamp '2013-04-15
-      10:28:18+00:00', description: create table `books`, revert_sql: drop table `books`;,
-    type: add, updated_at: !!timestamp '2013-04-15 10:28:18+00:00', volumetric_values: ''}
-  model: schemanizer.changesetdetail
-  pk: 19
-- fields: {changeset: 15, timestamp: !!timestamp '2013-04-15 10:24:51', type: created}
-  model: schemanizer.changesetaction
-  pk: 27
-- fields: {changeset: 16, timestamp: !!timestamp '2013-04-15 10:28:17', type: created}
-  model: schemanizer.changesetaction
-  pk: 28
-- fields: {changeset: 15, timestamp: !!timestamp '2013-04-15 10:32:26', type: changed}
-  model: schemanizer.changesetaction
-  pk: 29
-- fields: {changeset: 15, timestamp: !!timestamp '2013-04-15 10:36:15', type: changed}
-  model: schemanizer.changesetaction
-  pk: 30
-- fields: {created_at: !!timestamp '2013-04-15 09:50:19+00:00', name: schemanizer1,
-    updated_at: !!timestamp '2013-04-15 09:54:37+00:00'}
-  model: schemanizer.databaseschema
-  pk: 3
-- fields: {created_at: !!timestamp '2013-04-15 09:54:11+00:00', name: schemanizer2,
-    updated_at: !!timestamp '2013-04-15 09:54:32+00:00'}
-  model: schemanizer.databaseschema
-  pk: 4
-- fields: {checksum: '', created_at: !!timestamp '2013-04-15 09:53:03+00:00', database_schema: 3,
-    ddl: "create table `videos`(\r\n  `id` int primary key auto_increment,\r\n  `name`\
-      \ varchar(255));\r\n\r\ninsert into `videos` values (1, 'Python Training Video'),\
-      \ (2, 'Django Training Video');\r\n\r\ncreate table `audios`(\r\n  `id` int\
-      \ primary key auto_increment,\r\n  name varchar(255));\r\n\r\ninsert into `audios`\
-      \ values (1, 'Python Podcast'), (2, 'Django Podcast');\r\n\r\n\r\n", updated_at: !!timestamp '2013-04-15
-      10:13:42+00:00'}
-  model: schemanizer.schemaversion
-  pk: 3
-- fields: {checksum: '', created_at: !!timestamp '2013-04-15 09:58:14+00:00', database_schema: 4,
-    ddl: "create table `schemas` (\r\n  `id` int primary key auto_increment,\r\n \
-      \ `name` varchar(255));\r\n\r\ninsert into `schemas` values(1, 's1'), (2, 's2');\r\
-      \n\r\n", updated_at: !!timestamp '2013-04-15 10:14:52+00:00'}
-  model: schemanizer.schemaversion
-  pk: 4
-- fields:
-    date_joined: 2013-04-03 08:57:35+00:00
-    email: EMedez+admin@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: true
-    is_superuser: true
-    last_login: 2013-04-13 06:10:39+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=
-    user_permissions: []
-    username: admin
-  model: auth.user
-  pk: 1
-- fields:
-    date_joined: 2013-04-05 05:57:59+00:00
-    email: EMedez+dba@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-15 10:25:26+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$vqBOymDxHIOM$3i+tQEJm7O+lrfjERw4CBrvbVs6kSBP5oyJU6EitGPU=
-    user_permissions: []
-    username: dba
-  model: auth.user
-  pk: 2
-- fields:
-    date_joined: 2013-04-05 05:58:17+00:00
-    email: EMedez+dev@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-15 10:17:37+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$B2sTNTH3uYlb$qAC5jphlxDHraz6WmgiuF0wTNtkValZMInSnoc678Fw=
-    user_permissions: []
-    username: dev
-  model: auth.user
-  pk: 3
-- fields:
-    date_joined: 2013-04-12 16:27:14+00:00
-    email: EMedez+admin2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-12 16:27:14+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$qmKwOpCxvjG7$6I2YdO/xCYvJnUW2wpz1mO6hoVy32MfZh53EQLAXXqU=
-    user_permissions: []
-    username: admin2
-  model: auth.user
-  pk: 4
-- fields:
-    date_joined: 2013-04-12 16:28:23+00:00
-    email: EMedez+dba2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-12 16:28:23+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$FrODaLLeaCxw$22Gje7YyJzhuak8ST0xMaVhBzXutUfonJ1nz2D3lH80=
-    user_permissions: []
-    username: dba2
-  model: auth.user
-  pk: 5
-- fields:
-    date_joined: 2013-04-12 16:29:52+00:00
-    email: EMedez+dev2@palominodb.com
-    first_name: ''
-    groups: []
-    is_active: true
-    is_staff: false
-    is_superuser: false
-    last_login: 2013-04-15 10:26:28+00:00
-    last_name: ''
-    password: pbkdf2_sha256$10000$dCWz1cn26bqy$+VxOeoDoI9+uFw/wvyhm2RN1OyJP4PG2JjpktuXPsYo=
-    user_permissions: []
-    username: dev2
-  model: auth.user
-  pk: 7
 - fields:
     auth_user: [admin]
     created_at: 2013-04-03 09:02:34+00:00
-    email: EMedez+admin@palominodb.com
+    email: admin@example.com
     name: admin
     role: 1
-    updated_at: 2013-04-03 09:02:34+00:00
+    updated_at: 2013-04-28 17:18:19+00:00
   model: schemanizer.user
   pk: 1
 - fields:
     auth_user: [dba]
-    created_at: 2013-04-05 05:57:59+00:00
-    email: EMedez+dba@palominodb.com
+    created_at: 2013-04-29 11:11:10+00:00
+    email: dba@example.com
     name: dba
     role: 2
-    updated_at: 2013-04-05 05:57:59+00:00
+    updated_at: 2013-04-29 11:11:10+00:00
   model: schemanizer.user
   pk: 2
 - fields:
     auth_user: [dev]
-    created_at: 2013-04-05 05:58:17+00:00
-    email: EMedez+dev@palominodb.com
+    created_at: 2013-04-29 11:11:37+00:00
+    email: dev@example.com
     name: dev
     role: 3
-    updated_at: 2013-04-05 05:58:17+00:00
+    updated_at: 2013-04-29 11:11:37+00:00
   model: schemanizer.user
   pk: 3
-- fields:
-    auth_user: [admin2]
-    created_at: 2013-04-12 16:27:14+00:00
-    email: EMedez+admin2@palominodb.com
-    name: admin2
-    role: 1
-    updated_at: 2013-04-12 16:27:14+00:00
-  model: schemanizer.user
-  pk: 4
-- fields:
-    auth_user: [dba2]
-    created_at: 2013-04-12 16:28:23+00:00
-    email: EMedez+dba2@palominodb.com
-    name: dba2
-    role: 2
-    updated_at: 2013-04-12 16:28:23+00:00
-  model: schemanizer.user
-  pk: 5
-- fields:
-    auth_user: [dev2]
-    created_at: 2013-04-12 16:29:52+00:00
-    email: EMedez+dev2@palominodb.com
-    name: dev2
-    role: 3
-    updated_at: 2013-04-12 16:29:52+00:00
-  model: schemanizer.user
-  pk: 6
+- fields: {created_at: !!timestamp '2013-04-26 16:24:40+00:00', name: dev, updated_at: !!timestamp '2013-04-26
+      16:24:40+00:00'}
+  model: schemanizer.environment
+  pk: 1
+- fields: {created_at: !!timestamp '2013-04-26 16:24:48+00:00', name: test, updated_at: !!timestamp '2013-04-26
+      16:24:48+00:00'}
+  model: schemanizer.environment
+  pk: 2
+- fields: {created_at: !!timestamp '2013-04-26 16:24:53+00:00', name: prod, updated_at: !!timestamp '2013-04-26
+      16:24:53+00:00'}
+  model: schemanizer.environment
+  pk: 3
+- fields: {created_at: !!timestamp '2013-04-16 01:24:34+00:00', description: verify
+      that update statements do not have a where clause, name: no update with where
+      clause, updated_at: !!timestamp '2013-04-16 01:24:34+00:00', validation_commands: ''}
+  model: schemanizer.validationtype
+  pk: 2
+- fields: {created_at: !!timestamp '2013-04-26 15:21:12+00:00', description: 'spin
+      up an instance, verify changes are valid sql and won''t cause errors', name: syntax,
+    updated_at: !!timestamp '2013-04-26 15:22:58+00:00'}
+  model: schemanizer.testtype
+  pk: 1

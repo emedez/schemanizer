@@ -136,15 +136,16 @@ INSTALLED_APPS = (
     'south',
     'crispy_forms',
     'debug_toolbar',
-    'django_nose',
+    #'django_nose',
 
     #=============
     # project apps
     #=============
     'schemanizer',
+
 )
 
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+#TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
