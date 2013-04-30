@@ -817,7 +817,7 @@ def schema_version_create(
                     models.SchemaVersion.objects.create(
                         database_schema=database_schema,
                         ddl=structure,
-                        checksum=utils.hash_string(structure))
+                        checksum=businesslogic.schema_hash(structure))
 
                     msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
                     log.info(msg)

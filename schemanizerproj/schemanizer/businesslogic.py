@@ -1058,7 +1058,7 @@ class ReviewThread(threading.Thread):
 
                                                 #structure_after = utils.dump_structure(mysql_conn)
                                                 structure_after = utils.mysql_dump(**conn_opts)
-                                                hash_after = utils.hash_string(structure_after)
+                                                hash_after = schema_hash(structure_after)
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
 
                                                 # Test revert_sql
@@ -1357,7 +1357,7 @@ class ChangesetApplyThread(threading.Thread):
                 self.conn = MySQLdb.connect(**conn_opts)
                 self._apply_changeset_details()
             ddl = utils.mysql_dump(**conn_opts)
-            checksum = utils.hash_string(ddl)
+            checksum = schema_hash(ddl)
             if self.changeset.after_version and self.changeset.after_version.checksum == checksum:
                 pass
             else:
@@ -1374,3 +1374,20 @@ class ChangesetApplyThread(threading.Thread):
         msg = 'Changeset apply thread ended.'
         log.info(msg)
         self.messages.append(('info', msg))
+
+
+def normalize_mysql_dump(dump):
+    statement_list = sqlparse.split(dump)
+    new_statement_list = []
+    for statement in statement_list:
+        stripped_chars = unicode(string.whitespace + ';')
+        statement = statement.strip(stripped_chars)
+        if statement:
+            if not statement.startswith(u'/*!'):
+                # skip processing conditional comments
+                new_statement_list.append(statement)
+    return u';\n'.join(new_statement_list)
+
+
+def schema_hash(dump):
+    return utils.hash_string(normalize_mysql_dump(dump))

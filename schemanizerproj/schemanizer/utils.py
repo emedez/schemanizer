@@ -141,7 +141,6 @@ def mysql_load(db, query_string, host=None, port=None, user=None, passwd=None):
     return stdout_data
 
 
-
 def hash_string(s):
     """Creates hash for the string."""
 
