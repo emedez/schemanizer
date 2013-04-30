@@ -1344,24 +1344,32 @@ class ChangesetApplyThread(threading.Thread):
         self.messages.append(('info', msg))
 
         try:
+            conn_opts = {}
+            conn_opts['host'] = self.server.hostname
+            if self.db_port:
+                conn_opts['port'] = self.db_port
+            if self.db_user:
+                conn_opts['user'] = self.db_user
+            if self.db_passwd:
+                conn_opts['passwd'] = self.db_passwd
+            conn_opts['db'] = self.changeset.database_schema.name
+
+            ddl = utils.mysql_dump(**conn_opts)
+            checksum = schema_hash(ddl)
+            if not (self.changeset.before_version and self.changeset.before_version.checksum == checksum):
+                raise Exception('Cannot apply changeset, existing schema checksum does not match the expected value.')
+
             with transaction.commit_on_success():
-                conn_opts = {}
-                conn_opts['host'] = self.server.hostname
-                if self.db_port:
-                    conn_opts['port'] = self.db_port
-                if self.db_user:
-                    conn_opts['user'] = self.db_user
-                if self.db_passwd:
-                    conn_opts['passwd'] = self.db_passwd
-                conn_opts['db'] = self.changeset.database_schema.name
                 self.conn = MySQLdb.connect(**conn_opts)
                 self._apply_changeset_details()
+
             ddl = utils.mysql_dump(**conn_opts)
             checksum = schema_hash(ddl)
             if self.changeset.after_version and self.changeset.after_version.checksum == checksum:
                 pass
             else:
                 raise Exception('Final schema checksum does not match the expected value.')
+
         except Exception, e:
             log.exception('EXCEPTION')
             msg = 'ERROR: %s' % (e,)
