@@ -1356,6 +1356,12 @@ class ChangesetApplyThread(threading.Thread):
                 conn_opts['db'] = self.changeset.database_schema.name
                 self.conn = MySQLdb.connect(**conn_opts)
                 self._apply_changeset_details()
+            ddl = utils.mysql_dump(**conn_opts)
+            checksum = utils.hash_string(ddl)
+            if self.changeset.after_version and self.changeset.after_version.checksum == checksum:
+                pass
+            else:
+                raise Exception('Final schema checksum does not match the expected value.')
         except Exception, e:
             log.exception('EXCEPTION')
             msg = 'ERROR: %s' % (e,)
