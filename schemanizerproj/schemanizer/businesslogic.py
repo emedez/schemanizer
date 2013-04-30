@@ -1019,6 +1019,8 @@ class ReviewThread(threading.Thread):
                                                 # initial before structure and checksum should be the same with schema version
                                                 structure_before = schema_version.ddl
                                                 hash_before = schema_version.checksum
+                                                structure_after = structure_before
+                                                hash_after = hash_before
                                                 first_run = False
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_before, hash_before))
                                             else:
@@ -1026,9 +1028,8 @@ class ReviewThread(threading.Thread):
                                                 # to after structure and checksum of the preceeding operation
                                                 structure_before = structure_after
                                                 hash_before = hash_after
-
-                                            structure_after = None
-                                            hash_after = None
+                                                structure_after = structure_before
+                                                hash_after = hash_before
 
                                             msg = u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
                                                 changeset_detail.id, changeset_detail.apply_sql)
@@ -1057,7 +1058,7 @@ class ReviewThread(threading.Thread):
 
                                                 #structure_after = utils.dump_structure(mysql_conn)
                                                 structure_after = utils.mysql_dump(**conn_opts)
-                                                hash_after = utils.hash_string(structure_after)
+                                                hash_after = schema_hash(structure_after)
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
 
                                                 # Test revert_sql
@@ -1177,12 +1178,19 @@ class ReviewThread(threading.Thread):
                 #
                 # Update changeset.
                 #
+                after_version = models.SchemaVersion.objects.create(
+                    database_schema=self.schema_version.database_schema,
+                    ddl=structure_after,
+                    checksum=hash_after
+                )
                 if changeset_has_errors:
                     changeset.review_status = models.Changeset.REVIEW_STATUS_REJECTED
                 else:
                     changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
                 changeset.reviewed_by = self.user
                 changeset.reviewed_at = timezone.now()
+                changeset.before_version = self.schema_version
+                changeset.after_version = after_version
                 changeset.save()
                 #
                 # Create entry on changeset actions.
@@ -1336,18 +1344,32 @@ class ChangesetApplyThread(threading.Thread):
         self.messages.append(('info', msg))
 
         try:
+            conn_opts = {}
+            conn_opts['host'] = self.server.hostname
+            if self.db_port:
+                conn_opts['port'] = self.db_port
+            if self.db_user:
+                conn_opts['user'] = self.db_user
+            if self.db_passwd:
+                conn_opts['passwd'] = self.db_passwd
+            conn_opts['db'] = self.changeset.database_schema.name
+
+            ddl = utils.mysql_dump(**conn_opts)
+            checksum = schema_hash(ddl)
+            if not (self.changeset.before_version and self.changeset.before_version.checksum == checksum):
+                raise Exception('Cannot apply changeset, existing schema checksum does not match the expected value.')
+
             with transaction.commit_on_success():
-                conn_opts = {}
-                conn_opts['host'] = self.server.hostname
-                if self.db_port:
-                    conn_opts['port'] = self.db_port
-                if self.db_user:
-                    conn_opts['user'] = self.db_user
-                if self.db_passwd:
-                    conn_opts['passwd'] = self.db_passwd
-                conn_opts['db'] = self.changeset.database_schema.name
                 self.conn = MySQLdb.connect(**conn_opts)
                 self._apply_changeset_details()
+
+            ddl = utils.mysql_dump(**conn_opts)
+            checksum = schema_hash(ddl)
+            if self.changeset.after_version and self.changeset.after_version.checksum == checksum:
+                pass
+            else:
+                raise Exception('Final schema checksum does not match the expected value.')
+
         except Exception, e:
             log.exception('EXCEPTION')
             msg = 'ERROR: %s' % (e,)
@@ -1360,3 +1382,20 @@ class ChangesetApplyThread(threading.Thread):
         msg = 'Changeset apply thread ended.'
         log.info(msg)
         self.messages.append(('info', msg))
+
+
+def normalize_mysql_dump(dump):
+    statement_list = sqlparse.split(dump)
+    new_statement_list = []
+    for statement in statement_list:
+        stripped_chars = unicode(string.whitespace + ';')
+        statement = statement.strip(stripped_chars)
+        if statement:
+            if not statement.startswith(u'/*!'):
+                # skip processing conditional comments
+                new_statement_list.append(statement)
+    return u';\n'.join(new_statement_list)
+
+
+def schema_hash(dump):
+    return utils.hash_string(normalize_mysql_dump(dump))

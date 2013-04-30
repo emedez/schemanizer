@@ -5,8 +5,6 @@
             <tr>
                 <th>ID</th>
                 <th>Changeset detail ID</th>
-                <th>Before version</th>
-                <th>After version</th>
                 <th>Environment</th>
                 <th>Server</th>
                 <th>Results log</th>
@@ -19,8 +17,6 @@
                 <tr>
                     <td>{{ r.id }}</td>
                     <td>{{ r.changeset_detail_id }}</td>
-                    <td>{{ r.before_version }}</td>
-                    <td>{{ r.after_version }}</td>
                     <td>{{ r.environment }}</td>
                     <td>{{ r.server }}</td>
                     <td>{{ r.results_log }}</td>
@@ -33,3 +29,7 @@
 {% else %}
     <p class="text-info"><em>No records found.</em></p>
 {% endif %}
+
+<p>
+    <a href="{% url 'schemanizer_changeset_view' changeset.id %}">Click here to view the changeset.</a>
+</p>

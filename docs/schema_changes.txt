@@ -26,3 +26,15 @@ VARCHAR(255) NULL  AFTER `name` ;
 
 ALTER TABLE `changeset_detail_applies`
 DROP INDEX `environment_id` ;
+
+
+2013-04-30 GMT+08
+=================
+
+ALTER TABLE `changesets`
+ADD COLUMN `before_version` INT NULL  AFTER `database_schema_id` ,
+ADD COLUMN `after_version` INT NULL  AFTER `before_version` ;
+
+ALTER TABLE `changeset_detail_applies`
+DROP COLUMN `after_version` ,
+DROP COLUMN `before_version` ;

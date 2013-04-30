@@ -5,9 +5,11 @@
 
 {% block contents %}
     {% if user_has_access %}
-        <h2>Apply Changeset</h2>
-        <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
-        {% crispy form form.helper %}
+        {% if show_form %}
+            <h2>Apply Changeset</h2>
+            <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
+            {% crispy form form.helper %}
+        {% endif %}
 
         {% if poll_thread_status %}
             <div>

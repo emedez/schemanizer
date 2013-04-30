@@ -1,6 +1,7 @@
 """Utility functions."""
 import hashlib
 import logging
+import re
 import shlex
 import StringIO
 import struct
@@ -97,7 +98,7 @@ def mysql_dump(db, host=None, port=None, user=None, passwd=None):
         cmd += u' -u %s' % (user,)
     if passwd:
         cmd += u' -p%s' % (passwd,)
-    cmd += u' -d --skip-add-drop-table %s' % (db,)
+    cmd += u' -d --skip-add-drop-table --skip-comments %s' % (db,)
     log.debug(cmd)
     args = shlex.split(str(cmd))
 
@@ -111,6 +112,10 @@ def mysql_dump(db, host=None, port=None, user=None, passwd=None):
                 break
     finally:
         p.wait()
+
+    pattern = r'AUTO_INCREMENT=\d+\s*'
+    prog = re.compile(pattern, re.IGNORECASE)
+    ret = prog.sub('', ret)
     return ret
 
 
@@ -134,7 +139,6 @@ def mysql_load(db, query_string, host=None, port=None, user=None, passwd=None):
     finally:
         p.wait()
     return stdout_data
-
 
 
 def hash_string(s):

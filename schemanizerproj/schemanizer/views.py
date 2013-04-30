@@ -412,6 +412,7 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
 
             if request.method == 'POST':
                 form = forms.SelectServerForm(request.POST)
+                show_form = True
                 if form.is_valid():
                     server = models.Server.objects.get(pk=int(
                         form.cleaned_data['server']))
@@ -419,8 +420,10 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
                         changeset, user, server)
                     apply_threads[request_id] = thread
                     poll_thread_status = True
+                    show_form = False
             else:
                 form = forms.SelectServerForm()
+                show_form = True
 
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -471,6 +474,7 @@ def changeset_apply_status(
                 data['thread_changeset_detail_applies_html'] = render_to_string(
                     changeset_detail_applies_template,
                     dict(
+                        changeset=t.changeset,
                         changeset_detail_applies=t.changeset_detail_applies
                     ),
                     context_instance=RequestContext(request)
@@ -814,7 +818,7 @@ def schema_version_create(
                     models.SchemaVersion.objects.create(
                         database_schema=database_schema,
                         ddl=structure,
-                        checksum=utils.hash_string(structure))
+                        checksum=businesslogic.schema_hash(structure))
 
                     msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
                     log.info(msg)
