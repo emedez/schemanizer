@@ -412,6 +412,7 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
 
             if request.method == 'POST':
                 form = forms.SelectServerForm(request.POST)
+                show_form = True
                 if form.is_valid():
                     server = models.Server.objects.get(pk=int(
                         form.cleaned_data['server']))
@@ -419,8 +420,10 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
                         changeset, user, server)
                     apply_threads[request_id] = thread
                     poll_thread_status = True
+                    show_form = False
             else:
                 form = forms.SelectServerForm()
+                show_form = True
 
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
