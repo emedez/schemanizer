@@ -29,3 +29,7 @@
 {% else %}
     <p class="text-info"><em>No records found.</em></p>
 {% endif %}
+
+<p>
+    <a href="{% url 'schemanizer_changeset_view' changeset.id %}">Click here to view the changeset.</a>
+</p>

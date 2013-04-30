@@ -474,6 +474,7 @@ def changeset_apply_status(
                 data['thread_changeset_detail_applies_html'] = render_to_string(
                     changeset_detail_applies_template,
                     dict(
+                        changeset=t.changeset,
                         changeset_detail_applies=t.changeset_detail_applies
                     ),
                     context_instance=RequestContext(request)
