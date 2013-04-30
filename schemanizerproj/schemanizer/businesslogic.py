@@ -1019,6 +1019,8 @@ class ReviewThread(threading.Thread):
                                                 # initial before structure and checksum should be the same with schema version
                                                 structure_before = schema_version.ddl
                                                 hash_before = schema_version.checksum
+                                                structure_after = structure_before
+                                                hash_after = hash_before
                                                 first_run = False
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_before, hash_before))
                                             else:
@@ -1026,9 +1028,8 @@ class ReviewThread(threading.Thread):
                                                 # to after structure and checksum of the preceeding operation
                                                 structure_before = structure_after
                                                 hash_before = hash_after
-
-                                            structure_after = None
-                                            hash_after = None
+                                                structure_after = structure_before
+                                                hash_after = hash_before
 
                                             msg = u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
                                                 changeset_detail.id, changeset_detail.apply_sql)
@@ -1177,12 +1178,19 @@ class ReviewThread(threading.Thread):
                 #
                 # Update changeset.
                 #
+                after_version = models.SchemaVersion.objects.create(
+                    database_schema=self.schema_version.database_schema,
+                    ddl=structure_after,
+                    checksum=hash_after
+                )
                 if changeset_has_errors:
                     changeset.review_status = models.Changeset.REVIEW_STATUS_REJECTED
                 else:
                     changeset.review_status = models.Changeset.REVIEW_STATUS_IN_PROGRESS
                 changeset.reviewed_by = self.user
                 changeset.reviewed_at = timezone.now()
+                changeset.before_version = self.schema_version
+                changeset.after_version = after_version
                 changeset.save()
                 #
                 # Create entry on changeset actions.

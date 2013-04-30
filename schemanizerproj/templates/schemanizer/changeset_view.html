@@ -57,6 +57,14 @@
                     <td>{{ changeset.approved_at|default_if_none:'' }}</td>
                 </tr>
                 <tr>
+                    <th>Before version:</th>
+                    <td>{{ changeset.before_version.checksum }}</td>
+                </tr>
+                <tr>
+                    <th>After version:</th>
+                    <td>{{ changeset.after_version.checksum }}</td>
+                </tr>
+                <tr>
                     <th>Created at:</th>
                     <td>{{ changeset.created_at }}</td>
                 </tr>

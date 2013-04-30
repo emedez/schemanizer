@@ -46,8 +46,8 @@ class ServerAdmin(admin.ModelAdmin):
 
 class ChangesetDetailApplyAdmin(admin.ModelAdmin):
     list_display = (
-        'changeset_detail', 'before_version', 'after_version',
-        'environment', 'server', 'results_log', 'created_at', 'updated_at')
+        'changeset_detail', 'environment', 'server', 'results_log',
+        'created_at', 'updated_at')
 
 
 class DatabaseSchemaAdmin(admin.ModelAdmin):

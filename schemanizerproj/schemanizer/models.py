@@ -142,6 +142,15 @@ class Changeset(models.Model):
 
     is_deleted = models.IntegerField(null=True, blank=True, default=0)
 
+    before_version = models.ForeignKey(
+        'schemanizer.SchemaVersion', db_column='before_version', null=True,
+        blank=True, related_name='+', default=None
+    )
+    after_version = models.ForeignKey(
+        'schemanizer.SchemaVersion', db_column='after_version', null=True,
+        blank=True, related_name='+', default=None
+    )
+
     objects = ChangesetManager()
 
     class Meta:
@@ -155,105 +164,6 @@ class Changeset(models.Model):
                     ret += u', '
                 ret += u'%s=%s' % (k, v)
         return ret
-
-#    def can_be_updated_by(self, user):
-#        """Checks if this changeset can be updated by user."""
-#        role = user.role
-#        if (self.pk and role.name in Role.ROLE_LIST and
-#                self.review_status != self.REVIEW_STATUS_APPROVED):
-#            return True
-#        else:
-#            return False
-
-#    def can_be_reviewed_by(self, user):
-#        """Checks if this changeset can be reviewed by user."""
-#        role = user.role
-#        if self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA):
-#            return True
-#        else:
-#            return False
-
-#    def can_be_approved_by(self, user):
-#        """Checks if this changeset can be approved by user."""
-#        role = user.role
-#        if (self.pk and role.name in (Role.ROLE_ADMIN, Role.ROLE_DBA) and
-#                self.review_status not in (
-#                    Changeset.REVIEW_STATUS_APPROVED,
-#                    Changeset.REVIEW_STATUS_REJECTED)):
-#            return True
-#        else:
-#            return False
-#    can_be_rejected_by = can_be_approved_by
-
-#    def can_be_soft_deleted_by(self, user):
-#        """Checks if this changeset can be soft deleted by user."""
-#        role = user.role
-#        if self.pk and role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN,):
-#            return True
-#        elif self.pk and role.name in (Role.ROLE_DEVELOPER, ) and self.review_status != self.REVIEW_STATUS_APPROVED:
-#            return True
-#        else:
-#            return False
-
-#    def set_updated_by(self, user):
-#        """Sets this changeset as edited."""
-#        if self.can_be_updated_by(user):
-#            now = timezone.now()
-#            self.review_status = self.REVIEW_STATUS_NEEDS
-#            self.save()
-#
-#            ChangesetAction.objects.create(
-#                changeset=self,
-#                type=ChangesetAction.TYPE_CHANGED,
-#                timestamp=now)
-#        else:
-#            raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
-
-#    def set_reviewed_by(self, user):
-#        """Sets this changeset as reviewed."""
-#        if self.can_be_reviewed_by(user):
-#            now = timezone.now()
-#            self.review_status = self.REVIEW_STATUS_IN_PROGRESS
-#            self.reviewed_by = user
-#            self.reviewed_at = now
-#            self.save()
-#
-#            ChangesetAction.objects.create(
-#                changeset=self,
-#                type=ChangesetAction.TYPE_CHANGED,
-#                timestamp=now)
-#        else:
-#            raise exceptions.NotAllowed(u'User is not allowed to review changeset.')
-
-#    def set_approved_by(self, user):
-#        if self.can_be_approved_by(user):
-#            now = timezone.now()
-#            self.review_status = self.REVIEW_STATUS_APPROVED
-#            self.approved_by = user
-#            self.approved_at = now
-#            self.save()
-#
-#            ChangesetAction.objects.create(
-#                changeset=self,
-#                type=ChangesetAction.TYPE_CHANGED,
-#                timestamp=now)
-#        else:
-#            raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
-
-#    def set_rejected_by(self, user):
-#        if self.can_be_rejected_by(user):
-#            now = timezone.now()
-#            self.review_status = self.REVIEW_STATUS_REJECTED
-#            self.approved_by = user
-#            self.approved_at = now
-#            self.save()
-#
-#            ChangesetAction.objects.create(
-#                changeset=self,
-#                type=ChangesetAction.TYPE_CHANGED,
-#                timestamp=now)
-#        else:
-#            raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
 
 
 class ChangesetDetail(models.Model):
@@ -398,7 +308,7 @@ class Environment(models.Model):
 
 class Server(models.Model):
     name = models.CharField(max_length=255, unique=True, blank=True)
-    hostname = models.CharField(max_length=255)
+    hostname = models.CharField(max_length=255, default='')
     cached_size = models.IntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
@@ -428,8 +338,8 @@ class ChangesetDetailApply(models.Model):
     changeset_detail = models.ForeignKey(
         ChangesetDetail, db_column='changeset_detail_id', null=True, blank=True,
         related_name='changeset_detail_applies')
-    before_version = models.IntegerField(null=True, blank=True)
-    after_version = models.IntegerField(null=True, blank=True)
+    #before_version = models.IntegerField(null=True, blank=True)
+    #after_version = models.IntegerField(null=True, blank=True)
     environment = models.ForeignKey(
         Environment, db_column='environment_id', null=True, blank=True,
         related_name='environment_changeset_detail_applies')
