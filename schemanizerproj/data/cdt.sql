@@ -50,8 +50,6 @@ DROP TABLE IF EXISTS `changeset_detail_applies`;
 CREATE TABLE `changeset_detail_applies` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_detail_id` int(11) DEFAULT NULL,
-  `before_version` int(11) DEFAULT NULL,
-  `after_version` int(11) DEFAULT NULL,
   `environment_id` int(11) DEFAULT NULL,
   `server_id` int(11) DEFAULT NULL,
   `results_log` text,
@@ -209,6 +207,8 @@ CREATE TABLE `changesets` (
   `submitted_by` int(11) DEFAULT NULL,
   `is_deleted` tinyint(1) DEFAULT NULL,
   `database_schema_id` int(11) DEFAULT NULL,
+  `before_version` int(11) DEFAULT NULL,
+  `after_version` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -903,4 +903,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-04-29  0:40:08
+-- Dump completed on 2013-05-01  0:10:48
