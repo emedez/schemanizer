@@ -5,13 +5,117 @@ import urllib
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.test import TestCase, Client
+from django.test import TestCase, Client, TransactionTestCase
 from django.utils import timezone
 
 from schemanizer import models
 from schemanizer import businesslogic
 
 log = logging.getLogger(__name__)
+
+
+class ChangesetReviewViewTestCase(TransactionTestCase):
+    fixtures = ['schemanizer/test.yaml']
+
+    def setUp(self):
+        # usernames and passwords
+        self.users = (
+            ('dev', 'dev'),
+            ('dba', 'dba'),
+            ('admin', 'admin')
+        )
+
+    def tearDown(self):
+        pass
+
+    def _login(self, client, username, password):
+        logged_in = client.login(username=username, password=password)
+        self.assertTrue(logged_in)
+
+    def _create_changeset(self, database_schema):
+        user = models.User.objects.get(name='dev')
+        with transaction.commit_on_success():
+            changeset = models.Changeset.objects.create(
+                database_schema=database_schema,
+                type=models.Changeset.DDL_TABLE_CREATE,
+                classification=models.Changeset.CLASSIFICATION_PAINLESS,
+                review_status=models.Changeset.REVIEW_STATUS_NEEDS,
+                submitted_by=user,
+                submitted_at=timezone.now())
+            models.ChangesetDetail.objects.create(
+                changeset=changeset,
+                type=models.ChangesetDetail.TYPE_ADD,
+                description='create table_1',
+                apply_sql="""
+                    create table `table_1` (
+                        `id` int primary key auto_increment,
+                        `name` varchar(255)
+                    )
+                    """,
+                revert_sql="""
+                    drop table `table_1`
+                    """)
+        log.info('Changeset [id=%s] was created.' % (changeset.id,))
+        return changeset
+
+#    def test_changeset_review(self):
+#        with transaction.commit_on_success():
+#            database_schema = models.DatabaseSchema.objects.create(
+#                name='test_schemanizer_schema_1'
+#            )
+#            database_schema_id = database_schema.id
+#            log.debug('Database schema [id=%s] was created.' % (
+#                database_schema.id,))
+#
+#            c = Client()
+#            for u, p in self.users:
+#                self._login(c, u, p)
+#
+#                user = models.User.objects.get(name=u)
+#                changeset = None
+#                schema_version = None
+#
+#                try:
+#                    changeset = self._create_changeset(database_schema)
+#                    changeset_id = changeset.id
+#                    ddl = ''
+#                    schema_version = models.SchemaVersion.objects.create(
+#                        database_schema=database_schema,
+#                        ddl=ddl,
+#                        checksum='123456'
+#                    )
+#                    schema_version_id = schema_version.id
+#
+#                    user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
+#                    url = reverse('schemanizer_changeset_review', args=[changeset_id])
+#                    r = c.get(url)
+#                    if u in ('dba', 'admin'):
+#                        self.assertTrue(user_has_access)
+#                    else:
+#                        self.assertFalse(user_has_access)
+#                    if user_has_access:
+#                        self.assertTrue('select_schema_version_form' in r.context)
+#
+#                    if u in ('dba', ):
+#                        r = c.get(url, data=dict(schema_version=schema_version_id))
+#                        if user_has_access:
+#                            self.assertTrue('thread' in r.context)
+#                            self.assertTrue(r.context['thread_started'])
+#                            thread = r.context['thread']
+#                            # wait for thread to end
+#                            log.debug('Waiting for review thread to end...')
+#                            thread.join()
+#                            log.debug('Review thread ended.')
+#
+#                finally:
+#                    if schema_version:
+#                        schema_version.delete()
+#                    if changeset:
+#                        changeset.delete()
+#
+#            database_schema.delete()
+#            log.debug('Database schema [id=%s] was deleted.' % (
+#                database_schema_id,))
 
 
 class HomeViewTestCase(TestCase):
@@ -592,54 +696,6 @@ class ChangesetViewsTestCase(TestCase):
                     self.assertTrue(tmp_changeset.is_deleted)
             finally:
                 businesslogic.delete_changeset(changeset)
-
-    def test_changeset_review(self):
-        c = Client()
-        for u, p in self.users:
-            self._login(c, u, p)
-
-            user = models.User.objects.get(name=u)
-            changeset = None
-            schema_version = None
-
-            try:
-                changeset = self._create_changeset()
-                changeset_id = changeset.id
-
-                ddl = ''
-                schema_version = models.SchemaVersion.objects.create(
-                    database_schema=self.database_schema,
-                    ddl=ddl,
-                    checksum='123456'
-                )
-                schema_version_id = schema_version.id
-
-                user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
-                url = reverse('schemanizer_changeset_review', args=[changeset_id])
-                r = c.get(url)
-                if u in ('dba', 'admin'):
-                    self.assertTrue(user_has_access)
-                else:
-                    self.assertFalse(user_has_access)
-                if user_has_access:
-                    self.assertTrue('select_schema_version_form' in r.context)
-
-                r = c.get(url, data=dict(schema_version=schema_version_id))
-                if user_has_access:
-                    self.assertTrue('thread' in r.context)
-                    self.assertTrue(r.context['thread_started'])
-                    thread = r.context['thread']
-                    # wait for thread to end
-                    log.debug('Waiting for review thread to end...')
-                    thread.join()
-                    log.debug('Review thread ended.')
-
-            finally:
-                if schema_version:
-                    schema_version.delete()
-                if changeset:
-                    businesslogic.delete_changeset(changeset)
-
 
 
 class ServerViewsTestCase(TestCase):
