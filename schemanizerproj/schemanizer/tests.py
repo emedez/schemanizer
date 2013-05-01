@@ -593,6 +593,54 @@ class ChangesetViewsTestCase(TestCase):
             finally:
                 businesslogic.delete_changeset(changeset)
 
+    def test_changeset_review(self):
+        c = Client()
+        for u, p in self.users:
+            self._login(c, u, p)
+
+            user = models.User.objects.get(name=u)
+            changeset = None
+            schema_version = None
+
+            try:
+                changeset = self._create_changeset()
+                changeset_id = changeset.id
+
+                ddl = ''
+                schema_version = models.SchemaVersion.objects.create(
+                    database_schema=self.database_schema,
+                    ddl=ddl,
+                    checksum='123456'
+                )
+                schema_version_id = schema_version.id
+
+                user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
+                url = reverse('schemanizer_changeset_review', args=[changeset_id])
+                r = c.get(url)
+                if u in ('dba', 'admin'):
+                    self.assertTrue(user_has_access)
+                else:
+                    self.assertFalse(user_has_access)
+                if user_has_access:
+                    self.assertTrue('select_schema_version_form' in r.context)
+
+                r = c.get(url, data=dict(schema_version=schema_version_id))
+                if user_has_access:
+                    self.assertTrue('thread' in r.context)
+                    self.assertTrue(r.context['thread_started'])
+                    thread = r.context['thread']
+                    # wait for thread to end
+                    log.debug('Waiting for review thread to end...')
+                    thread.join()
+                    log.debug('Review thread ended.')
+
+            finally:
+                if schema_version:
+                    schema_version.delete()
+                if changeset:
+                    businesslogic.delete_changeset(changeset)
+
+
 
 class ServerViewsTestCase(TestCase):
     fixtures = ['schemanizer/test.yaml']
