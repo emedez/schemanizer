@@ -12,3 +12,4 @@ django-nose
 coverage
 sqlparse
 mmh3
+requests

@@ -100,3 +100,17 @@ AWS_EC2_INSTANCE_START_WAIT = 60
 # Number of seconds to wait before trying to connect to MySQL server.
 # This is to give time for it to start completely.
 AWS_MYSQL_START_WAIT = 60
+
+
+#==============================================================================
+# Changeset Github repository information
+#==============================================================================
+#
+# Github repo commits URL in the following format:
+#   https://api.github.com/repos/<owner>/<repo>/commits
+#
+# Example:
+#   https://api.github.com/repos/palominodb/schemanizer/commits
+CHANGESET_REPO_URL = None
+CHANGESET_REPO_USER = None
+CHANGESET_REPO_PASSWORD = None

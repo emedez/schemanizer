@@ -271,6 +271,21 @@ AWS_MYSQL_CONNECT_TIMEOUT = 300
 # If True will not launch an EC2 instance
 DEV_NO_EC2_APPLY_CHANGESET = False
 
+
+#==============================================================================
+# Changeset Github repository information
+#==============================================================================
+#
+# Github repo commits URL in the following format:
+#   https://api.github.com/repos/<owner>/<repo>/commits
+#
+# Example:
+#   https://api.github.com/repos/palominodb/schemanizer/commits
+CHANGESET_REPO_URL = None
+CHANGESET_REPO_USER = None
+CHANGESET_REPO_PASSWORD = None
+
+
 try:
     from local_settings import *
 except ImportError:
