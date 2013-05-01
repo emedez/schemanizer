@@ -87,6 +87,16 @@ the following permissions:
 plus add/edit/delete users.
 
 
+Custom django-admin Commands
+============================
+
+```
+$ python manage.py check_changesets_repository
+```
+
+Currently outputs to screens information about github repository commits.
+
+
 Unit Testing
 ============
 
