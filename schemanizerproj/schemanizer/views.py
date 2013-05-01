@@ -227,7 +227,7 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                 ChangesetDetailFormSet = inlineformset_factory(
                     models.Changeset, models.ChangesetDetail,
                     form=forms.ChangesetDetailForm,
-                    extra=1, can_delete=False)
+                    extra=1, can_delete=True)
                 if request.method == 'POST':
                     changeset_form = forms.ChangesetForm(request.POST, instance=changeset)
                     changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
