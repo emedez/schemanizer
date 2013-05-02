@@ -444,3 +444,4 @@ class ChangesetTest(models.Model):
 
     def __unicode__(self):
         return u'<ChangesetTest id=%s>' % (self.pk,)
+

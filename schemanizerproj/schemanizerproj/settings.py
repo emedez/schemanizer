@@ -286,6 +286,16 @@ CHANGESET_REPO_USER = None
 CHANGESET_REPO_PASSWORD = None
 
 
+#==============================================================================
+# Site information
+#==============================================================================
+#
+# The values found here are automatically used to update site information
+# whenever a management command syncdb is executed.
+SITE_NAME = 'Schemanizer'
+SITE_DOMAIN = '127.0.0.1:8000'
+
+
 try:
     from local_settings import *
 except ImportError:
