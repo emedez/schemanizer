@@ -995,3 +995,21 @@ def environment_del(request, environment_id=None, template='schemanizer/environm
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
     return render_to_response(template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def server_discover(request, template='schemanizer/server_discover.html'):
+    user_has_access = False
+    try:
+        user = request.user.schemanizer_user
+        user_has_access = user.role.name in (models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+        if user_has_access:
+            pass
+        else:
+            messages.error(request, MSG_USER_NO_ACCESS)
+
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(template, locals(), context_instance=RequestContext(request))
+

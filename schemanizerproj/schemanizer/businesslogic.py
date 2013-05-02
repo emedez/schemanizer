@@ -1413,3 +1413,6 @@ def normalize_mysql_dump(dump):
 
 def schema_hash(dump):
     return utils.hash_string(normalize_mysql_dump(dump))
+
+
+

@@ -7,6 +7,7 @@ import StringIO
 import struct
 import subprocess
 import time
+import nmap
 
 import mmh3
 
@@ -148,3 +149,42 @@ def hash_string(s):
     anded = 0xFFFFFFFFFFFFFFFF
     h = '%016x%016x' % (k1 & anded, k2 & anded)
     return h
+
+
+def discover_mysql_servers(hosts, ports):
+    nm = nmap.PortScanner()
+    results = nm.scan(hosts, ports)
+    if (
+            'nmap' in results and
+            'scaninfo' in results['nmap'] and
+            'error' in results['nmap']['scaninfo']):
+        raise Exception('%s' % (results['nmap']['scaninfo']['error'],))
+    mysql_servers = []
+    for host in nm.all_hosts():
+        hostname = host
+        port_scanner_host = nm[host]
+        #if port_scanner_host['status']['state'] == u'up':
+        if port_scanner_host['hostname']:
+            hostname = port_scanner_host['hostname']
+        mysql_server_ports = []
+        for tcp_port in port_scanner_host.all_tcp():
+            if (
+                    port_scanner_host['tcp'][tcp_port]['name'] == u'mysql' and
+                    port_scanner_host['tcp'][tcp_port]['state'] == u'open'):
+                mysql_server_ports.append(tcp_port)
+        if len(mysql_server_ports) == 1:
+            mysql_servers.append(dict(
+                host=host,
+                hostname=hostname,
+                port=mysql_server_ports[0],
+                name=hostname
+            ))
+        else:
+            for index, port in enumerate(mysql_server_ports):
+                mysql_servers.append(dict(
+                    host=host,
+                    hostname=hostname,
+                    port=port,
+                    name='%s%s' % (hostname, index)
+                ))
+    return mysql_servers, nm
