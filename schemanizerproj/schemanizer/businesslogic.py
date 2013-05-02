@@ -1040,12 +1040,14 @@ class ReviewThread(threading.Thread):
                                             results_log_items = []
                                             try:
                                                 cur = mysql_conn.cursor()
-                                                #affected_rows = cur.execute(changeset_detail.apply_sql)
+
+                                                # Test apply_sql
+                                                log.debug('Testing apply_sql')
                                                 ddls = sqlparse.split(changeset_detail.apply_sql)
                                                 for ddl in ddls:
                                                     ddl = ddl.rstrip(unicode(string.whitespace + ';'))
-                                                    log.debug(ddl)
                                                     if ddl:
+                                                        log.debug(ddl)
                                                         cur.execute(ddl)
                                                         while cur.nextset() is not None:
                                                             pass
@@ -1062,11 +1064,12 @@ class ReviewThread(threading.Thread):
                                                 log.debug('Structure=\n%s\nChecksum=%s' % (structure_after, hash_after))
 
                                                 # Test revert_sql
+                                                log.debug('Testing revert_sql')
                                                 ddls = sqlparse.split(changeset_detail.revert_sql)
                                                 for ddl in ddls:
                                                     ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
-                                                    log.debug(ddl)
                                                     if ddl:
+                                                        log.debug(ddl)
                                                         cur.execute(ddl)
                                                         while cur.nextset() is not None:
                                                             pass
@@ -1077,14 +1080,20 @@ class ReviewThread(threading.Thread):
                                                     raise Exception('Checksum after revert_sql was applied was not the same as before apply_sql was applied.')
 
                                                 # revert_sql worked, reapply appy sql again
+                                                log.debug('Reapplying apply_sql')
                                                 ddls = sqlparse.split(changeset_detail.apply_sql)
                                                 for ddl in ddls:
                                                     ddl = ddl.rstrip(unicode(string.whitespace + ';'))
-                                                    log.debug(ddl)
                                                     if ddl:
-                                                        cur.execute(ddl)
-                                                        while cur.nextset() is not None:
-                                                            pass
+                                                        tmp_ddl = ddl.strip().lower()
+                                                        if not (
+                                                                tmp_ddl.startswith('insert') or
+                                                                tmp_ddl.startswith('update') or
+                                                                tmp_ddl.startswith('del')):
+                                                            log.debug(ddl)
+                                                            cur.execute(ddl)
+                                                            while cur.nextset() is not None:
+                                                                pass
 
                                                 changeset_detail.before_checksum = hash_before
                                                 changeset_detail.after_checksum = hash_after
