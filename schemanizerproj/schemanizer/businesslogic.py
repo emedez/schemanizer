@@ -994,7 +994,7 @@ class ReviewThread(threading.Thread):
                                         for ddl in ddls:
                                             cur = None
                                             try:
-                                                ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                ddl = ddl.rstrip(unicode(string.whitespace + ';'))
                                                 log.debug(ddl)
                                                 cur = mysql_conn.cursor()
                                                 if ddl:
@@ -1043,7 +1043,7 @@ class ReviewThread(threading.Thread):
                                                 #affected_rows = cur.execute(changeset_detail.apply_sql)
                                                 ddls = sqlparse.split(changeset_detail.apply_sql)
                                                 for ddl in ddls:
-                                                    ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                    ddl = ddl.rstrip(unicode(string.whitespace + ';'))
                                                     log.debug(ddl)
                                                     if ddl:
                                                         cur.execute(ddl)
@@ -1071,10 +1071,15 @@ class ReviewThread(threading.Thread):
                                                         while cur.nextset() is not None:
                                                             pass
 
+                                                structure_after_revert = utils.mysql_dump(**conn_opts)
+                                                hash_after_revert = schema_hash(structure_after_revert)
+                                                if hash_after_revert != hash_before:
+                                                    raise Exception('Checksum after revert_sql was applied was not the same as before apply_sql was applied.')
+
                                                 # revert_sql worked, reapply appy sql again
                                                 ddls = sqlparse.split(changeset_detail.apply_sql)
                                                 for ddl in ddls:
-                                                    ddl = ddl.rstrip().rstrip(u';').rstrip().strip()
+                                                    ddl = ddl.rstrip(unicode(string.whitespace + ';'))
                                                     log.debug(ddl)
                                                     if ddl:
                                                         cur.execute(ddl)
