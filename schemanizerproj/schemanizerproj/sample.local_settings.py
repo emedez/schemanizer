@@ -124,3 +124,11 @@ CHANGESET_REPO_PASSWORD = None
 # whenever a management command syncdb is executed.
 SITE_NAME = 'Schemanizer'
 SITE_DOMAIN = '127.0.0.1:8000'
+
+
+#==============================================================================
+# Settings for MySQL server discovery
+#==============================================================================
+NMAP_HOSTS = '192.168.43.0/24'
+NMAP_PORTS = '3306'
+

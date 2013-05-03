@@ -6,8 +6,10 @@
     {% if user_has_access %}
         <h2>Servers</h2>
         <p>
-            <a href="{% url 'schemanizer_server_create' %}">Click here to create new entry</a>
+            <a href="{% url 'schemanizer_server_create' %}">Click here to create new entry</a><br/>
+            <a href="{% url 'schemanizer_server_discover' %}">Click here to discover servers.</a>
         </p>
+
         {% if servers %}
             <table class="table table-striped table-condensed table-bordered table-hover">
                 <thead>

@@ -1004,7 +1004,16 @@ def server_discover(request, template='schemanizer/server_discover.html'):
         user = request.user.schemanizer_user
         user_has_access = user.role.name in (models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
         if user_has_access:
-            pass
+            if request.method == 'POST':
+                for k, v in request.POST.iteritems():
+                    if k.startswith('server_'):
+                        name, hostname, port = v.split(',')
+                        models.Server.objects.create(name=name, hostname=hostname)
+                        messages.info(request, u'Server %s was added.' % (hostname,))
+                return redirect('schemanizer_server_list')
+            else:
+                mysql_servers = utils.discover_mysql_servers(settings.NMAP_HOSTS, settings.NMAP_PORTS)
+
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 

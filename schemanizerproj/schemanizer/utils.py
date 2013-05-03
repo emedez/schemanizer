@@ -185,6 +185,6 @@ def discover_mysql_servers(hosts, ports):
                     host=host,
                     hostname=hostname,
                     port=port,
-                    name='%s%s' % (hostname, index)
+                    name='%s (%s)' % (hostname, index)
                 ))
-    return mysql_servers, nm
+    return mysql_servers
