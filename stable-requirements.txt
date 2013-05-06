@@ -14,4 +14,5 @@ pytz==2013b
 sqlparse==0.1.7
 wsgiref==0.1.2
 requests==1.2.0
+python-nmap==0.2.7
 
