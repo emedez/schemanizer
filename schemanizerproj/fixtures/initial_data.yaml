@@ -13,9 +13,6 @@
     username: admin
   model: auth.user
   pk: 1
-- fields: {domain: 'localhost:8000', name: Schemanizer}
-  model: sites.site
-  pk: 1
 - fields: {created_at: !!timestamp '2013-03-31 20:02:25+00:00', name: admin, updated_at: !!timestamp '2013-03-31
       20:02:25+00:00'}
   model: schemanizer.role

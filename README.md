@@ -51,7 +51,10 @@ localhost:8000
 Update Site Domain Name
 -----------------------
 
-Browse the following URL, login as admin, edit the only record and update
+During data initialization, the site information specified in
+settings.SITE_NAME and settings.SITE_DOMAIN are automatically saved during data
+initialization. If this needs to be changed later, browse the following URL,
+login as admin, edit the only record and update
 the domain name to the correct address and the optional port number.
 This value is used for building absolute URL paths such as email functions
 which usually do not have access to web requests data.

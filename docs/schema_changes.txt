@@ -38,3 +38,9 @@ ADD COLUMN `after_version` INT NULL  AFTER `before_version` ;
 ALTER TABLE `changeset_detail_applies`
 DROP COLUMN `after_version` ,
 DROP COLUMN `before_version` ;
+
+
+2013-05-04 GMT+08
+=================
+ALTER TABLE `servers`
+ADD COLUMN `port` INT NULL  AFTER `environment_id` ;
