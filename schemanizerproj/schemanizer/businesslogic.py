@@ -1280,7 +1280,7 @@ def changeset_apply(changeset, user, server):
         server,
         db_user=settings.AWS_MYSQL_USER,
         db_passwd=settings.AWS_MYSQL_PASSWORD,
-        db_port=settings.AWS_MYSQL_PORT)
+        db_port=server.port)
     thread.start()
     return thread
 

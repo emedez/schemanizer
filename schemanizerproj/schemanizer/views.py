@@ -1008,8 +1008,11 @@ def server_discover(request, template='schemanizer/server_discover.html'):
                 for k, v in request.POST.iteritems():
                     if k.startswith('server_'):
                         name, hostname, port = v.split(',')
-                        models.Server.objects.create(name=name, hostname=hostname)
-                        messages.info(request, u'Server %s was added.' % (hostname,))
+                        with transaction.commit_on_success():
+                            qs = models.Server.objects.filter(hostname=hostname, port=port)
+                            if not qs.exists():
+                                models.Server.objects.create(name=name, hostname=hostname, port=port)
+                                messages.info(request, u'Server %s was added.' % (hostname,))
                 return redirect('schemanizer_server_list')
             else:
                 mysql_servers = utils.discover_mysql_servers(settings.NMAP_HOSTS, settings.NMAP_PORTS)

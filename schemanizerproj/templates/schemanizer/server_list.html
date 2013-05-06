@@ -6,8 +6,8 @@
     {% if user_has_access %}
         <h2>Servers</h2>
         <p>
-            <a href="{% url 'schemanizer_server_create' %}">Click here to create new entry</a><br/>
-            <a href="{% url 'schemanizer_server_discover' %}">Click here to discover servers.</a>
+            <a href="{% url 'schemanizer_server_create' %}">Create new entry</a> |
+            <a href="{% url 'schemanizer_server_discover' %}">Discover servers</a>
         </p>
 
         {% if servers %}
@@ -17,6 +17,7 @@
                         <th>ID</th>
                         <th>Name</th>
                         <th>Hostname</th>
+                        <th>Port</th>
                         <th>Cached size</th>
                         <th>Environment</th>
                         <th>Created at</th>
@@ -30,6 +31,7 @@
                             <td>{{ server.id }}</td>
                             <td>{{ server.name }}</td>
                             <td>{{ server.hostname }}</td>
+                            <td>{{ server.port|default_if_none:'' }}</td>
                             <td>{{ server.cached_size|default_if_none:'' }}</td>
                             <td>{{ server.environment|default_if_none:'' }}</td>
                             <td>{{ server.created_at }}</td>

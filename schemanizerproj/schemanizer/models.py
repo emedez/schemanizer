@@ -319,6 +319,8 @@ class Server(models.Model):
         Environment, db_column='environment_id', null=True, blank=True,
         related_name='servers')
 
+    port = models.IntegerField(null=True, blank=True, default=None)
+
     class Meta:
         db_table = 'servers'
 
