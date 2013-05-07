@@ -143,3 +143,52 @@ Schema
 
 The updated schema is on schemanizerproj/schemanizerproj/data/cdt.sql.
 
+
+REST API
+========
+TODO: document required data, data fields, possible values, etc.
+
+Submitting a changeset
+----------------------
+```
+POST /api/v1/changeset/submit/
+```
+
+POST data should be a JSON string in the following form:
+```
+{
+    'changeset': {
+        'database_schema': 1,
+        'type': 'DDL:Table:Create',
+        'classification': 'painless',
+        'version_control_url': ''
+    },
+    'changeset_details': [
+        {
+            'type': 'add',
+            'description': 'create a table',
+            'apply_sql': 'create table t1 (id int primary key auto_increment)',
+            'revert_sql': 'drop table t1'
+        }
+    ]
+}
+```
+
+Retrieving changesets that needs to be reviewed
+-----------------------------------------------
+```
+GET /api/v1/changeset/?review_status=needs
+```
+
+Rejecting a changeset
+---------------------
+```
+POST /api/v1/changeset/reject/<changeset_id>/
+```
+
+Approving a changeset
+---------------------
+```
+POST /api/v1/changeset/approve/<changeset_id>/
+```
+

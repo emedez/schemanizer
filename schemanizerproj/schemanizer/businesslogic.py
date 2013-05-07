@@ -151,7 +151,7 @@ def delete_changeset(changeset):
     log.info('Changeset [id=%s] was deleted.' % (changeset_id,))
 
 
-def changeset_submit(**kwargs):
+def changeset_submit_from_form(**kwargs):
     """Submits changeset.
 
     expected keyword arguments:
@@ -177,11 +177,45 @@ def changeset_submit(**kwargs):
     models.ChangesetAction.objects.create(
         changeset=changeset,
         type=models.ChangesetAction.TYPE_CREATED,
-        timestamp = now)
+        timestamp=now)
 
     log.info(u'A changeset was submitted:\n%s' % (changeset,))
 
     send_changeset_submitted_mail(changeset)
+
+    return changeset
+
+
+def changeset_submit(changeset, changeset_details, user):
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset.pk:
+        raise Exception('Only new changesets can be submitted.')
+
+    for changeset_detail in changeset_details:
+        if changeset_detail.pk:
+            raise Exception('Only new changeset detail is allowed for changeset submission.')
+
+    now = timezone.now()
+
+    with transaction.commit_on_success():
+        changeset.submitted_by = user
+        changeset.submitted_at = now
+        changeset.save()
+
+        for changeset_detail in changeset_details:
+            changeset_detail.changeset = changeset
+            changeset_detail.save()
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_CREATED,
+            timestamp=now
+        )
+
+    send_changeset_submitted_mail(changeset)
+    log.info('A changeset [id=%s] was submitted.' % (changeset.id,))
 
     return changeset
 
