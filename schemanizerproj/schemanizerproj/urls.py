@@ -6,6 +6,19 @@ from django.conf.urls.static import static
 from django.contrib import admin
 admin.autodiscover()
 
+from tastypie.api import Api
+
+from schemanizer.api import resources
+
+v1_api = Api(api_name='v1')
+v1_api.register(resources.AuthUserResource())
+v1_api.register(resources.RoleResource())
+v1_api.register(resources.UserResource())
+v1_api.register(resources.DatabaseSchemaResource())
+v1_api.register(resources.SchemaVersionResource())
+v1_api.register(resources.ChangesetResource())
+v1_api.register(resources.ChangesetDetailResource())
+
 from schemanizer.forms import AuthenticationForm
 
 urlpatterns = patterns('',
@@ -31,6 +44,7 @@ urlpatterns = patterns('',
         {'next_page': '/'},
         name='logout'),
 
+    url(r'^api/', include(v1_api.urls)),
 )
 
 if settings.DEBUG:

@@ -135,6 +135,7 @@ INSTALLED_APPS = (
 
     'south',
     'crispy_forms',
+    'tastypie',
     'debug_toolbar',
     #'django_nose',
 
