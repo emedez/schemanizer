@@ -168,6 +168,8 @@ class UserViewsTestCase(TestCase):
             ('admin', 'admin')
         )
 
+        self.admin_user = models.User.objects.get(name='admin')
+
     def _login(self, client, username, password):
         logged_in = client.login(username=username, password=password)
         self.assertTrue(logged_in)
@@ -239,17 +241,19 @@ class UserViewsTestCase(TestCase):
                 self.assertRedirects(r, reverse('schemanizer_users'))
                 # user should now exist
                 created_user = models.User.objects.get(name=data['name'])
-                businesslogic.delete_user(created_user)
+                businesslogic.delete_user(created_user, self.admin_user)
             else:
                 self.assertFalse(r.context['user_has_access'])
 
     def _create_user_dev(self):
+        user = models.User.objects.get(name='admin')
         role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
         created_user = businesslogic.create_user(
             name='test_dev',
             email='test_dev@example.com',
             role=role,
-            password='test_dev')
+            password='test_dev',
+            user=user)
         return created_user
 
     def test_user_update(self):
@@ -278,7 +282,7 @@ class UserViewsTestCase(TestCase):
                     self.assertFalse(r.context['user_has_access'])
                     self.assertFalse('form' in r.context)
         finally:
-            businesslogic.delete_user(created_user_id)
+            businesslogic.delete_user(created_user_id, self.admin_user)
 
     def test_user_update_post(self):
         created_user = self._create_user_dev()
@@ -310,7 +314,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id)
+            businesslogic.delete_user(created_user_id, self.admin_user)
 
     def test_user_delete(self):
         created_user = self._create_user_dev()
@@ -334,7 +338,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id)
+            businesslogic.delete_user(created_user_id, self.admin_user)
 
     def test_user_delete_post(self):
         created_user = self._create_user_dev()

@@ -188,3 +188,11 @@ def discover_mysql_servers(hosts, ports):
                     name='%s (%s)' % (hostname, index)
                 ))
     return mysql_servers
+
+
+def get_model_instance(obj, model_class):
+    """Helper function to return a model instance if the given obj is a primary key."""
+    if type(obj) in (int, long):
+        return model_class.objects.get(pk=obj)
+    else:
+        return obj

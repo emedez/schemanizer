@@ -93,7 +93,7 @@ def update_user(request, id, template='schemanizer/update_user.html'):
                     role_id = form.cleaned_data['role']
                     role = models.Role.objects.get(id=role_id)
                     with transaction.commit_on_success():
-                        businesslogic.update_user(id, name, email, role)
+                        businesslogic.update_user(id, name, email, role, user)
                     messages.success(request, u'User updated.')
                     return redirect('schemanizer_users')
             else:
@@ -123,7 +123,7 @@ def user_create(request, template='schemanizer/user_create.html'):
                     password = form.cleaned_data['password']
                     role = models.Role.objects.get(id=role_id)
                     with transaction.commit_on_success():
-                        businesslogic.create_user(name, email, role, password)
+                        businesslogic.create_user(name, email, role, password, user)
                     messages.success(request, u'User created.')
                     return redirect('schemanizer_users')
             else:
@@ -233,7 +233,7 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                     changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset = businesslogic.changeset_update(
+                            changeset = businesslogic.changeset_update_from_form(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
@@ -789,8 +789,10 @@ def schema_version_create(
             server = models.Server.objects.get(pk=int(server_id))
             conn_opts = {}
             conn_opts['host'] = server.hostname
-            if settings.AWS_MYSQL_PORT:
-                conn_opts['port'] = settings.AWS_MYSQL_PORT
+            #if settings.AWS_MYSQL_PORT:
+            #    conn_opts['port'] = settings.AWS_MYSQL_PORT
+            if server.port:
+                conn_opts['port'] = server.port
             if settings.AWS_MYSQL_USER:
                 conn_opts['user'] = settings.AWS_MYSQL_USER
             if settings.AWS_MYSQL_PASSWORD:
