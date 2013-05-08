@@ -148,8 +148,8 @@ REST API
 ========
 TODO: document required data, data fields, possible values, etc.
 
-Submitting a changeset
-----------------------
+Submit changeset
+----------------
 ```
 POST /api/v1/changeset/submit/
 ```
@@ -174,21 +174,26 @@ POST data should be a JSON string in the following form:
 }
 ```
 
-Retrieving changesets that needs to be reviewed
------------------------------------------------
+Get changesets that needs to be reviewed
+----------------------------------------
 ```
 GET /api/v1/changeset/?review_status=needs
 ```
 
-Rejecting a changeset
----------------------
+Reject changeset
+----------------
 ```
 POST /api/v1/changeset/reject/<changeset_id>/
 ```
 
-Approving a changeset
----------------------
+Approve changeset
+-----------------
 ```
 POST /api/v1/changeset/approve/<changeset_id>/
 ```
 
+Soft delete changeset
+---------------------
+```
+POST /api/v1/changeset/soft-delete/<changeset_id>/
+```
