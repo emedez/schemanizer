@@ -97,6 +97,11 @@ class ChangesetResource(ModelResource):
                 self.wrap_view('changeset_approve'),
                 name='api_changeset_approve',
             ),
+            url(
+                r'^(?P<resource_name>%s)/soft-delete/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                self.wrap_view('changeset_soft_delete'),
+                name='api_changeset_soft_delete',
+            ),
         ]
 
     def changeset_submit(self, request, **kwargs):
@@ -123,8 +128,10 @@ class ChangesetResource(ModelResource):
 
         self.method_check(request, allowed=['post'])
         self.is_authenticated(request)
-        self.throttle_check(request)
+        #self.throttle_check(request)
 
+        changeset = None
+        data = {}
         try:
             data = json.loads(request.raw_post_data)
             allowed_fields = ('database_schema', 'type', 'classification', 'version_control_url')
@@ -142,45 +149,71 @@ class ChangesetResource(ModelResource):
                 changeset_details.append(changeset_detail)
 
             changeset = businesslogic.changeset_submit(changeset, changeset_details, request.user.schemanizer_user)
-            bundle = self.build_bundle(obj=changeset, request=request)
-            bundle = self.full_dehydrate(bundle)
-        except:
+        except Exception, e:
             log.exception('EXCEPTION')
-            raise
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(obj=changeset, data=data, request=request)
+        if changeset and changeset.pk:
+            bundle = self.full_dehydrate(bundle)
 
-        self.log_throttled_access(request)
+        #self.log_throttled_access(request)
         return self.create_response(request, bundle)
 
     def changeset_reject(self, request, **kwargs):
         self.method_check(request, allowed=['post'])
         self.is_authenticated(request)
-        self.throttle_check(request)
+        #self.throttle_check(request)
 
+        changeset = None
+        data = {}
         try:
-            businesslogic.changeset_reject(int(kwargs['changeset_id']), request.user.schemanizer_user)
-            bundle = self.build_bundle(request=request)
-            bundle = self.full_dehydrate(bundle)
-        except:
+            changeset = businesslogic.changeset_reject(int(kwargs['changeset_id']), request.user.schemanizer_user)
+        except Exception, e:
             log.exception('EXCEPTION')
-            raise
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(obj=changeset, data=data, request=request)
+        if changeset and changeset.pk:
+            bundle = self.full_dehydrate(bundle)
 
-        self.log_throttled_access(request)
+        #self.log_throttled_access(request)
         return self.create_response(request, bundle)
 
     def changeset_approve(self, request, **kwargs):
         self.method_check(request, allowed=['post'])
         self.is_authenticated(request)
-        self.throttle_check(request)
+        #self.throttle_check(request)
 
+        changeset = None
+        data = {}
         try:
-            businesslogic.changeset_approve(int(kwargs['changeset_id']), request.user.schemanizer_user)
-            bundle = self.build_bundle(request=request)
-            bundle = self.full_dehydrate(bundle)
-        except:
+            changeset = businesslogic.changeset_approve(int(kwargs['changeset_id']), request.user.schemanizer_user)
+        except Exception, e:
             log.exception('EXCEPTION')
-            raise
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(obj=changeset, data=data, request=request)
+        if changeset and changeset.pk:
+            bundle = self.full_dehydrate(bundle)
 
-        self.log_throttled_access(request)
+        #self.log_throttled_access(request)
+        return self.create_response(request, bundle)
+
+    def changeset_soft_delete(self, request, **kwargs):
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+        #self.throttle_check(request)
+
+        changeset = None
+        data = {}
+        try:
+            changeset = businesslogic.soft_delete_changeset(int(kwargs['changeset_id']), request.user.schemanizer_user)
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(obj=changeset, data=data, request=request)
+        if changeset and changeset.pk:
+            bundle = self.full_dehydrate(bundle)
+
+        #self.log_throttled_access(request)
         return self.create_response(request, bundle)
 
 

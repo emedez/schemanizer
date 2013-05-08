@@ -115,6 +115,10 @@ def changeset_can_be_soft_deleted_by_user(changeset, user):
         # Cannot soft delete unsaved changeset.
         return False
 
+    if changeset.is_deleted:
+        # Cannot soft delete that was already soft deleted.
+        return False
+
     if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
         # dbas and admins can soft delete changeset
         return True
@@ -145,6 +149,8 @@ def soft_delete_changeset(changeset, user):
             timestamp=timezone.now()
         )
         log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+
+        return changeset
     else:
         raise exceptions.NotAllowed('User is not allowed to soft delete the changeset.')
 
@@ -530,6 +536,8 @@ def changeset_approve(changeset, user):
 
         changeset_send_approved_mail(changeset)
 
+        return changeset
+
     else:
         raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
 
@@ -580,6 +588,8 @@ def changeset_reject(changeset, user):
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
 
         changeset_send_rejected_mail(changeset)
+
+        return changeset
 
     else:
         log.debug(u'changeset:\n%s\n\nuser=%s' % (changeset, user.name))
