@@ -164,7 +164,7 @@ def changeset_soft_delete(
         if user_has_access:
             if request.method == 'POST':
                 with transaction.commit_on_success():
-                    businesslogic.soft_delete_changeset(changeset)
+                    businesslogic.soft_delete_changeset(changeset, user)
                 messages.success(request, 'Changeset [id=%s] was soft deleted.' % (id,))
                 return redirect('schemanizer_changeset_list')
         else:

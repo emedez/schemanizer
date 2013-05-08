@@ -127,17 +127,26 @@ def changeset_can_be_soft_deleted_by_user(changeset, user):
     return False
 
 
-def soft_delete_changeset(changeset):
+def soft_delete_changeset(changeset, user):
     """Soft deletes changeset."""
-    changeset.is_deleted = 1
-    changeset.save()
 
-    models.ChangesetAction.objects.create(
-        changeset=changeset,
-        type=models.ChangesetAction.TYPE_DELETED,
-        timestamp=timezone.now()
-    )
-    log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset_can_be_soft_deleted_by_user(changeset, user):
+        changeset.is_deleted = 1
+        changeset.save()
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_DELETED,
+            timestamp=timezone.now()
+        )
+        log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+    else:
+        raise exceptions.NotAllowed('User is not allowed to soft delete the changeset.')
 
 
 def delete_changeset(changeset):
