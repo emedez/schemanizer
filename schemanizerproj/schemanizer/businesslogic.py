@@ -25,40 +25,59 @@ from schemanizer import exceptions, models, utils
 log = logging.getLogger(__name__)
 
 
-def update_user(id, name, email, role):
+def update_user(id, name, email, role, user):
     """Updates user."""
-    user = models.User.objects.get(id=id)
-    user.name = name
-    user.email = email
-    user.role = role
-    user.save()
+    role = utils.get_model_instance(role, models.Role)
+    user = utils.get_model_instance(user, models.User)
 
-    auth_user = user.auth_user
-    auth_user.username = user.name
-    auth_user.email = user.email
-    auth_user.save()
+    if UserPrivileges.can_update_users(user):
+        with transaction.commit_on_success():
+            user = models.User.objects.get(id=id)
+            user.name = name
+            user.email = email
+            user.role = role
+            user.save()
 
-    log.info(u'User [id=%s] was updated.' % (id,))
+            auth_user = user.auth_user
+            auth_user.username = user.name
+            auth_user.email = user.email
+            auth_user.save()
 
-    return user
+        log.info(u'User [id=%s] was updated.' % (id,))
+
+        return user
+    else:
+        raise exceptions.NotAllowed('User is now allowed to update user.')
 
 
-def create_user(name, email, role, password):
+def create_user(name, email, role, password, user):
     """Creates user."""
-    auth_user = AuthUser.objects.create_user(name, email, password)
-    user = models.User.objects.create(name=name, email=email, role=role, auth_user=auth_user)
-    log.info(u'User [id=%s] was created.' % (user.id,))
-    return user
+    role = utils.get_model_instance(role, models.Role)
+    user = utils.get_model_instance(user, models.User)
+
+    if UserPrivileges.can_create_users(user):
+        with transaction.commit_on_success():
+            auth_user = AuthUser.objects.create_user(name, email, password)
+            schemanizer_user = models.User.objects.create(name=name, email=email, role=role, auth_user=auth_user)
+        log.info(u'User [id=%s] was created.' % (schemanizer_user.id,))
+        return schemanizer_user
+    else:
+        raise exceptions.NotAllowed('User is now allowed to create user.')
 
 
-def delete_user(user):
+def delete_user(to_be_deleted_user, user):
     """Deletes user."""
-    if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
-    auth_user = user.auth_user
-    user_id = user.id
-    auth_user.delete()
-    log.info(u'User [id=%s] was deleted.' % (user_id,))
+    to_be_deleted_user = utils.get_model_instance(to_be_deleted_user, models.User)
+    user = utils.get_model_instance(user, models.User)
+
+    if UserPrivileges.can_delete_users(user):
+        with transaction.commit_on_success():
+            auth_user = to_be_deleted_user.auth_user
+            user_id = to_be_deleted_user.id
+            auth_user.delete()
+        log.info(u'User [id=%s] was deleted.' % (user_id,))
+    else:
+        raise exceptions.NotAllowed('User is not allowed to delete user.')
 
 
 def send_mail(
@@ -115,6 +134,10 @@ def changeset_can_be_soft_deleted_by_user(changeset, user):
         # Cannot soft delete unsaved changeset.
         return False
 
+    if changeset.is_deleted:
+        # Cannot soft delete that was already soft deleted.
+        return False
+
     if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
         # dbas and admins can soft delete changeset
         return True
@@ -127,17 +150,28 @@ def changeset_can_be_soft_deleted_by_user(changeset, user):
     return False
 
 
-def soft_delete_changeset(changeset):
+def soft_delete_changeset(changeset, user):
     """Soft deletes changeset."""
-    changeset.is_deleted = 1
-    changeset.save()
 
-    models.ChangesetAction.objects.create(
-        changeset=changeset,
-        type=models.ChangesetAction.TYPE_DELETED,
-        timestamp=timezone.now()
-    )
-    log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+    if type(changeset) in (int, long):
+        changeset = models.Changeset.objects.get(pk=changeset)
+    if type(user) in (int, long):
+        user = models.User.objects.get(pk=user)
+
+    if changeset_can_be_soft_deleted_by_user(changeset, user):
+        changeset.is_deleted = 1
+        changeset.save()
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_DELETED,
+            timestamp=timezone.now()
+        )
+        log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
+
+        return changeset
+    else:
+        raise exceptions.NotAllowed('User is not allowed to soft delete the changeset.')
 
 
 def delete_changeset(changeset):
@@ -265,7 +299,7 @@ def changeset_send_updated_mail(changeset):
         log.warn(u'No email recipients.')
 
 
-def changeset_update(**kwargs):
+def changeset_update_from_form(**kwargs):
     """Updates changeset.
 
     expected keyword arguments:
@@ -305,6 +339,47 @@ def changeset_update(**kwargs):
         raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
 
     return changeset
+
+
+def changeset_update(changeset, changeset_details, to_be_deleted_changeset_details, user):
+    user = utils.get_model_instance(user, models.User)
+
+    if changeset_can_be_updated_by_user(changeset, user):
+        with transaction.commit_on_success():
+            now = timezone.now()
+
+            for tbdc in to_be_deleted_changeset_details:
+                if tbdc.pk and tbdc.changeset and tbdc.changeset.id == changeset.id:
+                    tbdc.delete()
+                else:
+                    raise Exception('to_be_deleted_changeset_details contain and invalid changeset detail.')
+
+            changeset.review_status = changeset.REVIEW_STATUS_NEEDS
+            changeset.save()
+
+            for cd in changeset_details:
+                if cd.pk:
+                    if cd.changeset.id == changeset.id:
+                        cd.save()
+                    else:
+                        raise Exception('One of the changeset details have invalid changeset value.')
+                else:
+                    cd.changeset = changeset
+                    cd.save()
+
+            # Create entry on changeset actions
+            models.ChangesetAction.objects.create(
+                changeset=changeset,
+                type=models.ChangesetAction.TYPE_CHANGED,
+                timestamp=now)
+
+        log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
+
+        changeset_send_updated_mail(changeset)
+
+        return changeset
+    else:
+        raise exceptions.NotAllowed('User is not allowed to update changeset.')
 
 
 def changeset_can_be_reviewed_by_user(changeset, user):
@@ -521,6 +596,8 @@ def changeset_approve(changeset, user):
 
         changeset_send_approved_mail(changeset)
 
+        return changeset
+
     else:
         raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
 
@@ -571,6 +648,8 @@ def changeset_reject(changeset, user):
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
 
         changeset_send_rejected_mail(changeset)
+
+        return changeset
 
     else:
         log.debug(u'changeset:\n%s\n\nuser=%s' % (changeset, user.name))
@@ -1449,4 +1528,83 @@ def schema_hash(dump):
     return utils.hash_string(normalize_mysql_dump(dump))
 
 
+class UserPrivileges:
+    """Encapsulates user privilege logic."""
 
+    @classmethod
+    def can_update_environments(cls, user):
+        """Checks if user can update environments."""
+        user = utils.get_model_instance(user, models.User)
+        if user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def can_delete_environments(cls, user):
+        """Checks if user can delete environments."""
+        user = utils.get_model_instance(user, models.User)
+        if user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def can_save_schema_dumps(cls, user):
+        """Checks if user can save schema dumps."""
+        # Everyone can save schema dumps.
+        return True
+
+    @classmethod
+    def can_create_users(cls, user):
+        """Checks if user can create users."""
+        if user.role.name in [models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def can_update_users(cls, user):
+        """Checks if user can update users."""
+        if user.role.name in [models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def can_delete_users(cls, user):
+        """Checks if user can delete users."""
+        if user.role.name in [models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+
+def save_schema_dump(server, database_schema_name, user):
+    """Creates database schema (if needed) and schema version."""
+
+    server = utils.get_model_instance(server, models.Server)
+    user = utils.get_model_instance(user, models.User)
+
+    if UserPrivileges.can_save_schema_dumps(user):
+        conn_opts = {}
+        conn_opts['host'] = server.hostname
+        if server.port:
+            conn_opts['port'] = server.port
+        if settings.AWS_MYSQL_USER:
+            conn_opts['user'] = settings.AWS_MYSQL_USER
+        if settings.AWS_MYSQL_PASSWORD:
+            conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
+
+        structure = utils.mysql_dump(database_schema_name, **conn_opts)
+
+        with transaction.commit_on_success():
+            database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=database_schema_name)
+            schema_version = models.SchemaVersion.objects.create(
+                database_schema=database_schema,
+                ddl=structure,
+                checksum=schema_hash(structure))
+
+        return schema_version
+    else:
+        raise exceptions.NotAllowed('User is not allowed to save schema dumps.')
