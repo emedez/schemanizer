@@ -75,7 +75,7 @@ class UserResource(ModelResource):
         {
             'name': 'Pilar',
             'email': 'pilar@example.com',
-            'role': 1,
+            'role_id': 1,
             'password': 'secret'
         }
         """
@@ -88,9 +88,9 @@ class UserResource(ModelResource):
             raw_post_data = json.loads(request.raw_post_data)
             name = raw_post_data['name']
             email = raw_post_data['email']
-            role = int(raw_post_data['role'])
+            role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = businesslogic.create_user(name, email, role, password, request.user.schemanizer_user)
+            user = businesslogic.create_user(name, email, role_id, password, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -120,8 +120,8 @@ class UserResource(ModelResource):
             raw_post_data = json.loads(request.raw_post_data)
             name = raw_post_data['name']
             email = raw_post_data['email']
-            role = int(raw_post_data['role'])
-            user = businesslogic.update_user(user_id, name, email, role, request.user.schemanizer_user)
+            role_id = int(raw_post_data['role_id'])
+            user = businesslogic.update_user(user_id, name, email, role_id, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -181,6 +181,10 @@ class DatabaseSchemaResource(ModelResource):
         authorization = ReadOnlyAuthorization()
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
+        filtering = {
+            'id': ALL,
+            'name': ALL,
+        }
 
 
 class SchemaVersionResource(ModelResource):
@@ -193,6 +197,9 @@ class SchemaVersionResource(ModelResource):
         authorization = ReadOnlyAuthorization()
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
+        filtering = {
+            'database_schema': ALL_WITH_RELATIONS
+        }
 
     def prepend_urls(self):
         return [
@@ -208,7 +215,7 @@ class SchemaVersionResource(ModelResource):
 
         request.raw_post_data should be in the following form:
         {
-            'server': 1,
+            'server_id': 1,
             'database_schema_name': 'test',
         }
         """
@@ -219,10 +226,10 @@ class SchemaVersionResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            server = int(raw_post_data['server'])
+            server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = businesslogic.save_schema_dump(server, database_schema_name, request.user.schemanizer_user)
+            schema_version = businesslogic.save_schema_dump(server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -249,6 +256,7 @@ class ChangesetResource(ModelResource):
         detail_allowed_methods = ['get']
         authorization = ReadOnlyAuthorization()
         filtering = {
+            'id': ALL,
             'review_status': ALL,
         }
 
@@ -287,7 +295,7 @@ class ChangesetResource(ModelResource):
         request.raw_post_data should be in the following form:
         {
             'changeset': {
-                'database_schema': 1,
+                'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
                 'version_control_url': ''
@@ -311,12 +319,14 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            allowed_fields = ('database_schema', 'type', 'classification', 'version_control_url')
+            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
             changeset_data = raw_post_data['changeset']
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
-            changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=int(changeset_data['database_schema']))
+            if 'database_schema_id' in changeset_data:
+                database_schema_id = int(changeset_data.pop('database_schema_id'))
+                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=database_schema_id)
             changeset = models.Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
@@ -342,7 +352,7 @@ class ChangesetResource(ModelResource):
         request.raw_post_data should be in the following form:
         {
             'changeset': {
-                'database_schema': 1,
+                'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
                 'version_control_url': ''
@@ -362,7 +372,7 @@ class ChangesetResource(ModelResource):
                     'revert_sql': 'drop table t2'
                 }
             ],
-            'to_be_deleted_changeset_details': [3, 4, 5]
+            'to_be_deleted_changeset_detail_ids': [3, 4, 5]
         }
         """
         self.method_check(request, allowed=['post'])
@@ -377,16 +387,20 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
 
-            allowed_fields = ('database_schema', 'type', 'classification', 'version_control_url')
+            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
-                setattr(changeset, k, v)
+                if k == 'database_schema_id':
+                    database_schema = models.DatabaseSchema.objects.get(pk=int(v))
+                    changeset.database_schema = database_schema
+                else:
+                    setattr(changeset, k, v)
 
-            to_be_deleted_changeset_details_data = post_data['to_be_deleted_changeset_details']
+            to_be_deleted_changeset_detail_ids = post_data['to_be_deleted_changeset_detail_ids']
             to_be_deleted_changeset_details = []
-            for tbdcdd in to_be_deleted_changeset_details_data:
-                tbdcd = models.ChangesetDetail.objects.get(pk=tbdcdd)
+            for cdid in to_be_deleted_changeset_detail_ids:
+                tbdcd = models.ChangesetDetail.objects.get(pk=int(cdid))
                 to_be_deleted_changeset_details.append(tbdcd)
 
             changeset_details_data = post_data['changeset_details']
