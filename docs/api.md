@@ -55,6 +55,7 @@ Schemanizer REST API
 ====================
 
 This section describes the individual API. Sample usage and outputs are provided.
+HTTP status code should be checked for every API calls. In most cases when error occurs, the *error_message* field will be included in the content.
 
 
 Role
