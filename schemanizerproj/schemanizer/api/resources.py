@@ -75,7 +75,7 @@ class UserResource(ModelResource):
         {
             'name': 'Pilar',
             'email': 'pilar@example.com',
-            'role': 1,
+            'role_id': 1,
             'password': 'secret'
         }
         """
@@ -88,9 +88,9 @@ class UserResource(ModelResource):
             raw_post_data = json.loads(request.raw_post_data)
             name = raw_post_data['name']
             email = raw_post_data['email']
-            role = int(raw_post_data['role'])
+            role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = businesslogic.create_user(name, email, role, password, request.user.schemanizer_user)
+            user = businesslogic.create_user(name, email, role_id, password, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -120,8 +120,8 @@ class UserResource(ModelResource):
             raw_post_data = json.loads(request.raw_post_data)
             name = raw_post_data['name']
             email = raw_post_data['email']
-            role = int(raw_post_data['role'])
-            user = businesslogic.update_user(user_id, name, email, role, request.user.schemanizer_user)
+            role_id = int(raw_post_data['role_id'])
+            user = businesslogic.update_user(user_id, name, email, role_id, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -181,6 +181,10 @@ class DatabaseSchemaResource(ModelResource):
         authorization = ReadOnlyAuthorization()
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
+        filtering = {
+            'id': ALL,
+            'name': ALL,
+        }
 
 
 class SchemaVersionResource(ModelResource):
@@ -193,6 +197,9 @@ class SchemaVersionResource(ModelResource):
         authorization = ReadOnlyAuthorization()
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
+        filtering = {
+            'database_schema': ALL_WITH_RELATIONS
+        }
 
     def prepend_urls(self):
         return [
@@ -208,7 +215,7 @@ class SchemaVersionResource(ModelResource):
 
         request.raw_post_data should be in the following form:
         {
-            'server': 1,
+            'server_id': 1,
             'database_schema_name': 'test',
         }
         """
@@ -219,10 +226,10 @@ class SchemaVersionResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            server = int(raw_post_data['server'])
+            server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = businesslogic.save_schema_dump(server, database_schema_name, request.user.schemanizer_user)
+            schema_version = businesslogic.save_schema_dump(server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
