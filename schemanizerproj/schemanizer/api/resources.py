@@ -256,6 +256,7 @@ class ChangesetResource(ModelResource):
         detail_allowed_methods = ['get']
         authorization = ReadOnlyAuthorization()
         filtering = {
+            'id': ALL,
             'review_status': ALL,
         }
 
@@ -294,7 +295,7 @@ class ChangesetResource(ModelResource):
         request.raw_post_data should be in the following form:
         {
             'changeset': {
-                'database_schema': 1,
+                'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
                 'version_control_url': ''
@@ -318,12 +319,14 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            allowed_fields = ('database_schema', 'type', 'classification', 'version_control_url')
+            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
             changeset_data = raw_post_data['changeset']
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
-            changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=int(changeset_data['database_schema']))
+            if 'database_schema_id' in changeset_data:
+                database_schema_id = int(changeset_data.pop('database_schema_id'))
+                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=database_schema_id)
             changeset = models.Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
@@ -349,7 +352,7 @@ class ChangesetResource(ModelResource):
         request.raw_post_data should be in the following form:
         {
             'changeset': {
-                'database_schema': 1,
+                'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
                 'version_control_url': ''
@@ -369,7 +372,7 @@ class ChangesetResource(ModelResource):
                     'revert_sql': 'drop table t2'
                 }
             ],
-            'to_be_deleted_changeset_details': [3, 4, 5]
+            'to_be_deleted_changeset_detail_ids': [3, 4, 5]
         }
         """
         self.method_check(request, allowed=['post'])
@@ -384,16 +387,20 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
 
-            allowed_fields = ('database_schema', 'type', 'classification', 'version_control_url')
+            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
-                setattr(changeset, k, v)
+                if k == 'database_schema_id':
+                    database_schema = models.DatabaseSchema.objects.get(pk=int(v))
+                    changeset.database_schema = database_schema
+                else:
+                    setattr(changeset, k, v)
 
-            to_be_deleted_changeset_details_data = post_data['to_be_deleted_changeset_details']
+            to_be_deleted_changeset_detail_ids = post_data['to_be_deleted_changeset_detail_ids']
             to_be_deleted_changeset_details = []
-            for tbdcdd in to_be_deleted_changeset_details_data:
-                tbdcd = models.ChangesetDetail.objects.get(pk=tbdcdd)
+            for cdid in to_be_deleted_changeset_detail_ids:
+                tbdcd = models.ChangesetDetail.objects.get(pk=int(cdid))
                 to_be_deleted_changeset_details.append(tbdcd)
 
             changeset_details_data = post_data['changeset_details']
