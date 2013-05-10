@@ -20,6 +20,9 @@ v1_api.register(resources.DatabaseSchemaResource())
 v1_api.register(resources.SchemaVersionResource())
 v1_api.register(resources.ChangesetResource())
 v1_api.register(resources.ChangesetDetailResource())
+v1_api.register(resources.ChangesetTestResource())
+v1_api.register(resources.ChangesetValidationResource())
+v1_api.register(resources.ChangesetDetailApplyResource())
 
 from schemanizer.forms import AuthenticationForm
 

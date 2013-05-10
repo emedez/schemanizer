@@ -10,10 +10,13 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
 
-from schemanizer import models, businesslogic, exceptions
+from schemanizer import models, businesslogic, exceptions, utils
 from schemanizer.api import authorizations
 
 log = logging.getLogger(__name__)
+
+review_threads = {}
+apply_threads = {}
 
 
 class AuthUserResource(ModelResource):
@@ -38,8 +41,8 @@ class RoleResource(ModelResource):
 
 
 class UserResource(ModelResource):
-    auth_user = fields.ForeignKey(AuthUserResource, 'auth_user', full=True)
-    role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True, full=True)
+    auth_user = fields.ForeignKey(AuthUserResource, 'auth_user')
+    role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True)
 
     class Meta:
         queryset = models.User.objects.all()
@@ -57,12 +60,14 @@ class UserResource(ModelResource):
                 name='api_user_create',
             ),
             url(
-                r'^(?P<resource_name>%s)/update/(?P<user_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/update/(?P<user_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('user_update'),
                 name='api_user_update',
             ),
             url(
-                r'^(?P<resource_name>%s)/delete/(?P<user_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/delete/(?P<user_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('user_delete'),
                 name='api_user_delete',
             ),
@@ -90,7 +95,8 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = businesslogic.create_user(name, email, role_id, password, request.user.schemanizer_user)
+            user = businesslogic.create_user(
+                name, email, role_id, password, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -121,7 +127,8 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = businesslogic.update_user(user_id, name, email, role_id, request.user.schemanizer_user)
+            user = businesslogic.update_user(
+                user_id, name, email, role_id, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -162,7 +169,8 @@ class EnvironmentResource(ModelResource):
 
 
 class ServerResource(ModelResource):
-    environment = fields.ForeignKey(EnvironmentResource, 'environment', full=True, null=True, blank=True)
+    environment = fields.ForeignKey(
+        EnvironmentResource, 'environment', null=True, blank=True)
 
     class Meta:
         queryset = models.Server.objects.all()
@@ -188,7 +196,8 @@ class DatabaseSchemaResource(ModelResource):
 
 
 class SchemaVersionResource(ModelResource):
-    database_schema = fields.ForeignKey(DatabaseSchemaResource, 'database_schema', null=True, blank=True, full=True)
+    database_schema = fields.ForeignKey(
+        DatabaseSchemaResource, 'database_schema', null=True, blank=True)
 
     class Meta:
         queryset = models.SchemaVersion.objects.all()
@@ -204,7 +213,8 @@ class SchemaVersionResource(ModelResource):
     def prepend_urls(self):
         return [
             url(
-                r'^(?P<resource_name>%s)/save_schema_dump/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/save_schema_dump/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('save_schema_dump'),
                 name='api_save_schema_dump',
             ),
@@ -229,7 +239,8 @@ class SchemaVersionResource(ModelResource):
             server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = businesslogic.save_schema_dump(server_id, database_schema_name, request.user.schemanizer_user)
+            schema_version = businesslogic.save_schema_dump(
+                server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -241,12 +252,18 @@ class SchemaVersionResource(ModelResource):
 
 
 class ChangesetResource(ModelResource):
-    database_schema = fields.ForeignKey(DatabaseSchemaResource, 'database_schema', null=True, blank=True, full=True)
-    reviewed_by = fields.ForeignKey(UserResource, 'reviewed_by', null=True, blank=True, full=True)
-    approved_by = fields.ForeignKey(UserResource, 'approved_by', null=True, blank=True, full=True)
-    submitted_by = fields.ForeignKey(UserResource, 'submitted_by', null=True, blank=True, full=True)
-    before_version = fields.ForeignKey(SchemaVersionResource, 'before_version', null=True, blank=True, full=True)
-    after_version = fields.ForeignKey(SchemaVersionResource, 'after_version', null=True, blank=True, full=True)
+    database_schema = fields.ForeignKey(
+        DatabaseSchemaResource, 'database_schema', null=True, blank=True)
+    reviewed_by = fields.ForeignKey(
+        UserResource, 'reviewed_by', null=True, blank=True)
+    approved_by = fields.ForeignKey(
+        UserResource, 'approved_by', null=True, blank=True)
+    submitted_by = fields.ForeignKey(
+        UserResource, 'submitted_by', null=True, blank=True)
+    before_version = fields.ForeignKey(
+        SchemaVersionResource, 'before_version', null=True, blank=True)
+    after_version = fields.ForeignKey(
+        SchemaVersionResource, 'after_version', null=True, blank=True)
 
     class Meta:
         queryset = models.Changeset.objects.all()
@@ -268,26 +285,223 @@ class ChangesetResource(ModelResource):
                 name='api_changeset_submit',
             ),
             url(
-                r'^(?P<resource_name>%s)/update/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/update/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_update'),
                 name='api_changeset_update',
             ),
             url(
-                r'^(?P<resource_name>%s)/reject/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/reject/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_reject'),
                 name='api_changeset_reject',
             ),
             url(
-                r'^(?P<resource_name>%s)/approve/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/approve/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_approve'),
                 name='api_changeset_approve',
             ),
             url(
-                r'^(?P<resource_name>%s)/soft_delete/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/soft_delete/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_soft_delete'),
                 name='api_changeset_soft_delete',
             ),
+            url(
+                r'^(?P<resource_name>%s)/review/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_review'),
+                name='api_changeset_review',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/review_status/(?P<request_id>.+?)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_review_status'),
+                name='api_changeset_review_status',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/apply/$' % (self._meta.resource_name,),
+                self.wrap_view('changeset_apply'),
+                name='api_changeset_apply',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/apply_status/(?P<request_id>.+?)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_apply_status'),
+                name='api_changeset_apply_status',
+            )
         ]
+
+    def changeset_apply(self, request, **kwargs):
+        """Applies changeset.
+
+        request.raw_post_data should be a JSON object in the form:
+        {
+            "changeset_id": 1,
+            "server_id": 1
+        }
+        """
+
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = utils.generate_request_id(request)
+            post_data = json.loads(request.raw_post_data)
+            changeset_id = int(post_data['changeset_id'])
+            server_id = int(post_data['server_id'])
+
+            thread = businesslogic.changeset_apply(
+                changeset_id, request.user.schemanizer_user, server_id)
+            apply_threads[request_id] = thread
+
+            data.update(dict(
+                thread_started=True,
+                request_id=request_id
+            ))
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_apply_status(self, request, **kwargs):
+        """Checks review thread status."""
+
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = kwargs['request_id']
+            thread = apply_threads.get(request_id, None)
+
+            if not thread:
+                #
+                # There was no running thread associated with the request_id,
+                # It is either request ID is invalid or thread had completed
+                # already and was removed from the dictionary.
+                #
+                data['error_message'] = 'Invalid request ID.'
+
+            else:
+                thread_is_alive = thread.is_alive()
+                data['thread_is_alive'] = thread_is_alive
+                if thread.has_errors:
+                    data['thread_has_errors'] = thread.errors
+                data['thread_messages'] = thread.messages
+                data['thread_changeset_detail_apply_ids'] = (
+                    thread.changeset_detail_apply_ids)
+
+                if not thread_is_alive:
+                    #
+                    # Remove dead threads from dictionary
+                    #
+                    apply_threads.pop(request_id, None)
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_review_status(self, request, **kwargs):
+        """Checks review thread status."""
+
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = kwargs['request_id']
+            thread = review_threads.get(request_id, None)
+
+            if not thread:
+                #
+                # There was no running thread associated with the request_id,
+                # It is either request ID is invalid or thread had completed
+                # already and was removed from the dictionary.
+                #
+                data['error_message'] = 'Invalid request ID.'
+
+            else:
+                thread_is_alive = thread.is_alive()
+                data['thread_is_alive'] = thread_is_alive
+                data['thread_errors'] = thread.errors
+                if thread.messages:
+                    data['thread_messages'] = thread.messages[-1:]
+                else:
+                    data['thread_messages'] = []
+                if thread.changeset_validations:
+                    data['thread_changeset_validation_ids'] = (
+                        thread.changeset_validation_ids)
+                if thread.changeset_tests:
+                    data['thread_changeset_test_ids'] = thread.changeset_tests_ids
+
+                if not thread_is_alive:
+                    #
+                    # Remove dead threads from dictionary
+                    #
+                    review_threads.pop(request_id, None)
+
+                    if thread.review_results_url:
+                        data['thread_review_results_url'] = (
+                            thread.review_results_url)
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_review(self, request, **kwargs):
+        """Reviews changeset.
+
+        request.raw_post_data should be in the following form:
+        {
+            "schema_version_id": 1
+        }
+
+        Successful call would have the following keys in the return value:
+            thread_started
+                - set to True
+            request_id
+                - ID of the request that started the review thread
+        """
+
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = utils.generate_request_id(request)
+            changeset_id = int(kwargs.get('changeset_id'))
+            post_data = json.loads(request.raw_post_data)
+            schema_version_id = int(post_data['schema_version_id'])
+
+            thread = businesslogic.changeset_review(
+                changeset_id, schema_version_id, request_id,
+                request.user.schemanizer_user
+            )
+
+            review_threads[request_id] = thread
+            data.update(dict(
+                thread_started=True,
+                request_id=request_id
+            ))
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
 
     def changeset_submit(self, request, **kwargs):
         """Submits changeset.
@@ -319,14 +533,17 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
+            allowed_fields = (
+                'database_schema_id', 'type', 'classification',
+                'version_control_url')
             changeset_data = raw_post_data['changeset']
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
             if 'database_schema_id' in changeset_data:
                 database_schema_id = int(changeset_data.pop('database_schema_id'))
-                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=database_schema_id)
+                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(
+                    pk=database_schema_id)
             changeset = models.Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
@@ -335,7 +552,8 @@ class ChangesetResource(ModelResource):
                 changeset_detail = models.ChangesetDetail(**changeset_detail_data)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_submit(changeset, changeset_details, request.user.schemanizer_user)
+            changeset = businesslogic.changeset_submit(
+                changeset, changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -387,7 +605,9 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
 
-            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
+            allowed_fields = (
+                'database_schema_id', 'type', 'classification',
+                'version_control_url')
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
@@ -407,7 +627,8 @@ class ChangesetResource(ModelResource):
             changeset_details = []
             for cdd in changeset_details_data:
                 if 'id' in cdd:
-                    changeset_detail = models.ChangesetDetail.objects.get(pk=int(cdd['id']))
+                    changeset_detail = models.ChangesetDetail.objects.get(
+                        pk=int(cdd['id']))
                 else:
                     changeset_detail = models.ChangesetDetail()
                 for k, v in cdd.iteritems():
@@ -415,7 +636,8 @@ class ChangesetResource(ModelResource):
                         setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_update(changeset, changeset_details,
+            changeset = businesslogic.changeset_update(
+                changeset, changeset_details,
                 to_be_deleted_changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -434,7 +656,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_reject(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.changeset_reject(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -453,7 +676,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_approve(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.changeset_approve(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -472,7 +696,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.soft_delete_changeset(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.soft_delete_changeset(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -485,7 +710,8 @@ class ChangesetResource(ModelResource):
 
 
 class ChangesetDetailResource(ModelResource):
-    changeset = fields.ForeignKey(ChangesetResource, 'changeset', null=True, blank=True, full=True)
+    changeset = fields.ForeignKey(
+        ChangesetResource, 'changeset', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetDetail.objects.all()
@@ -495,6 +721,57 @@ class ChangesetDetailResource(ModelResource):
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
         filtering = {
+            'id': ALL,
             'changeset': ALL_WITH_RELATIONS,
         }
 
+
+class ChangesetTestResource(ModelResource):
+    changeset_detail = fields.ForeignKey(
+        ChangesetDetailResource, 'changeset_detail', null=True, blank=True)
+
+    class Meta:
+        queryset = models.ChangesetTest.objects.all()
+        resource_name = 'changeset_test'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset_detail': ALL_WITH_RELATIONS,
+        }
+
+
+class ChangesetValidationResource(ModelResource):
+    changeset = fields.ForeignKey(
+        ChangesetResource, 'changeset', null=True, blank=True)
+
+    class Meta:
+        queryset = models.ChangesetValidation.objects.all()
+        resource_name = 'changeset_validation'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset': ALL_WITH_RELATIONS,
+        }
+
+
+class ChangesetDetailApplyResource(ModelResource):
+    changeset_detail = fields.ForeignKey(
+        ChangesetDetailResource, 'changeset_detail', null=True, blank=True)
+    environment = fields.ForeignKey(
+        EnvironmentResource, 'environment', null=True, blank=True)
+    server = fields.ForeignKey(ServerResource, 'server', null=True, blank=True)
+
+    class Meta:
+        queryset = models.ChangesetDetailApply.objects.all()
+        resource_name = 'changeset_detail_apply'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset_detail': ALL_WITH_RELATIONS,
+        }
