@@ -41,8 +41,8 @@ class RoleResource(ModelResource):
 
 
 class UserResource(ModelResource):
-    auth_user = fields.ForeignKey(AuthUserResource, 'auth_user', full=True)
-    role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True, full=True)
+    auth_user = fields.ForeignKey(AuthUserResource, 'auth_user')
+    role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True)
 
     class Meta:
         queryset = models.User.objects.all()
@@ -60,12 +60,14 @@ class UserResource(ModelResource):
                 name='api_user_create',
             ),
             url(
-                r'^(?P<resource_name>%s)/update/(?P<user_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/update/(?P<user_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('user_update'),
                 name='api_user_update',
             ),
             url(
-                r'^(?P<resource_name>%s)/delete/(?P<user_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/delete/(?P<user_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('user_delete'),
                 name='api_user_delete',
             ),
@@ -93,7 +95,8 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = businesslogic.create_user(name, email, role_id, password, request.user.schemanizer_user)
+            user = businesslogic.create_user(
+                name, email, role_id, password, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -124,7 +127,8 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = businesslogic.update_user(user_id, name, email, role_id, request.user.schemanizer_user)
+            user = businesslogic.update_user(
+                user_id, name, email, role_id, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -165,7 +169,8 @@ class EnvironmentResource(ModelResource):
 
 
 class ServerResource(ModelResource):
-    environment = fields.ForeignKey(EnvironmentResource, 'environment', full=True, null=True, blank=True)
+    environment = fields.ForeignKey(
+        EnvironmentResource, 'environment', null=True, blank=True)
 
     class Meta:
         queryset = models.Server.objects.all()
@@ -191,7 +196,8 @@ class DatabaseSchemaResource(ModelResource):
 
 
 class SchemaVersionResource(ModelResource):
-    database_schema = fields.ForeignKey(DatabaseSchemaResource, 'database_schema', null=True, blank=True, full=True)
+    database_schema = fields.ForeignKey(
+        DatabaseSchemaResource, 'database_schema', null=True, blank=True)
 
     class Meta:
         queryset = models.SchemaVersion.objects.all()
@@ -207,7 +213,8 @@ class SchemaVersionResource(ModelResource):
     def prepend_urls(self):
         return [
             url(
-                r'^(?P<resource_name>%s)/save_schema_dump/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/save_schema_dump/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('save_schema_dump'),
                 name='api_save_schema_dump',
             ),
@@ -232,7 +239,8 @@ class SchemaVersionResource(ModelResource):
             server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = businesslogic.save_schema_dump(server_id, database_schema_name, request.user.schemanizer_user)
+            schema_version = businesslogic.save_schema_dump(
+                server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -244,12 +252,18 @@ class SchemaVersionResource(ModelResource):
 
 
 class ChangesetResource(ModelResource):
-    database_schema = fields.ForeignKey(DatabaseSchemaResource, 'database_schema', null=True, blank=True, full=True)
-    reviewed_by = fields.ForeignKey(UserResource, 'reviewed_by', null=True, blank=True, full=True)
-    approved_by = fields.ForeignKey(UserResource, 'approved_by', null=True, blank=True, full=True)
-    submitted_by = fields.ForeignKey(UserResource, 'submitted_by', null=True, blank=True, full=True)
-    before_version = fields.ForeignKey(SchemaVersionResource, 'before_version', null=True, blank=True, full=True)
-    after_version = fields.ForeignKey(SchemaVersionResource, 'after_version', null=True, blank=True, full=True)
+    database_schema = fields.ForeignKey(
+        DatabaseSchemaResource, 'database_schema', null=True, blank=True)
+    reviewed_by = fields.ForeignKey(
+        UserResource, 'reviewed_by', null=True, blank=True)
+    approved_by = fields.ForeignKey(
+        UserResource, 'approved_by', null=True, blank=True)
+    submitted_by = fields.ForeignKey(
+        UserResource, 'submitted_by', null=True, blank=True)
+    before_version = fields.ForeignKey(
+        SchemaVersionResource, 'before_version', null=True, blank=True)
+    after_version = fields.ForeignKey(
+        SchemaVersionResource, 'after_version', null=True, blank=True)
 
     class Meta:
         queryset = models.Changeset.objects.all()
@@ -271,22 +285,26 @@ class ChangesetResource(ModelResource):
                 name='api_changeset_submit',
             ),
             url(
-                r'^(?P<resource_name>%s)/update/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/update/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_update'),
                 name='api_changeset_update',
             ),
             url(
-                r'^(?P<resource_name>%s)/reject/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/reject/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_reject'),
                 name='api_changeset_reject',
             ),
             url(
-                r'^(?P<resource_name>%s)/approve/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/approve/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_approve'),
                 name='api_changeset_approve',
             ),
             url(
-                r'^(?P<resource_name>%s)/soft_delete/(?P<changeset_id>\d+)/$' % (self._meta.resource_name,),
+                r'^(?P<resource_name>%s)/soft_delete/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
                 self.wrap_view('changeset_soft_delete'),
                 name='api_changeset_soft_delete',
             ),
@@ -515,14 +533,17 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             raw_post_data = json.loads(request.raw_post_data)
-            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
+            allowed_fields = (
+                'database_schema_id', 'type', 'classification',
+                'version_control_url')
             changeset_data = raw_post_data['changeset']
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
             if 'database_schema_id' in changeset_data:
                 database_schema_id = int(changeset_data.pop('database_schema_id'))
-                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(pk=database_schema_id)
+                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(
+                    pk=database_schema_id)
             changeset = models.Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
@@ -531,7 +552,8 @@ class ChangesetResource(ModelResource):
                 changeset_detail = models.ChangesetDetail(**changeset_detail_data)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_submit(changeset, changeset_details, request.user.schemanizer_user)
+            changeset = businesslogic.changeset_submit(
+                changeset, changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -583,7 +605,9 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
 
-            allowed_fields = ('database_schema_id', 'type', 'classification', 'version_control_url')
+            allowed_fields = (
+                'database_schema_id', 'type', 'classification',
+                'version_control_url')
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
@@ -603,7 +627,8 @@ class ChangesetResource(ModelResource):
             changeset_details = []
             for cdd in changeset_details_data:
                 if 'id' in cdd:
-                    changeset_detail = models.ChangesetDetail.objects.get(pk=int(cdd['id']))
+                    changeset_detail = models.ChangesetDetail.objects.get(
+                        pk=int(cdd['id']))
                 else:
                     changeset_detail = models.ChangesetDetail()
                 for k, v in cdd.iteritems():
@@ -611,7 +636,8 @@ class ChangesetResource(ModelResource):
                         setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_update(changeset, changeset_details,
+            changeset = businesslogic.changeset_update(
+                changeset, changeset_details,
                 to_be_deleted_changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -630,7 +656,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_reject(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.changeset_reject(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -649,7 +676,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_approve(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.changeset_approve(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -668,7 +696,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.soft_delete_changeset(int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = businesslogic.soft_delete_changeset(
+                int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -681,7 +710,8 @@ class ChangesetResource(ModelResource):
 
 
 class ChangesetDetailResource(ModelResource):
-    changeset = fields.ForeignKey(ChangesetResource, 'changeset', null=True, blank=True, full=True)
+    changeset = fields.ForeignKey(
+        ChangesetResource, 'changeset', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetDetail.objects.all()
@@ -698,8 +728,7 @@ class ChangesetDetailResource(ModelResource):
 
 class ChangesetTestResource(ModelResource):
     changeset_detail = fields.ForeignKey(
-        ChangesetDetailResource, 'changeset_detail', null=True, blank=True,
-        full=True)
+        ChangesetDetailResource, 'changeset_detail', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetTest.objects.all()
@@ -715,7 +744,7 @@ class ChangesetTestResource(ModelResource):
 
 class ChangesetValidationResource(ModelResource):
     changeset = fields.ForeignKey(
-        ChangesetResource, 'changeset', null=True, blank=True, full=True)
+        ChangesetResource, 'changeset', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetValidation.objects.all()

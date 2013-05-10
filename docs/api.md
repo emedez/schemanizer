@@ -164,47 +164,23 @@ $ curl -u admin:admin http://localhost:8000/api/v1/user/
     },
     "objects": [
         {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-05-08T18:36:37",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/1/",
-                "username": "admin"
-            },
+            "auth_user": "/api/v1/auth_user/1/",
             "created_at": "2013-04-03T17:02:34",
             "email": "admin@example.com",
             "id": 1,
             "name": "admin",
             "resource_uri": "/api/v1/user/1/",
-            "role": {
-                "created_at": "2013-04-01T04:02:25",
-                "id": 1,
-                "name": "admin",
-                "resource_uri": "/api/v1/role/1/",
-                "updated_at": "2013-04-01T04:02:25"
-            },
+            "role": "/api/v1/role/1/",
             "updated_at": "2013-04-29T01:18:19"
         },
         {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-05-03T00:04:56",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/2/",
-                "username": "dba"
-            },
+            "auth_user": "/api/v1/auth_user/2/",
             "created_at": "2013-04-29T19:11:10",
             "email": "dba@example.com",
             "id": 2,
             "name": "dba",
             "resource_uri": "/api/v1/user/2/",
-            "role": {
-                "created_at": "2013-04-01T04:02:31",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/role/2/",
-                "updated_at": "2013-04-01T04:02:31"
-            },
+            "role": "/api/v1/role/2/",
             "updated_at": "2013-04-29T19:11:10"
         }
     ]
@@ -224,25 +200,13 @@ Sample usage and output:
 $ curl -u admin:admin http://localhost:8000/api/v1/user/1/
 
 {
-    "auth_user": {
-        "first_name": "",
-        "last_login": "2013-05-08T18:36:37",
-        "last_name": "",
-        "resource_uri": "/api/v1/auth_user/1/",
-        "username": "admin"
-    },
+    "auth_user": "/api/v1/auth_user/1/",
     "created_at": "2013-04-03T17:02:34",
     "email": "admin@example.com",
     "id": 1,
     "name": "admin",
     "resource_uri": "/api/v1/user/1/",
-    "role": {
-        "created_at": "2013-04-01T04:02:25",
-        "id": 1,
-        "name": "admin",
-        "resource_uri": "/api/v1/role/1/",
-        "updated_at": "2013-04-01T04:02:25"
-    },
+    "role": "/api/v1/role/1/",
     "updated_at": "2013-04-29T01:18:19"
 }
 ```
@@ -268,25 +232,13 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -X POST --data '{"name": "dev2", "email": "dev2@example.com", "role_id": 3, "password": "dev"}' -u admin:admin http://localhost:8000/api/v1/user/create/
 
 {
-    "auth_user": {
-        "first_name": "",
-        "last_login": "2013-05-09T01:50:08.020853",
-        "last_name": "",
-        "resource_uri": "/api/v1/auth_user/8/",
-        "username": "dev2"
-    },
+    "auth_user": "/api/v1/auth_user/8/",
     "created_at": "2013-05-09T01:50:08.416342",
     "email": "dev2@example.com",
     "id": 8,
     "name": "dev2",
     "resource_uri": "/api/v1/user/7/",
-    "role": {
-        "created_at": "2013-04-01T04:02:36",
-        "id": 3,
-        "name": "developer",
-        "resource_uri": "/api/v1/role/3/",
-        "updated_at": "2013-04-01T04:02:36"
-    },
+    "role": "/api/v1/role/3/",
     "updated_at": "2013-05-09T01:50:08.416651"
 }
 ```
@@ -313,25 +265,13 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -X POST --data '{"name": "dev_2", "email": "dev_2@example.com", "role_id": 3}' -u admin:admin http://localhost:8000/api/v1/user/update/8/
 
 {
-    "auth_user": {
-        "first_name": "",
-        "last_login": "2013-05-09T01:56:18",
-        "last_name": "",
-        "resource_uri": "/api/v1/auth_user/9/",
-        "username": "dev_2"
-    },
+    "auth_user": "/api/v1/auth_user/9/",
     "created_at": "2013-05-09T01:56:18",
     "email": "dev_2@example.com",
     "id": 8,
     "name": "dev_2",
     "resource_uri": "/api/v1/user/8/",
-    "role": {
-        "created_at": "2013-04-01T04:02:36",
-        "id": 3,
-        "name": "developer",
-        "resource_uri": "/api/v1/role/3/",
-        "updated_at": "2013-04-01T04:02:36"
-    },
+    "role": "/api/v1/role/3/",
     "updated_at": "2013-05-09T02:06:24.672610"
 }
 ```
@@ -485,13 +425,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
         {
             "cached_size": null,
             "created_at": "2013-04-29T21:15:54",
-            "environment": {
-                "created_at": "2013-04-27T00:24:40",
-                "id": 1,
-                "name": "dev",
-                "resource_uri": "/api/v1/environment/1/",
-                "updated_at": "2013-04-27T00:24:40"
-            },
+            "environment": "/api/v1/environment/1/",
             "hostname": "localhost",
             "id": 1,
             "name": "localhost",
@@ -518,13 +452,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 {
     "cached_size": null,
     "created_at": "2013-04-29T21:15:54",
-    "environment": {
-        "created_at": "2013-04-27T00:24:40",
-        "id": 1,
-        "name": "dev",
-        "resource_uri": "/api/v1/environment/1/",
-        "updated_at": "2013-04-27T00:24:40"
-    },
+    "environment": "/api/v1/environment/1/",
     "hostname": "localhost",
     "id": 1,
     "name": "localhost",
@@ -663,13 +591,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
         {
             "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
             "created_at": "2013-04-30T23:20:15",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
+            "database_schema": "/api/v1/database_schema/5/",
             "ddl": "...",
             "id": 11,
             "resource_uri": "/api/v1/schema_version/11/",
@@ -695,13 +617,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
         {
             "checksum": "f8c2431456e6847af3a6fab68e6b1e39",
             "created_at": "2013-05-09T21:49:20",
-            "database_schema": {
-                "created_at": "2013-05-09T21:49:20",
-                "id": 6,
-                "name": "pdbtest_db1",
-                "resource_uri": "/api/v1/database_schema/6/",
-                "updated_at": "2013-05-09T21:49:20"
-            },
+            "database_schema": "/api/v1/database_schema/6/",
             "ddl": "...",
             "id": 20,
             "resource_uri": "/api/v1/schema_version/20/",
@@ -726,13 +642,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 {
     "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
     "created_at": "2013-04-30T23:20:15",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "ddl": "...",
     "id": 11,
     "resource_uri": "/api/v1/schema_version/11/",
@@ -763,13 +673,7 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"server_id": 1, "dat
 {
     "checksum": "f8c2431456e6847af3a6fab68e6b1e39",
     "created_at": "2013-05-09T21:49:20.892147",
-    "database_schema": {
-        "created_at": "2013-05-09T21:49:20.699588",
-        "id": 6,
-        "name": "pdbtest_db1",
-        "resource_uri": "/api/v1/database_schema/6/",
-        "updated_at": "2013-05-09T21:49:20.699933"
-    },
+    "database_schema": "/api/v1/database_schema/6/",
     "ddl": "...",
     "id": 20,
     "resource_uri": "/api/v1/schema_version/20/",
@@ -801,118 +705,21 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     },
     "objects": [
         {
-            "after_version": {
-                "checksum": "9c6c0612b81298ff8dbf86ae35ebc9d4",
-                "created_at": "2013-05-03T00:19:19",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "ddl": "...",
-                "id": 18,
-                "resource_uri": "/api/v1/schema_version/18/",
-                "updated_at": "2013-05-03T00:19:19"
-            },
+            "after_version": "/api/v1/schema_version/18/",
             "approved_at": "2013-05-03T00:19:29",
-            "approved_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-05-03T00:04:56",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/2/",
-                    "username": "dba"
-                },
-                "created_at": "2013-04-29T19:11:10",
-                "email": "dba@example.com",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/user/2/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:31",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/role/2/",
-                    "updated_at": "2013-04-01T04:02:31"
-                },
-                "updated_at": "2013-04-29T19:11:10"
-            },
-            "before_version": {
-                "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-                "created_at": "2013-05-01T00:47:27",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "ddl": "...",
-                "id": 13,
-                "resource_uri": "/api/v1/schema_version/13/",
-                "updated_at": "2013-05-01T00:47:27"
-            },
+            "approved_by": "/api/v1/user/2/",
+            "before_version": "/api/v1/schema_version/13/",
             "classification": "painless",
             "created_at": "2013-04-30T23:23:00",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
+            "database_schema": "/api/v1/database_schema/5/",
             "id": 4,
             "is_deleted": 0,
             "resource_uri": "/api/v1/changeset/4/",
             "review_status": "approved",
             "reviewed_at": "2013-05-03T00:19:19",
-            "reviewed_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-05-03T00:04:56",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/2/",
-                    "username": "dba"
-                },
-                "created_at": "2013-04-29T19:11:10",
-                "email": "dba@example.com",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/user/2/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:31",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/role/2/",
-                    "updated_at": "2013-04-01T04:02:31"
-                },
-                "updated_at": "2013-04-29T19:11:10"
-            },
+            "reviewed_by": "/api/v1/user/2/",
             "submitted_at": "2013-04-30T23:23:00",
-            "submitted_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-05-03T00:04:56",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/2/",
-                    "username": "dba"
-                },
-                "created_at": "2013-04-29T19:11:10",
-                "email": "dba@example.com",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/user/2/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:31",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/role/2/",
-                    "updated_at": "2013-04-01T04:02:31"
-                },
-                "updated_at": "2013-04-29T19:11:10"
-            },
+            "submitted_by": "/api/v1/user/2/",
             "type": "DDL:Table:Create",
             "updated_at": "2013-05-03T00:19:29",
             "version_control_url": ""
@@ -948,13 +755,7 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
             "before_version": null,
             "classification": "painless",
             "created_at": "2013-05-10T00:21:41",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
+            "database_schema": "/api/v1/database_schema/5/",
             "id": 9,
             "is_deleted": 0,
             "resource_uri": "/api/v1/changeset/9/",
@@ -962,28 +763,7 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
             "reviewed_at": null,
             "reviewed_by": null,
             "submitted_at": "2013-05-10T00:21:41",
-            "submitted_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-04-29T19:11:37",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/3/",
-                    "username": "dev"
-                },
-                "created_at": "2013-04-29T19:11:37",
-                "email": "dev@example.com",
-                "id": 3,
-                "name": "dev",
-                "resource_uri": "/api/v1/user/3/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:36",
-                    "id": 3,
-                    "name": "developer",
-                    "resource_uri": "/api/v1/role/3/",
-                    "updated_at": "2013-04-01T04:02:36"
-                },
-                "updated_at": "2013-04-29T19:11:37"
-            },
+            "submitted_by": "/api/v1/user/3/",
             "type": "DDL:Table:Create",
             "updated_at": "2013-05-10T00:21:41",
             "version_control_url": ""
@@ -1006,118 +786,21 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset/4/
 
 {
-    "after_version": {
-        "checksum": "9c6c0612b81298ff8dbf86ae35ebc9d4",
-        "created_at": "2013-05-03T00:19:19",
-        "database_schema": {
-            "created_at": "2013-04-30T23:20:15",
-            "id": 5,
-            "name": "test_schema_1",
-            "resource_uri": "/api/v1/database_schema/5/",
-            "updated_at": "2013-04-30T23:20:15"
-        },
-        "ddl": "...",
-        "id": 18,
-        "resource_uri": "/api/v1/schema_version/18/",
-        "updated_at": "2013-05-03T00:19:19"
-    },
+    "after_version": "/api/v1/schema_version/18/",
     "approved_at": "2013-05-03T00:19:29",
-    "approved_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
-    "before_version": {
-        "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-        "created_at": "2013-05-01T00:47:27",
-        "database_schema": {
-            "created_at": "2013-04-30T23:20:15",
-            "id": 5,
-            "name": "test_schema_1",
-            "resource_uri": "/api/v1/database_schema/5/",
-            "updated_at": "2013-04-30T23:20:15"
-        },
-        "ddl": "...",
-        "id": 13,
-        "resource_uri": "/api/v1/schema_version/13/",
-        "updated_at": "2013-05-01T00:47:27"
-    },
+    "approved_by": "/api/v1/user/2/",
+    "before_version": "/api/v1/schema_version/13/",
     "classification": "painless",
     "created_at": "2013-04-30T23:23:00",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "id": 4,
     "is_deleted": 0,
     "resource_uri": "/api/v1/changeset/4/",
     "review_status": "approved",
     "reviewed_at": "2013-05-03T00:19:19",
-    "reviewed_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "reviewed_by": "/api/v1/user/2/",
     "submitted_at": "2013-04-30T23:23:00",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "submitted_by": "/api/v1/user/2/",
     "type": "DDL:Table:Create",
     "updated_at": "2013-05-03T00:19:29",
     "version_control_url": ""
@@ -1163,13 +846,7 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
     "before_version": null,
     "classification": "painless",
     "created_at": "2013-05-10T00:21:41.454048",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
     "is_deleted": 0,
     "resource_uri": "/api/v1/changeset/9/",
@@ -1177,28 +854,7 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41.452454",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-04-29T19:11:37",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/3/",
-            "username": "dev"
-        },
-        "created_at": "2013-04-29T19:11:37",
-        "email": "dev@example.com",
-        "id": 3,
-        "name": "dev",
-        "resource_uri": "/api/v1/user/3/",
-        "role": {
-            "created_at": "2013-04-01T04:02:36",
-            "id": 3,
-            "name": "developer",
-            "resource_uri": "/api/v1/role/3/",
-            "updated_at": "2013-04-01T04:02:36"
-        },
-        "updated_at": "2013-04-29T19:11:37"
-    },
+    "submitted_by": "/api/v1/user/3/",
     "type": "DDL:Table:Create",
     "updated_at": "2013-05-10T00:21:41.454188",
     "version_control_url": ""
@@ -1221,28 +877,7 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
 {
     "after_version": null,
     "approved_at": "2013-05-10T00:35:16.485194",
-    "approved_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "approved_by": "/api/v1/user/2/",
     "before_version": null,
     "classification": "painless",
     "created_at": "2013-05-10T00:21:41",
@@ -1260,28 +895,7 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-04-29T19:11:37",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/3/",
-            "username": "dev"
-        },
-        "created_at": "2013-04-29T19:11:37",
-        "email": "dev@example.com",
-        "id": 3,
-        "name": "dev",
-        "resource_uri": "/api/v1/user/3/",
-        "role": {
-            "created_at": "2013-04-01T04:02:36",
-            "id": 3,
-            "name": "developer",
-            "resource_uri": "/api/v1/role/3/",
-            "updated_at": "2013-04-01T04:02:36"
-        },
-        "updated_at": "2013-04-29T19:11:37"
-    },
+    "submitted_by": "/api/v1/user/3/",
     "type": "DDL:Table:Create",
     "updated_at": "2013-05-10T00:35:16.520062",
     "version_control_url": ""
@@ -1303,38 +917,11 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
 {
     "after_version": null,
     "approved_at": "2013-05-10T00:40:25.307858",
-    "approved_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "approved_by": "/api/v1/user/2/",
     "before_version": null,
     "classification": "painless",
     "created_at": "2013-05-10T00:21:41",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
     "is_deleted": 0,
     "resource_uri": "/api/v1/changeset/9/",
@@ -1342,28 +929,7 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-04-29T19:11:37",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/3/",
-            "username": "dev"
-        },
-        "created_at": "2013-04-29T19:11:37",
-        "email": "dev@example.com",
-        "id": 3,
-        "name": "dev",
-        "resource_uri": "/api/v1/user/3/",
-        "role": {
-            "created_at": "2013-04-01T04:02:36",
-            "id": 3,
-            "name": "developer",
-            "resource_uri": "/api/v1/role/3/",
-            "updated_at": "2013-04-01T04:02:36"
-        },
-        "updated_at": "2013-04-29T19:11:37"
-    },
+    "submitted_by": "/api/v1/user/3/",
     "type": "DDL:Table:Create",
     "updated_at": "2013-05-10T00:40:25.367167",
     "version_control_url": ""
@@ -1385,38 +951,11 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
 {
     "after_version": null,
     "approved_at": "2013-05-10T00:40:25",
-    "approved_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "approved_by": "/api/v1/user/2/",
     "before_version": null,
     "classification": "painless",
     "created_at": "2013-05-10T00:21:41",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
     "is_deleted": 1,
     "resource_uri": "/api/v1/changeset/9/",
@@ -1424,28 +963,7 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-04-29T19:11:37",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/3/",
-            "username": "dev"
-        },
-        "created_at": "2013-04-29T19:11:37",
-        "email": "dev@example.com",
-        "id": 3,
-        "name": "dev",
-        "resource_uri": "/api/v1/user/3/",
-        "role": {
-            "created_at": "2013-04-01T04:02:36",
-            "id": 3,
-            "name": "developer",
-            "resource_uri": "/api/v1/role/3/",
-            "updated_at": "2013-04-01T04:02:36"
-        },
-        "updated_at": "2013-04-29T19:11:37"
-    },
+    "submitted_by": "/api/v1/user/3/",
     "type": "DDL:Table:Create",
     "updated_at": "2013-05-10T00:48:12.179797",
     "version_control_url": ""
@@ -1496,38 +1014,11 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
 {
     "after_version": null,
     "approved_at": "2013-05-10T00:40:25",
-    "approved_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-05-03T00:04:56",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/2/",
-            "username": "dba"
-        },
-        "created_at": "2013-04-29T19:11:10",
-        "email": "dba@example.com",
-        "id": 2,
-        "name": "dba",
-        "resource_uri": "/api/v1/user/2/",
-        "role": {
-            "created_at": "2013-04-01T04:02:31",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/role/2/",
-            "updated_at": "2013-04-01T04:02:31"
-        },
-        "updated_at": "2013-04-29T19:11:10"
-    },
+    "approved_by": "/api/v1/user/2/",
     "before_version": null,
     "classification": "impacting",
     "created_at": "2013-05-10T00:21:41",
-    "database_schema": {
-        "created_at": "2013-04-30T23:20:15",
-        "id": 5,
-        "name": "test_schema_1",
-        "resource_uri": "/api/v1/database_schema/5/",
-        "updated_at": "2013-04-30T23:20:15"
-    },
+    "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
     "is_deleted": 0,
     "resource_uri": "/api/v1/changeset/9/",
@@ -1535,321 +1026,13 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
-    "submitted_by": {
-        "auth_user": {
-            "first_name": "",
-            "last_login": "2013-04-29T19:11:37",
-            "last_name": "",
-            "resource_uri": "/api/v1/auth_user/3/",
-            "username": "dev"
-        },
-        "created_at": "2013-04-29T19:11:37",
-        "email": "dev@example.com",
-        "id": 3,
-        "name": "dev",
-        "resource_uri": "/api/v1/user/3/",
-        "role": {
-            "created_at": "2013-04-01T04:02:36",
-            "id": 3,
-            "name": "developer",
-            "resource_uri": "/api/v1/role/3/",
-            "updated_at": "2013-04-01T04:02:36"
-        },
-        "updated_at": "2013-04-29T19:11:37"
-    },
+    "submitted_by": "/api/v1/user/3/",
     "type": "DDL:Table:Drop",
     "updated_at": "2013-05-10T01:24:14.981568",
     "version_control_url": "https://"
 }
 ```
 
-Changeset Detail
-----------------
-
-### Get Changeset Details
-
-API:
-```
-GET /api/v1/changeset_detail/?changeset__id=<changeset_id>
-```
-changeset_id - Changeset ID/PK
-
-Sample usage and output:
-```
-$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset_detail/?changeset__id=9
-
-{
-    "meta": {
-        "limit": 20,
-        "next": null,
-        "offset": 0,
-        "previous": null,
-        "total_count": 2
-    },
-    "objects": [
-        {
-            "after_checksum": "",
-            "apply_sql": "ccreate table t1...",
-            "before_checksum": "",
-            "changeset": {
-                "after_version": null,
-                "approved_at": "2013-05-10T00:40:25",
-                "approved_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-05-03T00:04:56",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/2/",
-                        "username": "dba"
-                    },
-                    "created_at": "2013-04-29T19:11:10",
-                    "email": "dba@example.com",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/user/2/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:31",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/role/2/",
-                        "updated_at": "2013-04-01T04:02:31"
-                    },
-                    "updated_at": "2013-04-29T19:11:10"
-                },
-                "before_version": null,
-                "classification": "impacting",
-                "created_at": "2013-05-10T00:21:41",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "id": 9,
-                "is_deleted": 0,
-                "resource_uri": "/api/v1/changeset/9/",
-                "review_status": "needs",
-                "reviewed_at": null,
-                "reviewed_by": null,
-                "submitted_at": "2013-05-10T00:21:41",
-                "submitted_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-04-29T19:11:37",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/3/",
-                        "username": "dev"
-                    },
-                    "created_at": "2013-04-29T19:11:37",
-                    "email": "dev@example.com",
-                    "id": 3,
-                    "name": "dev",
-                    "resource_uri": "/api/v1/user/3/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:36",
-                        "id": 3,
-                        "name": "developer",
-                        "resource_uri": "/api/v1/role/3/",
-                        "updated_at": "2013-04-01T04:02:36"
-                    },
-                    "updated_at": "2013-04-29T19:11:37"
-                },
-                "type": "DDL:Table:Drop",
-                "updated_at": "2013-05-10T01:24:14",
-                "version_control_url": "https://"
-            },
-            "count_sql": "",
-            "created_at": "2013-05-10T00:21:41",
-            "description": "ccreate a table",
-            "id": 10,
-            "resource_uri": "/api/v1/changeset_detail/10/",
-            "revert_sql": "ddrop table t1",
-            "type": "add",
-            "updated_at": "2013-05-10T01:24:15",
-            "volumetric_values": ""
-        },
-        {
-            "after_checksum": "",
-            "apply_sql": "drop table t2",
-            "before_checksum": "",
-            "changeset": {
-                "after_version": null,
-                "approved_at": "2013-05-10T00:40:25",
-                "approved_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-05-03T00:04:56",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/2/",
-                        "username": "dba"
-                    },
-                    "created_at": "2013-04-29T19:11:10",
-                    "email": "dba@example.com",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/user/2/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:31",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/role/2/",
-                        "updated_at": "2013-04-01T04:02:31"
-                    },
-                    "updated_at": "2013-04-29T19:11:10"
-                },
-                "before_version": null,
-                "classification": "impacting",
-                "created_at": "2013-05-10T00:21:41",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "id": 9,
-                "is_deleted": 0,
-                "resource_uri": "/api/v1/changeset/9/",
-                "review_status": "needs",
-                "reviewed_at": null,
-                "reviewed_by": null,
-                "submitted_at": "2013-05-10T00:21:41",
-                "submitted_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-04-29T19:11:37",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/3/",
-                        "username": "dev"
-                    },
-                    "created_at": "2013-04-29T19:11:37",
-                    "email": "dev@example.com",
-                    "id": 3,
-                    "name": "dev",
-                    "resource_uri": "/api/v1/user/3/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:36",
-                        "id": 3,
-                        "name": "developer",
-                        "resource_uri": "/api/v1/role/3/",
-                        "updated_at": "2013-04-01T04:02:36"
-                    },
-                    "updated_at": "2013-04-29T19:11:37"
-                },
-                "type": "DDL:Table:Drop",
-                "updated_at": "2013-05-10T01:24:14",
-                "version_control_url": "https://"
-            },
-            "count_sql": "",
-            "created_at": "2013-05-10T01:24:15",
-            "description": "drop a table",
-            "id": 13,
-            "resource_uri": "/api/v1/changeset_detail/13/",
-            "revert_sql": "create table t2...",
-            "type": "drop",
-            "updated_at": "2013-05-10T01:24:15",
-            "volumetric_values": ""
-        }
-    ]
-}
-```
-
-### Get Changeset Detail
-
-API:
-```
-GET /api/v1/changeset_detail/<changeset_detail_id>/
-```
-changeset_detail_id - Changeset Detail ID/PK
-
-Sample usage and output:
-```
-$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset_detail/10/
-
-{
-    "after_checksum": "",
-    "apply_sql": "ccreate table t1...",
-    "before_checksum": "",
-    "changeset": {
-        "after_version": null,
-        "approved_at": "2013-05-10T00:40:25",
-        "approved_by": {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-05-03T00:04:56",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/2/",
-                "username": "dba"
-            },
-            "created_at": "2013-04-29T19:11:10",
-            "email": "dba@example.com",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/user/2/",
-            "role": {
-                "created_at": "2013-04-01T04:02:31",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/role/2/",
-                "updated_at": "2013-04-01T04:02:31"
-            },
-            "updated_at": "2013-04-29T19:11:10"
-        },
-        "before_version": null,
-        "classification": "impacting",
-        "created_at": "2013-05-10T00:21:41",
-        "database_schema": {
-            "created_at": "2013-04-30T23:20:15",
-            "id": 5,
-            "name": "test_schema_1",
-            "resource_uri": "/api/v1/database_schema/5/",
-            "updated_at": "2013-04-30T23:20:15"
-        },
-        "id": 9,
-        "is_deleted": 0,
-        "resource_uri": "/api/v1/changeset/9/",
-        "review_status": "needs",
-        "reviewed_at": null,
-        "reviewed_by": null,
-        "submitted_at": "2013-05-10T00:21:41",
-        "submitted_by": {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-04-29T19:11:37",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/3/",
-                "username": "dev"
-            },
-            "created_at": "2013-04-29T19:11:37",
-            "email": "dev@example.com",
-            "id": 3,
-            "name": "dev",
-            "resource_uri": "/api/v1/user/3/",
-            "role": {
-                "created_at": "2013-04-01T04:02:36",
-                "id": 3,
-                "name": "developer",
-                "resource_uri": "/api/v1/role/3/",
-                "updated_at": "2013-04-01T04:02:36"
-            },
-            "updated_at": "2013-04-29T19:11:37"
-        },
-        "type": "DDL:Table:Drop",
-        "updated_at": "2013-05-10T01:24:14",
-        "version_control_url": "https://"
-    },
-    "count_sql": "",
-    "created_at": "2013-05-10T00:21:41",
-    "description": "ccreate a table",
-    "id": 10,
-    "resource_uri": "/api/v1/changeset_detail/10/",
-    "revert_sql": "ddrop table t1",
-    "type": "add",
-    "updated_at": "2013-05-10T01:24:15",
-    "volumetric_values": ""
-}
-```
 
 ### Review Changeset
 
@@ -1974,6 +1157,94 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
 ```
 
 
+Changeset Detail
+----------------
+
+### Get Changeset Details
+
+API:
+```
+GET /api/v1/changeset_detail/?changeset__id=<changeset_id>
+```
+changeset_id - Changeset ID/PK
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset_detail/?changeset__id=9
+
+{
+    "meta": {
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total_count": 2
+    },
+    "objects": [
+        {
+            "after_checksum": "",
+            "apply_sql": "ccreate table t1...",
+            "before_checksum": "",
+            "changeset": "/api/v1/changeset/9/",
+            "count_sql": "",
+            "created_at": "2013-05-10T00:21:41",
+            "description": "ccreate a table",
+            "id": 10,
+            "resource_uri": "/api/v1/changeset_detail/10/",
+            "revert_sql": "ddrop table t1",
+            "type": "add",
+            "updated_at": "2013-05-10T01:24:15",
+            "volumetric_values": ""
+        },
+        {
+            "after_checksum": "",
+            "apply_sql": "drop table t2",
+            "before_checksum": "",
+            "changeset": "/api/v1/changeset/9/",
+            "count_sql": "",
+            "created_at": "2013-05-10T01:24:15",
+            "description": "drop a table",
+            "id": 13,
+            "resource_uri": "/api/v1/changeset_detail/13/",
+            "revert_sql": "create table t2...",
+            "type": "drop",
+            "updated_at": "2013-05-10T01:24:15",
+            "volumetric_values": ""
+        }
+    ]
+}
+```
+
+### Get Changeset Detail
+
+API:
+```
+GET /api/v1/changeset_detail/<changeset_detail_id>/
+```
+changeset_detail_id - Changeset Detail ID/PK
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset_detail/10/
+
+{
+    "after_checksum": "",
+    "apply_sql": "ccreate table t1...",
+    "before_checksum": "",
+    "changeset": "/api/v1/changeset/9/",
+    "count_sql": "",
+    "created_at": "2013-05-10T00:21:41",
+    "description": "ccreate a table",
+    "id": 10,
+    "resource_uri": "/api/v1/changeset_detail/10/",
+    "revert_sql": "ddrop table t1",
+    "type": "add",
+    "updated_at": "2013-05-10T01:24:15",
+    "volumetric_values": ""
+}
+```
+
+
 Changeset Test
 --------------
 
@@ -1998,116 +1269,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     },
     "objects": [
         {
-            "changeset_detail": {
-                "after_checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-                "apply_sql": "create table t3 (\r\n  id int primary key auto_increment\r\n)",
-                "before_checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-                "changeset": {
-                    "after_version": {
-                        "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-                        "created_at": "2013-05-10T23:25:00",
-                        "database_schema": {
-                            "created_at": "2013-04-30T23:20:15",
-                            "id": 5,
-                            "name": "test_schema_1",
-                            "resource_uri": "/api/v1/database_schema/5/",
-                            "updated_at": "2013-04-30T23:20:15"
-                        },
-                        "ddl": "...",
-                        "id": 23,
-                        "resource_uri": "/api/v1/schema_version/23/",
-                        "updated_at": "2013-05-10T23:25:00"
-                    },
-                    "approved_at": null,
-                    "approved_by": null,
-                    "before_version": {
-                        "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-                        "created_at": "2013-04-30T23:20:15",
-                        "database_schema": {
-                            "created_at": "2013-04-30T23:20:15",
-                            "id": 5,
-                            "name": "test_schema_1",
-                            "resource_uri": "/api/v1/database_schema/5/",
-                            "updated_at": "2013-04-30T23:20:15"
-                        },
-                        "ddl": "...",
-                        "id": 11,
-                        "resource_uri": "/api/v1/schema_version/11/",
-                        "updated_at": "2013-04-30T23:20:15"
-                    },
-                    "classification": "painless",
-                    "created_at": "2013-05-10T23:24:26",
-                    "database_schema": {
-                        "created_at": "2013-04-30T23:20:15",
-                        "id": 5,
-                        "name": "test_schema_1",
-                        "resource_uri": "/api/v1/database_schema/5/",
-                        "updated_at": "2013-04-30T23:20:15"
-                    },
-                    "id": 11,
-                    "is_deleted": 0,
-                    "resource_uri": "/api/v1/changeset/11/",
-                    "review_status": "in_progress",
-                    "reviewed_at": "2013-05-10T23:25:00",
-                    "reviewed_by": {
-                        "auth_user": {
-                            "first_name": "",
-                            "last_login": "2013-05-10T22:25:24",
-                            "last_name": "",
-                            "resource_uri": "/api/v1/auth_user/2/",
-                            "username": "dba"
-                        },
-                        "created_at": "2013-04-29T19:11:10",
-                        "email": "dba@example.com",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/user/2/",
-                        "role": {
-                            "created_at": "2013-04-01T04:02:31",
-                            "id": 2,
-                            "name": "dba",
-                            "resource_uri": "/api/v1/role/2/",
-                            "updated_at": "2013-04-01T04:02:31"
-                        },
-                        "updated_at": "2013-04-29T19:11:10"
-                    },
-                    "submitted_at": "2013-05-10T23:24:26",
-                    "submitted_by": {
-                        "auth_user": {
-                            "first_name": "",
-                            "last_login": "2013-05-10T22:25:24",
-                            "last_name": "",
-                            "resource_uri": "/api/v1/auth_user/2/",
-                            "username": "dba"
-                        },
-                        "created_at": "2013-04-29T19:11:10",
-                        "email": "dba@example.com",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/user/2/",
-                        "role": {
-                            "created_at": "2013-04-01T04:02:31",
-                            "id": 2,
-                            "name": "dba",
-                            "resource_uri": "/api/v1/role/2/",
-                            "updated_at": "2013-04-01T04:02:31"
-                        },
-                        "updated_at": "2013-04-29T19:11:10"
-                    },
-                    "type": "DDL:Table:Create",
-                    "updated_at": "2013-05-10T23:25:00",
-                    "version_control_url": ""
-                },
-                "count_sql": "",
-                "created_at": "2013-05-10T23:24:26",
-                "description": "create table t3",
-                "id": 15,
-                "resource_uri": "/api/v1/changeset_detail/15/",
-                "revert_sql": "drop table t3",
-                "type": "add",
-                "updated_at": "2013-05-10T23:25:00",
-                "volumetric_values": ""
-            },
+            "changeset_detail": "/api/v1/changeset_detail/15/",
             "created_at": "2013-05-10T23:25:00",
             "ended_at": "2013-05-10T23:25:00",
             "id": 27,
@@ -2133,116 +1295,7 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_test/27/
 
 {
-    "changeset_detail": {
-        "after_checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-        "apply_sql": "create table t3 (\r\n  id int primary key auto_increment\r\n)",
-        "before_checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-        "changeset": {
-            "after_version": {
-                "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-                "created_at": "2013-05-10T23:25:00",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "ddl": "...",
-                "id": 23,
-                "resource_uri": "/api/v1/schema_version/23/",
-                "updated_at": "2013-05-10T23:25:00"
-            },
-            "approved_at": null,
-            "approved_by": null,
-            "before_version": {
-                "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-                "created_at": "2013-04-30T23:20:15",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "ddl": "...",
-                "id": 11,
-                "resource_uri": "/api/v1/schema_version/11/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
-            "classification": "painless",
-            "created_at": "2013-05-10T23:24:26",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
-            "id": 11,
-            "is_deleted": 0,
-            "resource_uri": "/api/v1/changeset/11/",
-            "review_status": "in_progress",
-            "reviewed_at": "2013-05-10T23:25:00",
-            "reviewed_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-05-10T22:25:24",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/2/",
-                    "username": "dba"
-                },
-                "created_at": "2013-04-29T19:11:10",
-                "email": "dba@example.com",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/user/2/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:31",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/role/2/",
-                    "updated_at": "2013-04-01T04:02:31"
-                },
-                "updated_at": "2013-04-29T19:11:10"
-            },
-            "submitted_at": "2013-05-10T23:24:26",
-            "submitted_by": {
-                "auth_user": {
-                    "first_name": "",
-                    "last_login": "2013-05-10T22:25:24",
-                    "last_name": "",
-                    "resource_uri": "/api/v1/auth_user/2/",
-                    "username": "dba"
-                },
-                "created_at": "2013-04-29T19:11:10",
-                "email": "dba@example.com",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/user/2/",
-                "role": {
-                    "created_at": "2013-04-01T04:02:31",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/role/2/",
-                    "updated_at": "2013-04-01T04:02:31"
-                },
-                "updated_at": "2013-04-29T19:11:10"
-            },
-            "type": "DDL:Table:Create",
-            "updated_at": "2013-05-10T23:25:00",
-            "version_control_url": ""
-        },
-        "count_sql": "",
-        "created_at": "2013-05-10T23:24:26",
-        "description": "create table t3",
-        "id": 15,
-        "resource_uri": "/api/v1/changeset_detail/15/",
-        "revert_sql": "drop table t3",
-        "type": "add",
-        "updated_at": "2013-05-10T23:25:00",
-        "volumetric_values": ""
-    },
+    "changeset_detail": "/api/v1/changeset_detail/15/",
     "created_at": "2013-05-10T23:25:00",
     "ended_at": "2013-05-10T23:25:00",
     "id": 27,
@@ -2278,102 +1331,7 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     },
     "objects": [
         {
-            "changeset": {
-                "after_version": {
-                    "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-                    "created_at": "2013-05-10T23:25:00",
-                    "database_schema": {
-                        "created_at": "2013-04-30T23:20:15",
-                        "id": 5,
-                        "name": "test_schema_1",
-                        "resource_uri": "/api/v1/database_schema/5/",
-                        "updated_at": "2013-04-30T23:20:15"
-                    },
-                    "ddl": "...",
-                    "id": 23,
-                    "resource_uri": "/api/v1/schema_version/23/",
-                    "updated_at": "2013-05-10T23:25:00"
-                },
-                "approved_at": null,
-                "approved_by": null,
-                "before_version": {
-                    "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-                    "created_at": "2013-04-30T23:20:15",
-                    "database_schema": {
-                        "created_at": "2013-04-30T23:20:15",
-                        "id": 5,
-                        "name": "test_schema_1",
-                        "resource_uri": "/api/v1/database_schema/5/",
-                        "updated_at": "2013-04-30T23:20:15"
-                    },
-                    "ddl": "...",
-                    "id": 11,
-                    "resource_uri": "/api/v1/schema_version/11/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "classification": "painless",
-                "created_at": "2013-05-10T23:24:26",
-                "database_schema": {
-                    "created_at": "2013-04-30T23:20:15",
-                    "id": 5,
-                    "name": "test_schema_1",
-                    "resource_uri": "/api/v1/database_schema/5/",
-                    "updated_at": "2013-04-30T23:20:15"
-                },
-                "id": 11,
-                "is_deleted": 0,
-                "resource_uri": "/api/v1/changeset/11/",
-                "review_status": "in_progress",
-                "reviewed_at": "2013-05-10T23:25:00",
-                "reviewed_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-05-10T22:25:24",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/2/",
-                        "username": "dba"
-                    },
-                    "created_at": "2013-04-29T19:11:10",
-                    "email": "dba@example.com",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/user/2/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:31",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/role/2/",
-                        "updated_at": "2013-04-01T04:02:31"
-                    },
-                    "updated_at": "2013-04-29T19:11:10"
-                },
-                "submitted_at": "2013-05-10T23:24:26",
-                "submitted_by": {
-                    "auth_user": {
-                        "first_name": "",
-                        "last_login": "2013-05-10T22:25:24",
-                        "last_name": "",
-                        "resource_uri": "/api/v1/auth_user/2/",
-                        "username": "dba"
-                    },
-                    "created_at": "2013-04-29T19:11:10",
-                    "email": "dba@example.com",
-                    "id": 2,
-                    "name": "dba",
-                    "resource_uri": "/api/v1/user/2/",
-                    "role": {
-                        "created_at": "2013-04-01T04:02:31",
-                        "id": 2,
-                        "name": "dba",
-                        "resource_uri": "/api/v1/role/2/",
-                        "updated_at": "2013-04-01T04:02:31"
-                    },
-                    "updated_at": "2013-04-29T19:11:10"
-                },
-                "type": "DDL:Table:Create",
-                "updated_at": "2013-05-10T23:25:00",
-                "version_control_url": ""
-            },
+            "changeset": "/api/v1/changeset/11/",
             "created_at": "2013-05-10T23:25:00",
             "id": 23,
             "resource_uri": "/api/v1/changeset_validation/23/",
@@ -2398,102 +1356,7 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_validation/23/
 
 {
-    "changeset": {
-        "after_version": {
-            "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
-            "created_at": "2013-05-10T23:25:00",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
-            "ddl": "...",
-            "id": 23,
-            "resource_uri": "/api/v1/schema_version/23/",
-            "updated_at": "2013-05-10T23:25:00"
-        },
-        "approved_at": null,
-        "approved_by": null,
-        "before_version": {
-            "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
-            "created_at": "2013-04-30T23:20:15",
-            "database_schema": {
-                "created_at": "2013-04-30T23:20:15",
-                "id": 5,
-                "name": "test_schema_1",
-                "resource_uri": "/api/v1/database_schema/5/",
-                "updated_at": "2013-04-30T23:20:15"
-            },
-            "ddl": "...",
-            "id": 11,
-            "resource_uri": "/api/v1/schema_version/11/",
-            "updated_at": "2013-04-30T23:20:15"
-        },
-        "classification": "painless",
-        "created_at": "2013-05-10T23:24:26",
-        "database_schema": {
-            "created_at": "2013-04-30T23:20:15",
-            "id": 5,
-            "name": "test_schema_1",
-            "resource_uri": "/api/v1/database_schema/5/",
-            "updated_at": "2013-04-30T23:20:15"
-        },
-        "id": 11,
-        "is_deleted": 0,
-        "resource_uri": "/api/v1/changeset/11/",
-        "review_status": "in_progress",
-        "reviewed_at": "2013-05-10T23:25:00",
-        "reviewed_by": {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-05-10T22:25:24",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/2/",
-                "username": "dba"
-            },
-            "created_at": "2013-04-29T19:11:10",
-            "email": "dba@example.com",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/user/2/",
-            "role": {
-                "created_at": "2013-04-01T04:02:31",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/role/2/",
-                "updated_at": "2013-04-01T04:02:31"
-            },
-            "updated_at": "2013-04-29T19:11:10"
-        },
-        "submitted_at": "2013-05-10T23:24:26",
-        "submitted_by": {
-            "auth_user": {
-                "first_name": "",
-                "last_login": "2013-05-10T22:25:24",
-                "last_name": "",
-                "resource_uri": "/api/v1/auth_user/2/",
-                "username": "dba"
-            },
-            "created_at": "2013-04-29T19:11:10",
-            "email": "dba@example.com",
-            "id": 2,
-            "name": "dba",
-            "resource_uri": "/api/v1/user/2/",
-            "role": {
-                "created_at": "2013-04-01T04:02:31",
-                "id": 2,
-                "name": "dba",
-                "resource_uri": "/api/v1/role/2/",
-                "updated_at": "2013-04-01T04:02:31"
-            },
-            "updated_at": "2013-04-29T19:11:10"
-        },
-        "type": "DDL:Table:Create",
-        "updated_at": "2013-05-10T23:25:00",
-        "version_control_url": ""
-    },
+    "changeset": "/api/v1/changeset/11/",
     "created_at": "2013-05-10T23:25:00",
     "id": 23,
     "resource_uri": "/api/v1/changeset_validation/23/",
