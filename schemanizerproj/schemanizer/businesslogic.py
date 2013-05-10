@@ -899,6 +899,8 @@ class ReviewThread(threading.Thread):
         self.errors = []
         self.changeset_validations = []
         self.changeset_tests = []
+        self.changeset_validation_ids = []
+        self.changeset_test_ids = []
         self.review_results_url = None
 
     def create_aws_mysql_connection(self, db=None, host=None, wait=False):
@@ -1242,6 +1244,7 @@ class ReviewThread(threading.Thread):
                                                 results_log=results_log)
                                             created_changeset_test_ids.append(changeset_test.id)
                                             self.changeset_tests.append(changeset_test)
+                                            self.changeset_test_ids.append(changeset_test.id)
 
                                     except Exception, e:
                                         log.exception(u'[%s] EXCEPTION' % (self.request_id,))
@@ -1296,7 +1299,7 @@ class ReviewThread(threading.Thread):
                     changeset_has_errors = True
                 if results['changeset_validation']:
                     self.changeset_validations.append(results['changeset_validation'])
-                #self.changeset_tests.extend(results['changeset_tests'])
+                    self.changeset_validation_ids.append(results['changeset_validation'].id)
 
                 msg = u'No update with WHERE clause validation completed'
                 self.messages.append((u'info', msg))
@@ -1421,6 +1424,7 @@ class ChangesetApplyThread(threading.Thread):
 
         self.has_errors = False
         self.changeset_detail_applies = []
+        self.changeset_detail_apply_ids = []
 
     def _apply_changeset_detail(self, changeset_detail):
         has_errors = False
@@ -1464,6 +1468,7 @@ class ChangesetApplyThread(threading.Thread):
             if ret['has_errors']:
                 self.has_errors = True
             self.changeset_detail_applies.append(ret['changeset_detail_apply'])
+            self.changeset_detail_apply_ids.append(ret['changeset_detail_apply'].id)
 
     def run(self):
         msg = 'Changeset apply thread started.'

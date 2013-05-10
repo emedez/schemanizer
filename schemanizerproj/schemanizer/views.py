@@ -456,7 +456,8 @@ def changeset_apply_status(
             data['error'] = u'Invalid request ID.'
 
         else:
-            data['thread_is_alive'] = t.is_alive()
+            t_is_alive = t.is_alive()
+            data['thread_is_alive'] = t_is_alive
             data['thread_messages_html'] = render_to_string(
                 template,
                 {
@@ -464,7 +465,7 @@ def changeset_apply_status(
                 },
                 context_instance=RequestContext(request))
 
-            if not t.is_alive():
+            if not t_is_alive:
                 #
                 # Remove dead threads from dictionary.
                 #
@@ -644,7 +645,8 @@ def changeset_review_status(
             data['error'] = u'Invalid request ID.'
 
         else:
-            data['thread_is_alive'] = t.is_alive()
+            t_is_alive = t.is_alive()
+            data['thread_is_alive'] = t_is_alive
             data['thread_errors'] = t.errors
             if t.messages:
                 data['thread_messages'] = t.messages[-1:]
@@ -654,7 +656,7 @@ def changeset_review_status(
                 messages_template, {'thread_messages': data['thread_messages']},
                 context_instance=RequestContext(request))
 
-            if not t.is_alive():
+            if not t_is_alive:
                 #
                 # Remove dead threads from dictionary.
                 #

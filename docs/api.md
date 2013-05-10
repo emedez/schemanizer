@@ -16,6 +16,18 @@ The following are the resources supported by the API:
         "list_endpoint": "/api/v1/changeset_detail/",
         "schema": "/api/v1/changeset_detail/schema/"
     },
+    "changeset_detail_apply": {
+        "list_endpoint": "/api/v1/changeset_detail_apply/",
+        "schema": "/api/v1/changeset_detail_apply/schema/"
+    },
+    "changeset_test": {
+        "list_endpoint: "/api/v1/changeset_test/",
+        "schema": "/api/v1/changeset_detail/schema/"
+    },
+    "changeset_validation": {
+        "list_endpoint: "/api/v1/changeset_validation/",
+        "schema": "/api/v1/changeset_validation/schema/"
+    },
     "database_schema": {
         "list_endpoint": "/api/v1/database_schema/",
         "schema": "/api/v1/database_schema/schema/"
@@ -1836,5 +1848,719 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
     "type": "add",
     "updated_at": "2013-05-10T01:24:15",
     "volumetric_values": ""
+}
+```
+
+### Review Changeset
+
+API:
+```
+POST /api/v1/changeset/review/<changeset_id>/
+```
+changeset_id - Changeset ID/PK
+
+POST data should be a JSON object in the form:
+```
+{
+    "schema_version_id": <schema_version_id>
+}
+```
+
+Use the Changeset Review Status API to check the status/result of changeset review.
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -X POST --data '{"schema_version_id": 11}' -u dba:dba http://localhost:8000/api/v1/changeset/review/11/
+
+{
+    "request_id": "69c6d6be71ac7c4bf908b4d7f986d4004dabbd97",
+    "thread_started": true
+}
+```
+
+### Changeset Review Status
+
+API:
+```
+GET /api/v1/changeset/review_status/<request_id>/
+```
+request_id - ID of the request that started the review thread.
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/review_status/69c6d6be71ac7c4bf908b4d7f986d4004dabbd97/
+
+{
+    {
+    "thread_changeset_test_ids": [
+        27
+    ],
+    "thread_changeset_validation_ids": [
+        23
+    ],
+    "thread_errors": [],
+    "thread_is_alive": false,
+    "thread_messages": [
+        [
+            "info",
+            "Review thread ended."
+        ]
+    ],
+    "thread_review_results_url": "http://localhost:8000/schemanizer/changeset/view-review-results/11/?changeset_validation_ids=23&changeset_test_ids=27"
+}
+```
+
+
+### Apply Changeset
+
+API:
+```
+POST /api/v1/changeset/apply/
+```
+
+POST data should be a JSON object in the form:
+```
+{
+    "changeset_id": <changeset_id>
+    "server_id": <server_id>
+}
+```
+
+Use the Changeset Apply Status API to check the status/result of changeset apply.
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset_id": 11, "server_id": 1}' -u dba:dba http://localhost:8000/api/v1/changeset/apply/
+
+{
+    "request_id": "ae54b91bc38d0256a48c95b18b7103b06a83313a",
+    "thread_started": true
+}
+```
+
+
+### Changeset Apply Status
+
+API:
+```
+GET /api/v1/changeset/apply_status/<request_id>/
+```
+request_id - ID of the request that started the apply thread.
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/apply_status/ae54b91bc38d0256a48c95b18b7103b06a83313a/
+
+{
+    "thread_changeset_detail_apply_ids": [
+        15
+    ],
+    "thread_is_alive": false,
+    "thread_messages": [
+        [
+            "info",
+            "Changeset apply thread started."
+        ],
+        [
+            "info",
+            "create table t3 (\r\n  id int primary key auto_increment\r\n)"
+        ],
+        [
+            "info",
+            "Changeset apply thread ended."
+        ]
+    ]
+}
+```
+
+
+Changeset Test
+--------------
+
+### Get Changeset Tests
+
+API:
+```
+GET /api/v1/changeset_test/
+```
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_test/
+
+{
+    "meta": {
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total_count": 1
+    },
+    "objects": [
+        {
+            "changeset_detail": {
+                "after_checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+                "apply_sql": "create table t3 (\r\n  id int primary key auto_increment\r\n)",
+                "before_checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+                "changeset": {
+                    "after_version": {
+                        "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+                        "created_at": "2013-05-10T23:25:00",
+                        "database_schema": {
+                            "created_at": "2013-04-30T23:20:15",
+                            "id": 5,
+                            "name": "test_schema_1",
+                            "resource_uri": "/api/v1/database_schema/5/",
+                            "updated_at": "2013-04-30T23:20:15"
+                        },
+                        "ddl": "...",
+                        "id": 23,
+                        "resource_uri": "/api/v1/schema_version/23/",
+                        "updated_at": "2013-05-10T23:25:00"
+                    },
+                    "approved_at": null,
+                    "approved_by": null,
+                    "before_version": {
+                        "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+                        "created_at": "2013-04-30T23:20:15",
+                        "database_schema": {
+                            "created_at": "2013-04-30T23:20:15",
+                            "id": 5,
+                            "name": "test_schema_1",
+                            "resource_uri": "/api/v1/database_schema/5/",
+                            "updated_at": "2013-04-30T23:20:15"
+                        },
+                        "ddl": "...",
+                        "id": 11,
+                        "resource_uri": "/api/v1/schema_version/11/",
+                        "updated_at": "2013-04-30T23:20:15"
+                    },
+                    "classification": "painless",
+                    "created_at": "2013-05-10T23:24:26",
+                    "database_schema": {
+                        "created_at": "2013-04-30T23:20:15",
+                        "id": 5,
+                        "name": "test_schema_1",
+                        "resource_uri": "/api/v1/database_schema/5/",
+                        "updated_at": "2013-04-30T23:20:15"
+                    },
+                    "id": 11,
+                    "is_deleted": 0,
+                    "resource_uri": "/api/v1/changeset/11/",
+                    "review_status": "in_progress",
+                    "reviewed_at": "2013-05-10T23:25:00",
+                    "reviewed_by": {
+                        "auth_user": {
+                            "first_name": "",
+                            "last_login": "2013-05-10T22:25:24",
+                            "last_name": "",
+                            "resource_uri": "/api/v1/auth_user/2/",
+                            "username": "dba"
+                        },
+                        "created_at": "2013-04-29T19:11:10",
+                        "email": "dba@example.com",
+                        "id": 2,
+                        "name": "dba",
+                        "resource_uri": "/api/v1/user/2/",
+                        "role": {
+                            "created_at": "2013-04-01T04:02:31",
+                            "id": 2,
+                            "name": "dba",
+                            "resource_uri": "/api/v1/role/2/",
+                            "updated_at": "2013-04-01T04:02:31"
+                        },
+                        "updated_at": "2013-04-29T19:11:10"
+                    },
+                    "submitted_at": "2013-05-10T23:24:26",
+                    "submitted_by": {
+                        "auth_user": {
+                            "first_name": "",
+                            "last_login": "2013-05-10T22:25:24",
+                            "last_name": "",
+                            "resource_uri": "/api/v1/auth_user/2/",
+                            "username": "dba"
+                        },
+                        "created_at": "2013-04-29T19:11:10",
+                        "email": "dba@example.com",
+                        "id": 2,
+                        "name": "dba",
+                        "resource_uri": "/api/v1/user/2/",
+                        "role": {
+                            "created_at": "2013-04-01T04:02:31",
+                            "id": 2,
+                            "name": "dba",
+                            "resource_uri": "/api/v1/role/2/",
+                            "updated_at": "2013-04-01T04:02:31"
+                        },
+                        "updated_at": "2013-04-29T19:11:10"
+                    },
+                    "type": "DDL:Table:Create",
+                    "updated_at": "2013-05-10T23:25:00",
+                    "version_control_url": ""
+                },
+                "count_sql": "",
+                "created_at": "2013-05-10T23:24:26",
+                "description": "create table t3",
+                "id": 15,
+                "resource_uri": "/api/v1/changeset_detail/15/",
+                "revert_sql": "drop table t3",
+                "type": "add",
+                "updated_at": "2013-05-10T23:25:00",
+                "volumetric_values": ""
+            },
+            "created_at": "2013-05-10T23:25:00",
+            "ended_at": "2013-05-10T23:25:00",
+            "id": 27,
+            "resource_uri": "/api/v1/changeset_test/27/",
+            "results_log": "",
+            "started_at": "2013-05-10T23:25:00",
+            "updated_at": "2013-05-10T23:25:00"
+        }
+    ]
+}
+```
+
+### Get Changeset Test
+
+API:
+```
+GET /api/v1/changeset_test/<changeset_test_id>/
+```
+changeset_test_id = Changeset Test ID/PK
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_test/27/
+
+{
+    "changeset_detail": {
+        "after_checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+        "apply_sql": "create table t3 (\r\n  id int primary key auto_increment\r\n)",
+        "before_checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+        "changeset": {
+            "after_version": {
+                "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+                "created_at": "2013-05-10T23:25:00",
+                "database_schema": {
+                    "created_at": "2013-04-30T23:20:15",
+                    "id": 5,
+                    "name": "test_schema_1",
+                    "resource_uri": "/api/v1/database_schema/5/",
+                    "updated_at": "2013-04-30T23:20:15"
+                },
+                "ddl": "...",
+                "id": 23,
+                "resource_uri": "/api/v1/schema_version/23/",
+                "updated_at": "2013-05-10T23:25:00"
+            },
+            "approved_at": null,
+            "approved_by": null,
+            "before_version": {
+                "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+                "created_at": "2013-04-30T23:20:15",
+                "database_schema": {
+                    "created_at": "2013-04-30T23:20:15",
+                    "id": 5,
+                    "name": "test_schema_1",
+                    "resource_uri": "/api/v1/database_schema/5/",
+                    "updated_at": "2013-04-30T23:20:15"
+                },
+                "ddl": "...",
+                "id": 11,
+                "resource_uri": "/api/v1/schema_version/11/",
+                "updated_at": "2013-04-30T23:20:15"
+            },
+            "classification": "painless",
+            "created_at": "2013-05-10T23:24:26",
+            "database_schema": {
+                "created_at": "2013-04-30T23:20:15",
+                "id": 5,
+                "name": "test_schema_1",
+                "resource_uri": "/api/v1/database_schema/5/",
+                "updated_at": "2013-04-30T23:20:15"
+            },
+            "id": 11,
+            "is_deleted": 0,
+            "resource_uri": "/api/v1/changeset/11/",
+            "review_status": "in_progress",
+            "reviewed_at": "2013-05-10T23:25:00",
+            "reviewed_by": {
+                "auth_user": {
+                    "first_name": "",
+                    "last_login": "2013-05-10T22:25:24",
+                    "last_name": "",
+                    "resource_uri": "/api/v1/auth_user/2/",
+                    "username": "dba"
+                },
+                "created_at": "2013-04-29T19:11:10",
+                "email": "dba@example.com",
+                "id": 2,
+                "name": "dba",
+                "resource_uri": "/api/v1/user/2/",
+                "role": {
+                    "created_at": "2013-04-01T04:02:31",
+                    "id": 2,
+                    "name": "dba",
+                    "resource_uri": "/api/v1/role/2/",
+                    "updated_at": "2013-04-01T04:02:31"
+                },
+                "updated_at": "2013-04-29T19:11:10"
+            },
+            "submitted_at": "2013-05-10T23:24:26",
+            "submitted_by": {
+                "auth_user": {
+                    "first_name": "",
+                    "last_login": "2013-05-10T22:25:24",
+                    "last_name": "",
+                    "resource_uri": "/api/v1/auth_user/2/",
+                    "username": "dba"
+                },
+                "created_at": "2013-04-29T19:11:10",
+                "email": "dba@example.com",
+                "id": 2,
+                "name": "dba",
+                "resource_uri": "/api/v1/user/2/",
+                "role": {
+                    "created_at": "2013-04-01T04:02:31",
+                    "id": 2,
+                    "name": "dba",
+                    "resource_uri": "/api/v1/role/2/",
+                    "updated_at": "2013-04-01T04:02:31"
+                },
+                "updated_at": "2013-04-29T19:11:10"
+            },
+            "type": "DDL:Table:Create",
+            "updated_at": "2013-05-10T23:25:00",
+            "version_control_url": ""
+        },
+        "count_sql": "",
+        "created_at": "2013-05-10T23:24:26",
+        "description": "create table t3",
+        "id": 15,
+        "resource_uri": "/api/v1/changeset_detail/15/",
+        "revert_sql": "drop table t3",
+        "type": "add",
+        "updated_at": "2013-05-10T23:25:00",
+        "volumetric_values": ""
+    },
+    "created_at": "2013-05-10T23:25:00",
+    "ended_at": "2013-05-10T23:25:00",
+    "id": 27,
+    "resource_uri": "/api/v1/changeset_test/27/",
+    "results_log": "",
+    "started_at": "2013-05-10T23:25:00",
+    "updated_at": "2013-05-10T23:25:00"
+}
+```
+
+
+Changeset Validation
+--------------------
+
+### Get Changeset Validations
+
+API:
+```
+GET /api/v1/changeset_validation/
+```
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_validation/?changeset__id=11
+
+{
+    "meta": {
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total_count": 1
+    },
+    "objects": [
+        {
+            "changeset": {
+                "after_version": {
+                    "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+                    "created_at": "2013-05-10T23:25:00",
+                    "database_schema": {
+                        "created_at": "2013-04-30T23:20:15",
+                        "id": 5,
+                        "name": "test_schema_1",
+                        "resource_uri": "/api/v1/database_schema/5/",
+                        "updated_at": "2013-04-30T23:20:15"
+                    },
+                    "ddl": "...",
+                    "id": 23,
+                    "resource_uri": "/api/v1/schema_version/23/",
+                    "updated_at": "2013-05-10T23:25:00"
+                },
+                "approved_at": null,
+                "approved_by": null,
+                "before_version": {
+                    "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+                    "created_at": "2013-04-30T23:20:15",
+                    "database_schema": {
+                        "created_at": "2013-04-30T23:20:15",
+                        "id": 5,
+                        "name": "test_schema_1",
+                        "resource_uri": "/api/v1/database_schema/5/",
+                        "updated_at": "2013-04-30T23:20:15"
+                    },
+                    "ddl": "...",
+                    "id": 11,
+                    "resource_uri": "/api/v1/schema_version/11/",
+                    "updated_at": "2013-04-30T23:20:15"
+                },
+                "classification": "painless",
+                "created_at": "2013-05-10T23:24:26",
+                "database_schema": {
+                    "created_at": "2013-04-30T23:20:15",
+                    "id": 5,
+                    "name": "test_schema_1",
+                    "resource_uri": "/api/v1/database_schema/5/",
+                    "updated_at": "2013-04-30T23:20:15"
+                },
+                "id": 11,
+                "is_deleted": 0,
+                "resource_uri": "/api/v1/changeset/11/",
+                "review_status": "in_progress",
+                "reviewed_at": "2013-05-10T23:25:00",
+                "reviewed_by": {
+                    "auth_user": {
+                        "first_name": "",
+                        "last_login": "2013-05-10T22:25:24",
+                        "last_name": "",
+                        "resource_uri": "/api/v1/auth_user/2/",
+                        "username": "dba"
+                    },
+                    "created_at": "2013-04-29T19:11:10",
+                    "email": "dba@example.com",
+                    "id": 2,
+                    "name": "dba",
+                    "resource_uri": "/api/v1/user/2/",
+                    "role": {
+                        "created_at": "2013-04-01T04:02:31",
+                        "id": 2,
+                        "name": "dba",
+                        "resource_uri": "/api/v1/role/2/",
+                        "updated_at": "2013-04-01T04:02:31"
+                    },
+                    "updated_at": "2013-04-29T19:11:10"
+                },
+                "submitted_at": "2013-05-10T23:24:26",
+                "submitted_by": {
+                    "auth_user": {
+                        "first_name": "",
+                        "last_login": "2013-05-10T22:25:24",
+                        "last_name": "",
+                        "resource_uri": "/api/v1/auth_user/2/",
+                        "username": "dba"
+                    },
+                    "created_at": "2013-04-29T19:11:10",
+                    "email": "dba@example.com",
+                    "id": 2,
+                    "name": "dba",
+                    "resource_uri": "/api/v1/user/2/",
+                    "role": {
+                        "created_at": "2013-04-01T04:02:31",
+                        "id": 2,
+                        "name": "dba",
+                        "resource_uri": "/api/v1/role/2/",
+                        "updated_at": "2013-04-01T04:02:31"
+                    },
+                    "updated_at": "2013-04-29T19:11:10"
+                },
+                "type": "DDL:Table:Create",
+                "updated_at": "2013-05-10T23:25:00",
+                "version_control_url": ""
+            },
+            "created_at": "2013-05-10T23:25:00",
+            "id": 23,
+            "resource_uri": "/api/v1/changeset_validation/23/",
+            "result": "",
+            "timestamp": "2013-05-10T15:25:00",
+            "updated_at": "2013-05-10T23:25:00"
+        }
+    ]
+}
+```
+
+
+### Get Changeset Validation
+
+API:
+```
+GET /api/v1/changeset_validation/<changeset_validation_id>/
+```
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_validation/23/
+
+{
+    "changeset": {
+        "after_version": {
+            "checksum": "21e3ac1ee4346b8f426c5c812ba6d1f6",
+            "created_at": "2013-05-10T23:25:00",
+            "database_schema": {
+                "created_at": "2013-04-30T23:20:15",
+                "id": 5,
+                "name": "test_schema_1",
+                "resource_uri": "/api/v1/database_schema/5/",
+                "updated_at": "2013-04-30T23:20:15"
+            },
+            "ddl": "...",
+            "id": 23,
+            "resource_uri": "/api/v1/schema_version/23/",
+            "updated_at": "2013-05-10T23:25:00"
+        },
+        "approved_at": null,
+        "approved_by": null,
+        "before_version": {
+            "checksum": "8f281fa8732078c9b4f6cea8c988c48b",
+            "created_at": "2013-04-30T23:20:15",
+            "database_schema": {
+                "created_at": "2013-04-30T23:20:15",
+                "id": 5,
+                "name": "test_schema_1",
+                "resource_uri": "/api/v1/database_schema/5/",
+                "updated_at": "2013-04-30T23:20:15"
+            },
+            "ddl": "...",
+            "id": 11,
+            "resource_uri": "/api/v1/schema_version/11/",
+            "updated_at": "2013-04-30T23:20:15"
+        },
+        "classification": "painless",
+        "created_at": "2013-05-10T23:24:26",
+        "database_schema": {
+            "created_at": "2013-04-30T23:20:15",
+            "id": 5,
+            "name": "test_schema_1",
+            "resource_uri": "/api/v1/database_schema/5/",
+            "updated_at": "2013-04-30T23:20:15"
+        },
+        "id": 11,
+        "is_deleted": 0,
+        "resource_uri": "/api/v1/changeset/11/",
+        "review_status": "in_progress",
+        "reviewed_at": "2013-05-10T23:25:00",
+        "reviewed_by": {
+            "auth_user": {
+                "first_name": "",
+                "last_login": "2013-05-10T22:25:24",
+                "last_name": "",
+                "resource_uri": "/api/v1/auth_user/2/",
+                "username": "dba"
+            },
+            "created_at": "2013-04-29T19:11:10",
+            "email": "dba@example.com",
+            "id": 2,
+            "name": "dba",
+            "resource_uri": "/api/v1/user/2/",
+            "role": {
+                "created_at": "2013-04-01T04:02:31",
+                "id": 2,
+                "name": "dba",
+                "resource_uri": "/api/v1/role/2/",
+                "updated_at": "2013-04-01T04:02:31"
+            },
+            "updated_at": "2013-04-29T19:11:10"
+        },
+        "submitted_at": "2013-05-10T23:24:26",
+        "submitted_by": {
+            "auth_user": {
+                "first_name": "",
+                "last_login": "2013-05-10T22:25:24",
+                "last_name": "",
+                "resource_uri": "/api/v1/auth_user/2/",
+                "username": "dba"
+            },
+            "created_at": "2013-04-29T19:11:10",
+            "email": "dba@example.com",
+            "id": 2,
+            "name": "dba",
+            "resource_uri": "/api/v1/user/2/",
+            "role": {
+                "created_at": "2013-04-01T04:02:31",
+                "id": 2,
+                "name": "dba",
+                "resource_uri": "/api/v1/role/2/",
+                "updated_at": "2013-04-01T04:02:31"
+            },
+            "updated_at": "2013-04-29T19:11:10"
+        },
+        "type": "DDL:Table:Create",
+        "updated_at": "2013-05-10T23:25:00",
+        "version_control_url": ""
+    },
+    "created_at": "2013-05-10T23:25:00",
+    "id": 23,
+    "resource_uri": "/api/v1/changeset_validation/23/",
+    "result": "",
+    "timestamp": "2013-05-10T15:25:00",
+    "updated_at": "2013-05-10T23:25:00"
+}
+```
+
+
+Changeset Detail Apply
+----------------------
+
+### Get Changeset Detail Applies
+
+API:
+```
+GET /api/v1/changeset_detail_apply/
+```
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_detail_apply/?changeset_detail__changeset__id=11
+
+{
+    "meta": {
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total_count": 1
+    },
+    "objects": [
+        {
+            "changeset_detail": "/api/v1/changeset_detail/15/",
+            "created_at": "2013-05-11T01:11:42",
+            "environment": "/api/v1/environment/1/",
+            "id": 15,
+            "resource_uri": "/api/v1/changeset_detail_apply/15/",
+            "results_log": "",
+            "server": "/api/v1/server/1/",
+            "updated_at": "2013-05-11T01:11:42"
+        }
+    ]
+}
+```
+
+### Get Changeset Detail Apply
+
+API:
+```
+GET /api/v1/changeset_detail_apply/<changeset_detail_apply_id>/
+```
+changeset_detail_apply_id = Changeset Detail Apply ID/PK
+
+Sample usage and output:
+```
+$ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/changeset_detail_apply/15/
+
+{
+    "changeset_detail": "/api/v1/changeset_detail/15/",
+    "created_at": "2013-05-11T01:11:42",
+    "environment": "/api/v1/environment/1/",
+    "id": 15,
+    "resource_uri": "/api/v1/changeset_detail_apply/15/",
+    "results_log": "",
+    "server": "/api/v1/server/1/",
+    "updated_at": "2013-05-11T01:11:42"
 }
 ```

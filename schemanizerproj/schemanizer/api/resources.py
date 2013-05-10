@@ -10,10 +10,13 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
 
-from schemanizer import models, businesslogic, exceptions
+from schemanizer import models, businesslogic, exceptions, utils
 from schemanizer.api import authorizations
 
 log = logging.getLogger(__name__)
+
+review_threads = {}
+apply_threads = {}
 
 
 class AuthUserResource(ModelResource):
@@ -287,7 +290,200 @@ class ChangesetResource(ModelResource):
                 self.wrap_view('changeset_soft_delete'),
                 name='api_changeset_soft_delete',
             ),
+            url(
+                r'^(?P<resource_name>%s)/review/(?P<changeset_id>\d+)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_review'),
+                name='api_changeset_review',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/review_status/(?P<request_id>.+?)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_review_status'),
+                name='api_changeset_review_status',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/apply/$' % (self._meta.resource_name,),
+                self.wrap_view('changeset_apply'),
+                name='api_changeset_apply',
+            ),
+            url(
+                r'^(?P<resource_name>%s)/apply_status/(?P<request_id>.+?)/$' % (
+                    self._meta.resource_name,),
+                self.wrap_view('changeset_apply_status'),
+                name='api_changeset_apply_status',
+            )
         ]
+
+    def changeset_apply(self, request, **kwargs):
+        """Applies changeset.
+
+        request.raw_post_data should be a JSON object in the form:
+        {
+            "changeset_id": 1,
+            "server_id": 1
+        }
+        """
+
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = utils.generate_request_id(request)
+            post_data = json.loads(request.raw_post_data)
+            changeset_id = int(post_data['changeset_id'])
+            server_id = int(post_data['server_id'])
+
+            thread = businesslogic.changeset_apply(
+                changeset_id, request.user.schemanizer_user, server_id)
+            apply_threads[request_id] = thread
+
+            data.update(dict(
+                thread_started=True,
+                request_id=request_id
+            ))
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_apply_status(self, request, **kwargs):
+        """Checks review thread status."""
+
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = kwargs['request_id']
+            thread = apply_threads.get(request_id, None)
+
+            if not thread:
+                #
+                # There was no running thread associated with the request_id,
+                # It is either request ID is invalid or thread had completed
+                # already and was removed from the dictionary.
+                #
+                data['error_message'] = 'Invalid request ID.'
+
+            else:
+                thread_is_alive = thread.is_alive()
+                data['thread_is_alive'] = thread_is_alive
+                if thread.has_errors:
+                    data['thread_has_errors'] = thread.errors
+                data['thread_messages'] = thread.messages
+                data['thread_changeset_detail_apply_ids'] = (
+                    thread.changeset_detail_apply_ids)
+
+                if not thread_is_alive:
+                    #
+                    # Remove dead threads from dictionary
+                    #
+                    apply_threads.pop(request_id, None)
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_review_status(self, request, **kwargs):
+        """Checks review thread status."""
+
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = kwargs['request_id']
+            thread = review_threads.get(request_id, None)
+
+            if not thread:
+                #
+                # There was no running thread associated with the request_id,
+                # It is either request ID is invalid or thread had completed
+                # already and was removed from the dictionary.
+                #
+                data['error_message'] = 'Invalid request ID.'
+
+            else:
+                thread_is_alive = thread.is_alive()
+                data['thread_is_alive'] = thread_is_alive
+                data['thread_errors'] = thread.errors
+                if thread.messages:
+                    data['thread_messages'] = thread.messages[-1:]
+                else:
+                    data['thread_messages'] = []
+                if thread.changeset_validations:
+                    data['thread_changeset_validation_ids'] = (
+                        thread.changeset_validation_ids)
+                if thread.changeset_tests:
+                    data['thread_changeset_test_ids'] = thread.changeset_tests_ids
+
+                if not thread_is_alive:
+                    #
+                    # Remove dead threads from dictionary
+                    #
+                    review_threads.pop(request_id, None)
+
+                    if thread.review_results_url:
+                        data['thread_review_results_url'] = (
+                            thread.review_results_url)
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
+
+    def changeset_review(self, request, **kwargs):
+        """Reviews changeset.
+
+        request.raw_post_data should be in the following form:
+        {
+            "schema_version_id": 1
+        }
+
+        Successful call would have the following keys in the return value:
+            thread_started
+                - set to True
+            request_id
+                - ID of the request that started the review thread
+        """
+
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+
+        data = {}
+        try:
+            request_id = utils.generate_request_id(request)
+            changeset_id = int(kwargs.get('changeset_id'))
+            post_data = json.loads(request.raw_post_data)
+            schema_version_id = int(post_data['schema_version_id'])
+
+            thread = businesslogic.changeset_review(
+                changeset_id, schema_version_id, request_id,
+                request.user.schemanizer_user
+            )
+
+            review_threads[request_id] = thread
+            data.update(dict(
+                thread_started=True,
+                request_id=request_id
+            ))
+
+        except Exception, e:
+            log.exception('EXCEPTION')
+            data['error_message'] = '%s' % (e,)
+        bundle = self.build_bundle(data=data, request=request)
+
+        return self.create_response(request, bundle)
 
     def changeset_submit(self, request, **kwargs):
         """Submits changeset.
@@ -495,6 +691,58 @@ class ChangesetDetailResource(ModelResource):
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
         filtering = {
+            'id': ALL,
             'changeset': ALL_WITH_RELATIONS,
         }
 
+
+class ChangesetTestResource(ModelResource):
+    changeset_detail = fields.ForeignKey(
+        ChangesetDetailResource, 'changeset_detail', null=True, blank=True,
+        full=True)
+
+    class Meta:
+        queryset = models.ChangesetTest.objects.all()
+        resource_name = 'changeset_test'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset_detail': ALL_WITH_RELATIONS,
+        }
+
+
+class ChangesetValidationResource(ModelResource):
+    changeset = fields.ForeignKey(
+        ChangesetResource, 'changeset', null=True, blank=True, full=True)
+
+    class Meta:
+        queryset = models.ChangesetValidation.objects.all()
+        resource_name = 'changeset_validation'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset': ALL_WITH_RELATIONS,
+        }
+
+
+class ChangesetDetailApplyResource(ModelResource):
+    changeset_detail = fields.ForeignKey(
+        ChangesetDetailResource, 'changeset_detail', null=True, blank=True)
+    environment = fields.ForeignKey(
+        EnvironmentResource, 'environment', null=True, blank=True)
+    server = fields.ForeignKey(ServerResource, 'server', null=True, blank=True)
+
+    class Meta:
+        queryset = models.ChangesetDetailApply.objects.all()
+        resource_name = 'changeset_detail_apply'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'changeset_detail': ALL_WITH_RELATIONS,
+        }
