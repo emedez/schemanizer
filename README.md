@@ -128,13 +128,9 @@ Dependencies
 ============
 
 Aside from the Python packages listed on requirements.txt,
-the following are used:
+the application depends on the following to be installed on the system:
 
-Twitter Bootstrap 2.3.1
-
-jQuery 1.9.1
-
-nmap
+nmap 5.21 or later
 
 
 Schema
