@@ -11,6 +11,7 @@ import sqlparse
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.forms.models import inlineformset_factory
@@ -44,11 +45,13 @@ def home(request, template='schemanizer/home.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def confirm_delete_user(request, id, template='schemanizer/confirm_delete_user.html'):
+def confirm_delete_user(
+        request, id, template='schemanizer/confirm_delete_user.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -61,14 +64,16 @@ def confirm_delete_user(request, id, template='schemanizer/confirm_delete_user.h
                     with transaction.commit_on_success():
                         to_be_del_user.auth_user.delete()
                     log.info('User [id=%s] was deleted.' % (id,))
-                    messages.success(request, 'User [id=%s] was deleted.' % (id,))
+                    messages.success(
+                        request, 'User [id=%s] was deleted.' % (id,))
                     return redirect('schemanizer_users')
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -103,7 +108,8 @@ def update_user(request, id, template='schemanizer/update_user.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -123,7 +129,8 @@ def user_create(request, template='schemanizer/user_create.html'):
                     password = form.cleaned_data['password']
                     role = models.Role.objects.get(id=role_id)
                     with transaction.commit_on_success():
-                        businesslogic.create_user(name, email, role, password, user)
+                        businesslogic.create_user(
+                            name, email, role, password, user)
                     messages.success(request, u'User created.')
                     return redirect('schemanizer_users')
             else:
@@ -133,7 +140,8 @@ def user_create(request, template='schemanizer/user_create.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -149,7 +157,8 @@ def users(request, template='schemanizer/users.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -165,14 +174,16 @@ def changeset_soft_delete(
             if request.method == 'POST':
                 with transaction.commit_on_success():
                     businesslogic.soft_delete_changeset(changeset, user)
-                messages.success(request, 'Changeset [id=%s] was soft deleted.' % (id,))
+                messages.success(
+                    request, 'Changeset [id=%s] was soft deleted.' % (id,))
                 return redirect('schemanizer_changeset_list')
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -188,15 +199,19 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                 form=forms.ChangesetDetailForm,
                 extra=1, can_delete=False)
             if request.method == 'POST':
-                changeset_form = forms.ChangesetForm(request.POST, instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
+                changeset_form = forms.ChangesetForm(
+                    request.POST, instance=changeset)
+                changeset_detail_formset = ChangesetDetailFormSet(
+                    request.POST, instance=changeset)
                 if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                     with transaction.commit_on_success():
                         changeset = businesslogic.changeset_submit_from_form(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user)
-                    messages.success(request, u'Changeset [id=%s] was submitted.' % (changeset.id,))
+                    messages.success(
+                        request, u'Changeset [id=%s] was submitted.' % (
+                            changeset.id,))
                     return redirect('schemanizer_changeset_view', changeset.id)
             else:
                 changeset_form = forms.ChangesetForm(instance=changeset)
@@ -206,7 +221,8 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -229,19 +245,25 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                     form=forms.ChangesetDetailForm,
                     extra=1, can_delete=True)
                 if request.method == 'POST':
-                    changeset_form = forms.ChangesetForm(request.POST, instance=changeset)
-                    changeset_detail_formset = ChangesetDetailFormSet(request.POST, instance=changeset)
+                    changeset_form = forms.ChangesetForm(
+                        request.POST, instance=changeset)
+                    changeset_detail_formset = ChangesetDetailFormSet(
+                        request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
                             changeset = businesslogic.changeset_update_from_form(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
-                        messages.success(request, u'Changeset [id=%s] was updated.' % (changeset.id,))
-                        return redirect('schemanizer_changeset_view', changeset.id)
+                        messages.success(
+                            request, u'Changeset [id=%s] was updated.' % (
+                                changeset.id,))
+                        return redirect(
+                            'schemanizer_changeset_view', changeset.id)
                 else:
                     changeset_form = forms.ChangesetForm(instance=changeset)
-                    changeset_detail_formset = ChangesetDetailFormSet(instance=changeset)
+                    changeset_detail_formset = ChangesetDetailFormSet(
+                        instance=changeset)
             else:
                 messages.error(request, MSG_USER_NO_ACCESS)
         else:
@@ -249,11 +271,14 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def changeset_view_review_results(request, changeset_id, template='schemanizer/changeset_view_review_results.html'):
+def changeset_view_review_results(
+        request, changeset_id,
+        template='schemanizer/changeset_view_review_results.html'):
     user_has_access = False
 
     try:
@@ -264,22 +289,30 @@ def changeset_view_review_results(request, changeset_id, template='schemanizer/c
             models.Role.ROLE_ADMIN)
         if user_has_access:
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
-            changeset_validations = models.ChangesetValidation.objects.filter(changeset=changeset).order_by('id')
-            changeset_validation_ids = request.GET.get('changeset_validation_ids', None)
+            changeset_validations = models.ChangesetValidation.objects.filter(
+                changeset=changeset).order_by('id')
+            changeset_validation_ids = request.GET.get(
+                'changeset_validation_ids', None)
             if changeset_validation_ids:
-                changeset_validation_ids = [int(id) for id in changeset_validation_ids.split(',')]
-                changeset_validations = changeset_validations.filter(id__in=changeset_validation_ids)
-            changeset_tests = models.ChangesetTest.objects.filter(changeset_detail__changeset=changeset).order_by('id')
+                changeset_validation_ids = [
+                    int(id) for id in changeset_validation_ids.split(',')]
+                changeset_validations = changeset_validations.filter(
+                    id__in=changeset_validation_ids)
+            changeset_tests = models.ChangesetTest.objects.filter(
+                changeset_detail__changeset=changeset).order_by('id')
             changeset_test_ids = request.GET.get('changeset_test_ids', None)
             if changeset_test_ids:
-                changeset_test_ids = [int(id) for id in changeset_test_ids.split(',')]
-                changeset_tests = changeset_tests.filter(id__in=changeset_test_ids)
+                changeset_test_ids = [
+                    int(id) for id in changeset_test_ids.split(',')]
+                changeset_tests = changeset_tests.filter(
+                    id__in=changeset_test_ids)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -319,7 +352,9 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         with transaction.commit_on_success():
                             businesslogic.changeset_approve(
                                 changeset=changeset, user=user)
-                        messages.success(request, u'Changeset [id=%s] was approved.' % (changeset.id,))
+                        messages.success(
+                            request, u'Changeset [id=%s] was approved.' % (
+                                changeset.id,))
 
                     elif u'submit_reject' in request.POST:
                         #
@@ -328,7 +363,9 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         with transaction.commit_on_success():
                             businesslogic.changeset_reject(
                                 changeset=changeset, user=user)
-                        messages.success(request, u'Changeset [id=%s] was rejected.' % (changeset.id,))
+                        messages.success(
+                            request, u'Changeset [id=%s] was rejected.' % (
+                                changeset.id,))
 
                     elif u'submit_delete' in request.POST:
                         #
@@ -342,11 +379,14 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         #
                         # Apply changeset
                         #
-                        return redirect('schemanizer_changeset_apply', changeset.id)
+                        return redirect(
+                            'schemanizer_changeset_apply', changeset.id)
 
                     else:
                         messages.error(request, u'Unknown command.')
-                        log.error(u'Invalid post.\nrequest.POST=\n%s' % (pformat(request.POST),))
+                        log.error(
+                            u'Invalid post.\nrequest.POST=\n%s' % (
+                                pformat(request.POST),))
 
                 except exceptions.NotAllowed, e:
                     log.exception('EXCEPTION')
@@ -370,7 +410,8 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -378,12 +419,15 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA,
+            models.Role.ROLE_ADMIN)
         if user_has_access:
             qs = models.Changeset.objects.get_not_deleted()
             changesets = []
             for r in qs:
-                extra=dict(can_apply=businesslogic.user_can_apply_changeset(user, r))
+                extra=dict(
+                    can_apply=businesslogic.user_can_apply_changeset(user, r))
                 changesets.append(dict(r=r, extra=extra))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -391,11 +435,13 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply.html'):
+def changeset_apply(
+        request, changeset_id, template='schemanizer/changeset_apply.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -408,7 +454,8 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
             if not businesslogic.user_can_apply_changeset(user, changeset):
-                raise exceptions.NotAllowed('User is not allowed to apply changeset.')
+                raise exceptions.NotAllowed(
+                    'User is not allowed to apply changeset.')
 
             if request.method == 'POST':
                 form = forms.SelectServerForm(request.POST)
@@ -430,7 +477,8 @@ def changeset_apply(request, changeset_id, template='schemanizer/changeset_apply
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 def changeset_apply_status(
@@ -505,7 +553,9 @@ def changeset_validate_no_update_with_where_clause(
             validation_results = []
 
             for cd in changeset.changeset_details.all():
-                log.debug(u'changeset detail >>\nid: %s\napply_sql:\n%s' % (cd.id, cd.apply_sql))
+                log.debug(
+                    u'changeset detail >>\nid: %s\napply_sql:\n%s' % (
+                        cd.id, cd.apply_sql))
                 msg = u"Validating [%s]... " % (cd.apply_sql)
                 parsed = sqlparse.parse(cd.apply_sql)
                 where_clause_found = False
@@ -519,7 +569,9 @@ def changeset_validate_no_update_with_where_clause(
                     if where_clause_found:
                         break
                 if where_clause_found:
-                    validation_results.append(u'Changeset Detail [id=%s] contains WHERE clause.' % (cd.id,))
+                    validation_results.append(
+                        u'Changeset Detail [id=%s] contains WHERE clause.' % (
+                            cd.id,))
                     messages.error(request, msg)
                 else:
                     msg += u'OK.'
@@ -528,7 +580,8 @@ def changeset_validate_no_update_with_where_clause(
             validation_results_text = u''
             if validation_results:
                 validation_results_text = u'\n'.join(validation_results)
-            validation_type = models.ValidationType.objects.get(name=u'no update with where clause')
+            validation_type = models.ValidationType.objects.get(
+                name=u'no update with where clause')
             models.ChangesetValidation.objects.create(
                 changeset=changeset,
                 validation_type=validation_type,
@@ -543,12 +596,14 @@ def changeset_validate_no_update_with_where_clause(
             msg = u'Results:\n%s' % (validation_results_text,)
             log.info(msg)
 
-            return redirect(reverse('schemanizer_changeset_view', args=[changeset.id]))
+            return redirect(
+                reverse('schemanizer_changeset_view', args=[changeset.id]))
 
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -565,7 +620,8 @@ def changeset_review(
             changeset, user)
         schema_version = request.GET.get('schema_version', None)
         if schema_version:
-            schema_version = models.SchemaVersion.objects.get(pk=int(schema_version))
+            schema_version = models.SchemaVersion.objects.get(
+                pk=int(schema_version))
 
         if user_has_access:
             if request.method == 'POST':
@@ -577,9 +633,14 @@ def changeset_review(
                     select_schema_version_form = forms.SelectSchemaVersionForm(
                         request.POST, database_schema=changeset.database_schema)
                     if select_schema_version_form.is_valid():
-                        schema_version = int(select_schema_version_form.cleaned_data['schema_version'])
-                        url = reverse('schemanizer_changeset_review', args=[changeset.id])
-                        query_string = urllib.urlencode(dict(schema_version=schema_version))
+                        schema_version = int(
+                            select_schema_version_form.cleaned_data[
+                                'schema_version'])
+                        url = reverse(
+                            'schemanizer_changeset_review',
+                            args=[changeset.id])
+                        query_string = urllib.urlencode(
+                            dict(schema_version=schema_version))
                         #
                         # redirect to actual changeset syntax validation procedure
                         return redirect('%s?%s' % (url, query_string))
@@ -620,7 +681,8 @@ def changeset_review(
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
 
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 def changeset_review_status(
@@ -695,7 +757,8 @@ def server_list(request, template='schemanizer/server_list.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -733,7 +796,8 @@ def server_update(request, id=None, template='schemanizer/server_update.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -768,7 +832,8 @@ def server_delete(request, id, template='schemanizer/server_delete.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -818,13 +883,25 @@ def schema_version_create(
                     #
                     # Save dump as latest version for the schema
                     #
-                    database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=schema)
-                    models.SchemaVersion.objects.create(
-                        database_schema=database_schema,
-                        ddl=structure,
-                        checksum=businesslogic.schema_hash(structure))
-
-                    msg = u'New schema version was saved for database schema `%s`' % (database_schema.name,)
+                    database_schema, __ = models.DatabaseSchema.objects.get_or_create(
+                        name=schema)
+                    checksum = businesslogic.schema_hash(structure)
+                    create_schema = True
+                    try:
+                        schema_version = models.SchemaVersion.objects.get(
+                            database_schema=database_schema,
+                            checksum=checksum)
+                        schema_version.ddl=structure
+                        schema_version.save()
+                        msg = u'Schema version for database schema `%s` was updated.' % (
+                            database_schema.name,)
+                    except ObjectDoesNotExist:
+                        models.SchemaVersion.objects.create(
+                            database_schema=database_schema,
+                            ddl=structure,
+                            checksum=businesslogic.schema_hash(structure))
+                        msg = u'New schema version for database schema `%s` was saved.' % (
+                            database_schema.name,)
                     log.info(msg)
                     messages.success(request, msg)
                     return redirect('schemanizer_server_list')
@@ -838,11 +915,13 @@ def schema_version_create(
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def database_schema_list(request, template='schemanizer/database_schema_list.html'):
+def database_schema_list(
+        request, template='schemanizer/database_schema_list.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -861,11 +940,13 @@ def database_schema_list(request, template='schemanizer/database_schema_list.htm
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def schema_version_list(request, template='schemanizer/schema_version_list.html'):
+def schema_version_list(
+        request, template='schemanizer/schema_version_list.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -881,18 +962,22 @@ def schema_version_list(request, template='schemanizer/schema_version_list.html'
         if user_has_access:
             schema_versions = models.SchemaVersion.objects.all()
             if database_schema:
-                schema_versions = schema_versions.filter(database_schema_id=int(database_schema))
+                schema_versions = schema_versions.filter(
+                    database_schema_id=int(database_schema))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def schema_version_view(request, schema_version_id, template='schemanizer/schema_version_view.html'):
+def schema_version_view(
+        request, schema_version_id,
+        template='schemanizer/schema_version_view.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -911,7 +996,8 @@ def schema_version_view(request, schema_version_id, template='schemanizer/schema
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -936,11 +1022,14 @@ def environment_list(request, template='schemanizer/environment_list.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def environment_update(request, environment_id=None, template='schemanizer/environment_update.html'):
+def environment_update(
+        request, environment_id=None,
+        template='schemanizer/environment_update.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -960,9 +1049,13 @@ def environment_update(request, environment_id=None, template='schemanizer/envir
                 if form.is_valid():
                     r = form.save()
                     if environment_id:
-                        messages.success(request, u'Environment [ID=%s] was updated.' % (r.id,))
+                        messages.success(
+                            request,
+                            u'Environment [ID=%s] was updated.' % (r.id,))
                     else:
-                        messages.success(request, u'Environment [ID=%s] was created.' % (r.id,))
+                        messages.success(
+                            request,
+                            u'Environment [ID=%s] was created.' % (r.id,))
                     return redirect('schemanizer_environment_list')
             else:
                 form = forms.EnvironmentForm(instance=r)
@@ -972,11 +1065,14 @@ def environment_update(request, environment_id=None, template='schemanizer/envir
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
-def environment_del(request, environment_id=None, template='schemanizer/environment_del.html'):
+def environment_del(
+        request, environment_id=None,
+        template='schemanizer/environment_del.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -990,7 +1086,9 @@ def environment_del(request, environment_id=None, template='schemanizer/environm
             r = models.Environment.objects.get(pk=int(environment_id))
             if request.method == 'POST':
                 r.delete()
-                messages.success(request, u'Environment [ID=%s] was deleted.' % (environment_id,))
+                messages.success(
+                    request,
+                    u'Environment [ID=%s] was deleted.' % (environment_id,))
                 return redirect('schemanizer_environment_list')
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -998,7 +1096,8 @@ def environment_del(request, environment_id=None, template='schemanizer/environm
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
@@ -1006,20 +1105,27 @@ def server_discover(request, template='schemanizer/server_discover.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)
+        user_has_access = user.role.name in (
+            models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA,
+            models.Role.ROLE_ADMIN)
         if user_has_access:
             if request.method == 'POST':
                 for k, v in request.POST.iteritems():
                     if k.startswith('server_'):
                         name, hostname, port = v.split(',')
                         with transaction.commit_on_success():
-                            qs = models.Server.objects.filter(hostname=hostname, port=port)
+                            qs = models.Server.objects.filter(
+                                hostname=hostname, port=port)
                             if not qs.exists():
-                                models.Server.objects.create(name=name, hostname=hostname, port=port)
-                                messages.info(request, u'Server %s was added.' % (hostname,))
+                                models.Server.objects.create(
+                                    name=name, hostname=hostname, port=port)
+                                messages.info(
+                                    request,
+                                    u'Server %s was added.' % (hostname,))
                 return redirect('schemanizer_server_list')
             else:
-                mysql_servers = utils.discover_mysql_servers(settings.NMAP_HOSTS, settings.NMAP_PORTS)
+                mysql_servers = utils.discover_mysql_servers(
+                    settings.NMAP_HOSTS, settings.NMAP_PORTS)
 
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -1027,5 +1133,6 @@ def server_discover(request, template='schemanizer/server_discover.html'):
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(template, locals(), context_instance=RequestContext(request))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
