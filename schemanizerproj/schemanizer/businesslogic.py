@@ -11,6 +11,7 @@ warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 from django.conf import settings
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.sites.models import Site
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -881,7 +882,8 @@ def changeset_review(changeset, schema_version, request_id, user, server=None):
         thread.start()
         return thread
     else:
-        raise exceptions.NotAllowed(u'User is not allowed to set review status to \'in_progress\'.')
+        raise exceptions.NotAllowed(
+            u'User is not allowed to set review status to \'in_progress\'.')
 
 
 class ReviewThread(threading.Thread):
@@ -1308,11 +1310,18 @@ class ReviewThread(threading.Thread):
                 #
                 # Update changeset.
                 #
-                after_version = models.SchemaVersion.objects.create(
-                    database_schema=self.schema_version.database_schema,
-                    ddl=structure_after,
-                    checksum=hash_after
-                )
+                try:
+                    after_version = models.SchemaVersion.objects.get(
+                        database_schema=self.schema_version.database_schema,
+                        checksum=hash_after)
+                    after_version.ddl = structure_after
+                    after_version.save()
+                except ObjectDoesNotExist:
+                    after_version = models.SchemaVersion.objects.create(
+                        database_schema=self.schema_version.database_schema,
+                        ddl=structure_after,
+                        checksum=hash_after
+                    )
                 if changeset_has_errors:
                     changeset.review_status = models.Changeset.REVIEW_STATUS_REJECTED
                 else:
