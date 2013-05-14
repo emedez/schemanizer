@@ -1,33 +1,63 @@
-Installation and Running
-========================
+Schemanizer Web Application
+===========================
 
-Setup
------
 
-Install requirements via pip.
+Requirements
+------------
 
+It is recommended to install the the web application and its requirements in an isolated Python environments.
+virtualenv is a tool that can create such environments.
+
+To install virtualenv:
+```
+$ pip install virtualenv
+```
+
+To create a virtual environment:
+```
+$ virtualenv venv --no-site-packages
+```
+
+To begin using the virtual environment, it needs to be activated:
+```
+$ source venv/bin/activate
+```
+At this point, you can begin installing any new modules without affecting the system default Python or other virtual environments.
+
+If you are done working in the virtual environment, you can deactivate it:
+```
+$ deactivate
+```
+
+The requirements.txt file contains the required components for the
+web applicaton.
+
+To install the requirements, run the following inside a virtual environment:
 ```
 $ pip install -r requirements.txt
 ```
 
-Set Local Settings
-------------------
+Note:
+    stable-requirements.txt is also provided and can be used instead of requirements.txt if newer versions of packages causes issues.
 
-Copy schemanizerproj/schemanizerproj/local_settings.py.sample to schemanizerproj/schemanizerproj/local_settings.py
 
-Edit the contents of local_settings.py and set the correct values for settings.
+Setup
+-----
 
-Initial Data
-------------
+### Configuration
 
-Do the following:
+Copy (schemanizer_root)/schemanizerproj/schemanizerproj/sample.local_settings.py to (schemanizer_root)/schemanizerproj/schemanizerproj/local_settings.py and edit the contents of the new file.  Provided correct values for each setting. The comments for each setting will give you an idea about its purpose.
 
+You will usually need to modify the DATABASES settings and provide values that are needed by the application to connect successfully to a database.  You can also use local_settings.py to override the default settings that are included in (schemanizer_root)/schemanizerproj/schemanizerproj/settings.py.
+
+
+### Database Initialization
+
+To prepare the database for use:
 ```
-$ mysql -u user -p dbname < schemanizerproj/data/cdt.sql
-$ cd schemanizerproj
-$ ./manage.py syncdb --noinput
-$ ./manage.py migrate --fake
-$ ./manage.py loaddata ./fixtures/initial_data.yaml
+$ cd (schemanizer_root)/schemanizerproj
+$ mysql -u user -p dbname < ./data/cdt.sql
+$ ./schemanizer_init.sh
 ```
 
 _**dbname**_ should be the same as the database name that you had set in your local_settings.py.
@@ -35,39 +65,18 @@ _**dbname**_ should be the same as the database name that you had set in your lo
 At this point user 'admin' now exists with password 'admin'.
 
 
-Run Server
-----------
+Running
+-------
 
-Do the following:
-
+To start the web application's built-in HTTP server:
 ```
-$ ./manage.py runserver [ipaddr:port]
-```
-
-If ipaddr:port is not specified the following default is used:
-localhost:8000
-
-
-Update Site Domain Name
------------------------
-
-During data initialization, the site information specified in
-settings.SITE_NAME and settings.SITE_DOMAIN are automatically saved during data
-initialization. If this needs to be changed later, browse the following URL,
-login as admin, edit the only record and update
-the domain name to the correct address and the optional port number.
-This value is used for building absolute URL paths such as email functions
-which usually do not have access to web requests data.
-
-```
-http://ipaddr:port/admin/sites/site/
+$ cd (schemanizer_root)/schemanizerproj/
+$ ./manage.py runserver [optional port number, or ipaddr:port]
 ```
 
-Logout after updating site domain name.
 
-
-Web App Usage
--------------
+Usage
+-----
 
 Start here and login as 'admin' if there are no other users yet.:
 
@@ -98,16 +107,6 @@ $ python manage.py check_changesets_repository
 ```
 
 Currently outputs to screens information about github repository commits.
-
-
-Unit Testing
-============
-
-To run the tests:
-
-```
-$ ./manage.py test schemanizer
-```
 
 
 Dumping and Restoring Data
