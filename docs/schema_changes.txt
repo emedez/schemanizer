@@ -44,3 +44,15 @@ DROP COLUMN `before_version` ;
 =================
 ALTER TABLE `servers`
 ADD COLUMN `port` INT NULL  AFTER `environment_id` ;
+
+
+2013-05-14 GMT+08
+=================
+ALTER TABLE `statements` ADD COLUMN `hostname` TEXT NULL  AFTER `updated_at` ;
+
+ALTER TABLE `explained_statements` ADD COLUMN `server_id` INT NULL  AFTER `updated_at` ;
+
+ALTER TABLE `explain_results`
+CHANGE COLUMN `table_name` `table` TEXT NULL DEFAULT NULL  ,
+CHANGE COLUMN `key_name` `key` TEXT NULL DEFAULT NULL  ;
+
