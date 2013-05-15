@@ -209,6 +209,10 @@ LOGGING = {
     },
 }
 
+# Schemanizer Base URL. Used by Schemanizer CLI. Don't append trailing slash.
+# Note: If needed, override this in local_settings.py 
+SCHEMANIZER_BASE_URL = 'http://localhost:8000'
+
 #==============================================================================
 # AWS data for launching an EC2 instance (for use in reviewing changesets)
 #==============================================================================
