@@ -20,6 +20,10 @@ The following are the resources supported by the API:
         "list_endpoint": "/api/v1/changeset_detail_apply/",
         "schema": "/api/v1/changeset_detail_apply/schema/"
     },
+    "test_type": {
+        "list_endpoint": "/api/v1/test_type/",
+        "schema": "/api/v1/test_type/schema/"
+    },
     "changeset_test": {
         "list_endpoint: "/api/v1/changeset_test/",
         "schema": "/api/v1/changeset_detail/schema/"
@@ -1244,6 +1248,16 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
 }
 ```
 
+Test Type
+---------
+
+### Get Test Types
+
+API:
+```
+GET /api/v1/test_type/
+```
+
 
 Changeset Test
 --------------
@@ -1304,6 +1318,17 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     "started_at": "2013-05-10T23:25:00",
     "updated_at": "2013-05-10T23:25:00"
 }
+```
+
+
+Validation Type
+---------------
+
+### Get Validation Types
+
+API:
+```
+GET /api/v1/validation_type/
 ```
 
 

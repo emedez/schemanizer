@@ -445,6 +445,8 @@ def changeset_validate_no_update_with_where_clause(changeset, user, server=None)
     validation_results = []
     where_clause_found = False
     with transaction.commit_on_success():
+        models.ChangesetValidation.objects.filter(
+            changeset=changeset).delete()
         for changeset_detail in changeset.changeset_details.all():
             log.debug(u'Validating changeset detail...\nid: %s\napply_sql:\n%s' % (
                 changeset_detail.id, changeset_detail.apply_sql))
@@ -1126,6 +1128,9 @@ class ReviewThread(threading.Thread):
                                             finally:
                                                 if cur:
                                                     cur.close()
+
+                                        models.ChangesetTest.objects.filter(
+                                            changeset_detail__changeset=changeset).delete()
 
                                         #
                                         # Apply all changeset details.
