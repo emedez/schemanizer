@@ -1,81 +1,70 @@
-Schemanizer REST API Introduction
-=================================
-
-The following are the resources supported by the API:
-```
-{
-    "auth_user": {
-        "list_endpoint": "/api/v1/auth_user/",
-        "schema": "/api/v1/auth_user/schema/"
-    },
-    "changeset": {
-        "list_endpoint": "/api/v1/changeset/",
-        "schema": "/api/v1/changeset/schema/"
-    },
-    "changeset_detail": {
-        "list_endpoint": "/api/v1/changeset_detail/",
-        "schema": "/api/v1/changeset_detail/schema/"
-    },
-    "changeset_detail_apply": {
-        "list_endpoint": "/api/v1/changeset_detail_apply/",
-        "schema": "/api/v1/changeset_detail_apply/schema/"
-    },
-    "test_type": {
-        "list_endpoint": "/api/v1/test_type/",
-        "schema": "/api/v1/test_type/schema/"
-    },
-    "changeset_test": {
-        "list_endpoint: "/api/v1/changeset_test/",
-        "schema": "/api/v1/changeset_detail/schema/"
-    },
-    "changeset_validation": {
-        "list_endpoint: "/api/v1/changeset_validation/",
-        "schema": "/api/v1/changeset_validation/schema/"
-    },
-    "database_schema": {
-        "list_endpoint": "/api/v1/database_schema/",
-        "schema": "/api/v1/database_schema/schema/"
-    },
-    "environment": {
-        "list_endpoint": "/api/v1/environment/",
-        "schema": "/api/v1/environment/schema/"
-    },
-    "role": {
-        "list_endpoint": "/api/v1/role/",
-        "schema": "/api/v1/role/schema/"
-    },
-    "schema_version": {
-        "list_endpoint": "/api/v1/schema_version/",
-        "schema": "/api/v1/schema_version/schema/"
-    },
-    "server": {
-        "list_endpoint": "/api/v1/server/",
-        "schema": "/api/v1/server/schema/"
-    },
-    "user": {
-        "list_endpoint": "/api/v1/user/",
-        "schema": "/api/v1/user/schema/"
-    }
-}
-```
-
-The above JSON object is the output of browsing:
-```
-http://<domain>:<port>/api/v1/?format=json
-```
-The list_endpoint field is the url for listing resource objects.
-The schema field is the the url for retrieving info about the resouce object, such as fields, allowed HTTP methods, and allowed fields for filtering.
-
-
 Schemanizer REST API
 ====================
 
-This section describes the individual API. Sample usage and outputs are provided.
+For every resource, common attributes are the following:
+* list endpoint - allows retrieval of list of resources. Individual resource can be retrieved by appending primary key, for example, GET /api/v1/role/1/
+* schema - retrieves info about the resource such as the supported fields, allowed HTTP methods, and allowed fields for filtering
+
+Retrieving objects from a list endpoint will also include a meta object as shown from the output of Role list endpoint:
+```
+{
+    "meta": {
+        "limit": 20,
+        "next": null,
+        "offset": 0,
+        "previous": null,
+        "total_count": 3
+    },
+    "objects": [
+        {
+            "created_at": "2013-04-01T04:02:25",
+            "id": 1,
+            "name": "admin",
+            "resource_uri": "/api/v1/role/1/",
+            "updated_at": "2013-04-01T04:02:25"
+        },
+        {
+            "created_at": "2013-04-01T04:02:31",
+            "id": 2,
+            "name": "dba",
+            "resource_uri": "/api/v1/role/2/",
+            "updated_at": "2013-04-01T04:02:31"
+        },
+        {
+            "created_at": "2013-04-01T04:02:36",
+            "id": 3,
+            "name": "developer",
+            "resource_uri": "/api/v1/role/3/",
+            "updated_at": "2013-04-01T04:02:36"
+        }
+    ]
+}
+```
+
+Meta fields:
+
+limit - The current maximum number of objects return per call.
+next - The URL for the next set of objects.
+offset - The starting record number for the current set.
+previous - The URL of the previous set of objects.
+total_count - The number of objects of the current set.
+
 HTTP status code should be checked for every API calls. In most cases when error occurs, the *error_message* field will be included in the content.
 
 
 Role
 ----
+
+List endpoint:
+```
+GET /api/v1/role/
+```
+
+Schema:
+```
+GET /api/v1/role/schema/
+```
+
 
 ### Get Roles
 
@@ -146,6 +135,17 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 
 User
 ----
+
+List endpoint:
+```
+GET /api/v1/user/
+```
+
+Schema:
+```
+GET /api/v1/user/schema/
+```
+
 
 ### Get Users
 
@@ -299,6 +299,17 @@ $ curl -H 'Content-Type: application/json' -X POST -u admin:admin http://localho
 Environment
 -----------
 
+List endpoint:
+```
+GET /api/v1/environment/
+```
+
+Schema:
+```
+GET /api/v1/environment/schema/
+```
+
+
 ### Get Environments
 
 API:
@@ -405,6 +416,17 @@ $ curl -H 'Content-Type: application/json' -X DELETE -u admin:admin http://local
 
 Server
 ------
+
+List endpoint:
+```
+GET /api/v1/server/
+```
+
+Schema:
+```
+GET /api/v1/server/schema/
+```
+
 
 ### Get Servers
 
@@ -516,6 +538,17 @@ $ curl -H 'Content-Type: application/json' -X DELETE -u admin:admin http://local
 Database Schema
 ---------------
 
+List endpoint:
+```
+GET /api/v1/database_schema/
+```
+
+Schema:
+```
+GET /api/v1/database_schema/schema/
+```
+
+
 ### Get Database Schemas
 
 API:
@@ -571,6 +604,17 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 
 Schema Version
 --------------
+
+List endpoint:
+```
+GET /api/v1/schema_version/
+```
+
+Schema:
+```
+GET /api/v1/schema_version/schema/
+```
+
 
 ### Get Schema Versions
 
@@ -687,6 +731,17 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"server_id": 1, "dat
 
 Changeset
 ---------
+
+List endpoint:
+```
+GET /api/v1/changeset/
+```
+
+Schema:
+```
+GET /api/v1/changeset/schema/
+```
+
 
 ### Get Changesets
 
@@ -1164,6 +1219,17 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
 Changeset Detail
 ----------------
 
+List endpoint:
+```
+GET /api/v1/changeset_detail/
+```
+
+Schema:
+```
+GET /api/v1/changeset_detail/schema/
+```
+
+
 ### Get Changeset Details
 
 API:
@@ -1251,16 +1317,30 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
 Test Type
 ---------
 
-### Get Test Types
-
-API:
+List endpoint:
 ```
 GET /api/v1/test_type/
+```
+
+Schema:
+```
+GET /api/v1/test_type/schema/
 ```
 
 
 Changeset Test
 --------------
+
+List endpoint:
+```
+GET /api/v1/changeset_test/
+```
+
+Schema:
+```
+GET /api/v1/changeset_test/schema/
+```
+
 
 ### Get Changeset Tests
 
@@ -1324,6 +1404,17 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 Validation Type
 ---------------
 
+List endpoint:
+```
+GET /api/v1/validation_type/
+```
+
+Schema:
+```
+GET /api/v1/validation_type/schema/
+```
+
+
 ### Get Validation Types
 
 API:
@@ -1334,6 +1425,17 @@ GET /api/v1/validation_type/
 
 Changeset Validation
 --------------------
+
+List endpoint:
+```
+GET /api/v1/changeset_validation/
+```
+
+Schema:
+```
+GET /api/v1/changeset_validation/schema/
+```
+
 
 ### Get Changeset Validations
 
@@ -1394,6 +1496,17 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
 
 Changeset Detail Apply
 ----------------------
+
+List endpoint:
+```
+GET /api/v1/changeset_detail_apply/
+```
+
+Schema:
+```
+GET /api/v1/changeset_detail_apply/schema/
+```
+
 
 ### Get Changeset Detail Applies
 
