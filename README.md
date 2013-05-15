@@ -5,6 +5,13 @@ Schemanizer Web Application
 Requirements
 ------------
 
+Aside from the Python packages listed on requirements.txt,
+the web application depends on the following to be installed on the system:
+
+Python 2.6 or later
+nmap 5.21 or later
+
+
 It is recommended to install the the web application and its requirements in an isolated Python environments.
 virtualenv is a tool that can create such environments.
 
@@ -123,15 +130,6 @@ To restore:
 ```
 $ ./manage.py loaddata data.yaml
 ```
-
-Dependencies
-============
-
-Aside from the Python packages listed on requirements.txt,
-the application depends on the following to be installed on the system:
-
-nmap 5.21 or later
-
 
 Schema
 ======
