@@ -726,9 +726,24 @@ class ChangesetDetailResource(ModelResource):
         }
 
 
+class TestTypeResource(ModelResource):
+    class Meta:
+        queryset = models.TestType.objects.all()
+        resource_name = 'test_type'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'id': ALL
+        }
+
+
 class ChangesetTestResource(ModelResource):
     changeset_detail = fields.ForeignKey(
         ChangesetDetailResource, 'changeset_detail', null=True, blank=True)
+    test_type = fields.ForeignKey(
+        TestTypeResource, 'test_type', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetTest.objects.all()
@@ -739,12 +754,28 @@ class ChangesetTestResource(ModelResource):
         detail_allowed_methods = ['get']
         filtering = {
             'changeset_detail': ALL_WITH_RELATIONS,
+            'test_type': ALL_WITH_RELATIONS,
+        }
+
+
+class ValidationTypeResource(ModelResource):
+    class Meta:
+        queryset = models.ValidationType.objects.all()
+        resource_name = 'validation_type'
+        authentication = BasicAuthentication()
+        authorization = ReadOnlyAuthorization()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        filtering = {
+            'id': ALL
         }
 
 
 class ChangesetValidationResource(ModelResource):
     changeset = fields.ForeignKey(
         ChangesetResource, 'changeset', null=True, blank=True)
+    validation_type = fields.ForeignKey(
+        ValidationTypeResource, 'validation_type', null=True, blank=True)
 
     class Meta:
         queryset = models.ChangesetValidation.objects.all()
@@ -755,6 +786,7 @@ class ChangesetValidationResource(ModelResource):
         detail_allowed_methods = ['get']
         filtering = {
             'changeset': ALL_WITH_RELATIONS,
+            'validation_type': ALL_WITH_RELATIONS,
         }
 
 
