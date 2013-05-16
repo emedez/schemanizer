@@ -392,7 +392,7 @@ class ChangesetResource(ModelResource):
                 thread_is_alive = thread.is_alive()
                 data['thread_is_alive'] = thread_is_alive
                 if thread.has_errors:
-                    data['thread_has_errors'] = thread.errors
+                    data['thread_has_errors'] = thread.has_errors
                 data['thread_messages'] = thread.messages
                 data['thread_changeset_detail_apply_ids'] = (
                     thread.changeset_detail_apply_ids)
@@ -441,7 +441,7 @@ class ChangesetResource(ModelResource):
                     data['thread_changeset_validation_ids'] = (
                         thread.changeset_validation_ids)
                 if thread.changeset_tests:
-                    data['thread_changeset_test_ids'] = thread.changeset_tests_ids
+                    data['thread_changeset_test_ids'] = thread.changeset_test_ids
 
                 if not thread_is_alive:
                     #
