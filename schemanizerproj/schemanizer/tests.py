@@ -4,7 +4,7 @@ import urllib
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.db import transaction
+from django.db import connection, transaction
 from django.test import TestCase, Client, TransactionTestCase
 from django.utils import timezone
 
@@ -13,11 +13,12 @@ from schemanizer import businesslogic
 
 log = logging.getLogger(__name__)
 
-
 class ChangesetReviewViewTestCase(TransactionTestCase):
     fixtures = ['schemanizer/test.yaml']
 
     def setUp(self):
+        super(ChangesetReviewViewTestCase, self).setUp()
+
         # usernames and passwords
         self.users = (
             ('dev', 'dev'),
@@ -25,97 +26,117 @@ class ChangesetReviewViewTestCase(TransactionTestCase):
             ('admin', 'admin')
         )
 
-    def tearDown(self):
-        pass
-
     def _login(self, client, username, password):
         logged_in = client.login(username=username, password=password)
         self.assertTrue(logged_in)
 
     def _create_changeset(self, database_schema):
         user = models.User.objects.get(name='dev')
-        with transaction.commit_on_success():
-            changeset = models.Changeset.objects.create(
-                database_schema=database_schema,
-                type=models.Changeset.DDL_TABLE_CREATE,
-                classification=models.Changeset.CLASSIFICATION_PAINLESS,
-                review_status=models.Changeset.REVIEW_STATUS_NEEDS,
-                submitted_by=user,
-                submitted_at=timezone.now())
-            models.ChangesetDetail.objects.create(
-                changeset=changeset,
-                type=models.ChangesetDetail.TYPE_ADD,
-                description='create table_1',
-                apply_sql="""
-                    create table `table_1` (
-                        `id` int primary key auto_increment,
-                        `name` varchar(255)
-                    )
-                    """,
-                revert_sql="""
-                    drop table `table_1`
-                    """)
+        changeset = models.Changeset.objects.create(
+            database_schema=database_schema,
+            type=models.Changeset.DDL_TABLE_CREATE,
+            classification=models.Changeset.CLASSIFICATION_PAINLESS,
+            review_status=models.Changeset.REVIEW_STATUS_NEEDS,
+            submitted_by=user,
+            submitted_at=timezone.now())
+        models.ChangesetDetail.objects.create(
+            changeset=changeset,
+            type=models.ChangesetDetail.TYPE_ADD,
+            description='create table_1',
+            apply_sql="""
+                create table `table_1` (
+                    `id` int primary key auto_increment,
+                    `name` varchar(255)
+                )
+                """,
+            revert_sql="""
+                drop table `table_1`
+                """)
         log.info('Changeset [id=%s] was created.' % (changeset.id,))
         return changeset
 
-#    def test_changeset_review(self):
-#        with transaction.commit_on_success():
-#            database_schema = models.DatabaseSchema.objects.create(
-#                name='test_schemanizer_schema_1'
-#            )
-#            database_schema_id = database_schema.id
-#            log.debug('Database schema [id=%s] was created.' % (
-#                database_schema.id,))
-#
-#            c = Client()
-#            for u, p in self.users:
-#                self._login(c, u, p)
-#
-#                user = models.User.objects.get(name=u)
-#                changeset = None
-#                schema_version = None
-#
-#                try:
-#                    changeset = self._create_changeset(database_schema)
-#                    changeset_id = changeset.id
-#                    ddl = ''
-#                    schema_version = models.SchemaVersion.objects.create(
-#                        database_schema=database_schema,
-#                        ddl=ddl,
-#                        checksum='123456'
-#                    )
-#                    schema_version_id = schema_version.id
-#
-#                    user_has_access = businesslogic.changeset_can_be_reviewed_by_user(changeset, user)
-#                    url = reverse('schemanizer_changeset_review', args=[changeset_id])
-#                    r = c.get(url)
-#                    if u in ('dba', 'admin'):
-#                        self.assertTrue(user_has_access)
-#                    else:
-#                        self.assertFalse(user_has_access)
-#                    if user_has_access:
-#                        self.assertTrue('select_schema_version_form' in r.context)
-#
-#                    if u in ('dba', ):
-#                        r = c.get(url, data=dict(schema_version=schema_version_id))
-#                        if user_has_access:
-#                            self.assertTrue('thread' in r.context)
-#                            self.assertTrue(r.context['thread_started'])
-#                            thread = r.context['thread']
-#                            # wait for thread to end
-#                            log.debug('Waiting for review thread to end...')
-#                            thread.join()
-#                            log.debug('Review thread ended.')
-#
-#                finally:
-#                    if schema_version:
-#                        schema_version.delete()
-#                    if changeset:
-#                        changeset.delete()
-#
-#            database_schema.delete()
-#            log.debug('Database schema [id=%s] was deleted.' % (
-#                database_schema_id,))
+    def test_changeset_review(self):
+        log.debug('__name__ = %s' % (__name__,))
+        schema_name = 'schemanizer_test_changeset_review'
+        database_schema = models.DatabaseSchema.objects.create(
+            name=schema_name
+        )
+        database_schema_id = database_schema.id
+        log.debug('Database schema [id=%s] was created.' % (
+            database_schema.id,))
+
+        c = Client()
+        for u, p in self.users:
+            self._login(c, u, p)
+            log.debug('%s logged in.' % (u,))
+
+            user = models.User.objects.get(name=u)
+            changeset = None
+            schema_version = None
+
+            try:
+                cursor = connection.cursor()
+                cursor.execute('drop schema if exists %s' % (schema_name,))
+                while cursor.nextset() is not None:
+                    pass
+                log.debug('%s was dropped (if exists).' % (schema_name,))
+
+                changeset = self._create_changeset(database_schema)
+                changeset_id = changeset.id
+                ddl = ''
+                schema_version = models.SchemaVersion.objects.create(
+                    database_schema=database_schema,
+                    ddl=ddl,
+                    checksum=businesslogic.schema_hash(ddl)
+                )
+                schema_version_id = schema_version.id
+
+                user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
+                    changeset, user)
+                url = reverse('schemanizer_changeset_review', args=[changeset_id])
+                r = c.get(url)
+                if u in ('dba', 'admin'):
+                    self.assertTrue(user_has_access)
+                else:
+                    self.assertFalse(user_has_access)
+                if user_has_access:
+                    self.assertTrue('select_schema_version_form' in r.context)
+
+                log.debug('Review thread section (dba-only).')
+                if u in ('dba', ):
+                    r = c.get(url, data=dict(schema_version=schema_version_id))
+                    if user_has_access:
+                        self.assertTrue('thread' in r.context)
+                        self.assertTrue(r.context['thread_started'])
+                        thread = r.context['thread']
+                        # wait for thread to end
+                        log.debug('Waiting for review thread to end...')
+                        thread.join()
+                        log.debug('Review thread ended.')
+
+            except:
+                log.exception('EXCEPTION')
+                raise
+            finally:
+                if schema_version:
+                    schema_version.delete()
+                    log.debug('Schema version was deleted.')
+                if changeset:
+                    changeset.delete()
+                    log.debug('Changeset was deleted.')
+
+                cursor.execute('drop schema if exists %s' % (schema_name,))
+                while cursor.nextset() is not None:
+                    pass
+                log.debug('%s was dropped (if exists).' % (schema_name,))
+
+            log.debug('-' * 80)
+
+        database_schema.delete()
+        log.debug('Database schema [id=%s] was deleted.' % (
+            database_schema_id,))
+
+        log.debug('=' * 80)
 
 
 class HomeViewTestCase(TestCase):
@@ -1108,6 +1129,9 @@ class SchemaVersionViewsTestCase(TestCase):
             server.delete()
 
     def test_schema_version_create_post(self):
+        schema_name = 'schemanizer_test_schema'
+        cursor = connection.cursor()
+        cursor.execute('create schema if not exists %s' % (schema_name,))
         environment = models.Environment.objects.get(name='test')
         server = models.Server.objects.create(
             name='test_server_1',
@@ -1121,7 +1145,7 @@ class SchemaVersionViewsTestCase(TestCase):
 
             for u, p in self.users:
                 self._login(c, u, p)
-                data = dict(schema='information_schema')
+                data = dict(schema=schema_name)
                 r = c.post(url, data)
 
                 self.assertRedirects(r, reverse('schemanizer_server_list'))
@@ -1133,12 +1157,12 @@ class SchemaVersionViewsTestCase(TestCase):
         schema_version = None
         try:
             database_schema = models.DatabaseSchema.objects.create(
-                name='test_schemanizer_schema_1'
+                name='schemanizer_test_schema'
             )
             schema_version = models.SchemaVersion.objects.create(
                 database_schema=database_schema,
                 ddl='',
-                checksum=''
+                checksum=businesslogic.schema_hash('')
             )
             url = reverse('schemanizer_schema_version_view', args=[schema_version.id])
             c = Client()

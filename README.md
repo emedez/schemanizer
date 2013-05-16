@@ -85,13 +85,15 @@ $ ./manage.py runserver [optional port number, or ipaddr:port]
 Usage
 -----
 
+When the application is freshly installed, only one user exists - admin, with a default password of admin.
 Start here and login as 'admin' if there are no other users yet.:
-
 ```
 http://ipaddr:port/
 ```
+In the next examples, localhost:8000 will be used in place of ipadd:port.
 
-###Roles###
+
+### Roles
 
 1. **developer** - Users with this role have the following permissions:
     * submit changesets
@@ -104,6 +106,64 @@ the following permissions:
     * approve/reject changeset
 3. **admin** - Admins can do everything that a developer or dba can
 plus add/edit/delete users.
+
+
+### Users
+
+Only admin users can create, update or delete users.
+Click on the 'Users' link from the menu bar or browse the
+URL http://localhost:8000/schemanizer/user/list/ to go to a page
+that provides links for creating, updating and deleting users.
+
+
+### Environments
+
+Environment refers to the name of environment for the server.
+Predefined are dev, test, and prod. You can create, update or delete
+environments at the URL http://localhost:8000/schemanizer/environments/list/
+or click Data -> Environments.
+
+
+### Servers
+
+Server refers to the to collection of information about a MySQL server.
+Browse the URL http://localhost:8000/schemanizer/server/list/ or
+click Data -> Servers to go to server list page.
+In the server list page, you will be able to create, update or delete entries
+about a MySQL server.
+
+Browsing URL http://localhost:8000/schemanizer/server/discover/ or clicking
+Discover servers link will scan hosts in a local area network for
+MySQL server installations.
+This feature depends on the following Django settings:
+
+NMAP_HOSTS - hosts to scan, for example: '192.168.1.103/24'
+NMAP_PORTS - ports to scan, for example: '3300-3310'
+
+
+### Database Schemas and Schema Versions
+
+On the server list page, clicking on Create schema version link enables user to
+create a schema version by selecting a schema name from the list.
+Schema name is then saved as a Database Schema entry (a new entry will be created)
+if the schema name does not exist yet. New schema version entry is also created
+if no entry with the same checksum and schema name exists yet.
+
+To view database schema list, click on Data -> Database Schemas.
+To view schema version list, click on Data -> Schema Versions.
+
+
+### Changesets
+
+Clicking on the Data -> Changesets will show a list of changesets.
+The workflow for the changesets are the following:
+
+1. New changeset is submitted.
+2. Submitted changeset can either be reviewed or rejected.
+3. Rejected changesets can be updated again and will have a status similar to newly submitted changeset.
+4. Oly reviewed changesets can be approved
+5. Reviewed changesets can be rejected.
+6. Only approved changesets can be applied.
 
 
 Custom django-admin Commands
