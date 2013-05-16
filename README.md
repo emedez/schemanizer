@@ -201,3 +201,8 @@ REST API
 ========
 
 (See: docs/api.md)
+
+Schemanizer CLI
+===============
+
+(See: docs/cli.md)
