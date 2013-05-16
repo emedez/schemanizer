@@ -89,7 +89,9 @@ class SchemanizerCLI(Cmd):
                         cmds_doc.append(cmd)
                     else:
                         cmds_undoc.append(cmd)
-                    if 'schemanizer' in cmd:
+                    if cmd in ['list_changesets', 'create_changeset', 'show_changeset',
+                            'review_changeset', 'approve_changeset', 'reject_changeset',
+                            'apply_changeset']:
                         cmds_schemanizer.append(cmd)
             self.stdout.write("%s\n"%str(self.doc_leader))
             self.print_topics(self.doc_header,   cmds_doc,   15,80)
@@ -97,7 +99,7 @@ class SchemanizerCLI(Cmd):
             self.print_topics(self.undoc_header, cmds_undoc, 15,80)
             self.print_topics(self.schemanizer_header, cmds_schemanizer, 15,80)
     
-    def do_schemanizer_list(self, arg, opts=None):
+    def do_list_changesets(self, arg, opts=None):
         '''Show changesets needing review.'''
         changesets = requests.get('http://%s/api/v1/changeset/' % self.site, 
                                 params={'review_status': 'needs'},
@@ -105,24 +107,21 @@ class SchemanizerCLI(Cmd):
         objects = changesets.json().get('objects')
         table = Texttable()
         table.set_deco(Texttable.HEADER)
-        table.set_cols_align(['c', 'c', 'l', 'c'])
-        table.set_cols_width([10, 10, 40, 10])
-        rows = [['Changeset ID', 'Changeset Detail ID', 'Description', 'Submitted By']]
+        table.set_cols_align(['c', 'c', 'c', 'c', 'c'])
+        table.set_cols_width([5, 20, 15, 15, 10])
+        rows = [['ID', 'Type', 'Classification', 'Version Control URL', 'Submitted By']]
         for cs in objects:
-            details = requests.get('http://%s/api/v1/changeset_detail/' % self.site,
-                                params={'changeset__id': cs.get('id')},
-                                auth=self.api_auth)
-            detail_objects = details.json().get('objects')
-            for detail in detail_objects:
-                user = requests.get('http://%s%s' % (self.site, cs.get('submitted_by')),
+            user = requests.get('http://%s%s' % (self.site, cs.get('submitted_by')),
                                     auth=self.api_auth)
-                user_detail = user.json()
-                rows.append([cs.get('id'), detail.get('id'), detail.get('description'), user_detail.get('name')])
+            user_detail = user.json()
+            rows.append([cs.get('id'), cs.get('type'), cs.get('classification'),
+                        cs.get('version_control_url'), user_detail.get('name')])
         table.add_rows(rows)
         print 'Changesets That Need To Be Reviewed:'
         print table.draw()
         
-    def do_schemanizer_new(self, arg, opts=None):
+    def do_create_changeset(self, arg, opts=None):
+        '''Create a new changeset'''
         schema_id = self.pseudo_raw_input('Enter Schema ID: ')
         schema_id = int(schema_id)
         changeset_type = ''
@@ -225,7 +224,7 @@ class SchemanizerCLI(Cmd):
         else:
             print 'Adding changeset failed'
     
-    def do_schemanizer_show(self, arg, opts=None):
+    def do_show_changeset(self, arg, opts=None):
         '''Show fields and details for a changeset.'''
         if arg:
             changeset_id = arg
@@ -259,9 +258,9 @@ class SchemanizerCLI(Cmd):
                 print '\tRevert SQL: %s' % detail.get('revert_sql')
                 print
         else:
-            raise Exception, '*** Invalid syntax: schemanizer_show requires 1 argument(id).'
+            raise Exception, '*** Invalid syntax: show_changeset requires 1 argument(id).'
             
-    def do_schemanizer_check(self, arg, opts=None):
+    def do_review_changeset(self, arg, opts=None):
         '''Run validations and tests for a changeset.'''
         if arg:
             changeset_id = arg
@@ -299,7 +298,7 @@ class SchemanizerCLI(Cmd):
                 print
                 print 'Test Result Log:'
                 for i,test_id in enumerate(thread_changeset_test_ids):
-                    r = requests.get('http://%s/api/v1/changeset_test/%d/' % (self.site, tes_id),
+                    r = requests.get('http://%s/api/v1/changeset_test/%d/' % (self.site, test_id),
                                     auth=self.api_auth)
                     response = r.json()
                     log = response.get('results_log')
@@ -309,9 +308,9 @@ class SchemanizerCLI(Cmd):
             else:
                 raise Exception, '*** Changeset check failed: Unable to start review thread.'
         else:
-            raise Exception, '*** Invalid syntax: schemanizer_check requires 1 argument(id).'
+            raise Exception, '*** Invalid syntax: review_changeset requires 1 argument(id).'
             
-    def do_schemanizer_approve(self, arg, opts=None):
+    def do_approve_changeset(self, arg, opts=None):
         '''Approve a changeset'''
         if arg:
             changeset_id = arg
@@ -321,15 +320,15 @@ class SchemanizerCLI(Cmd):
             review_status = response.get('review_status')
             if review_status == 'approved':
                 print 'Approved Changeset Details:'
-                self.do_schemanizer_show(changeset_id)
+                self.do_show_changeset(changeset_id)
                 print
                 print '*** Changeset approval successful.'
             else:
                 raise Exception, '*** Changeset approval failed: Unable to approve changeset.'
         else:
-            raise Exception, '*** Invalid syntax: schemanizer_approve requires 1 argument(id).'
+            raise Exception, '*** Invalid syntax: approve_changeset requires 1 argument(id).'
             
-    def do_schemanizer_reject(self, arg, opts=None):
+    def do_reject_changeset(self, arg, opts=None):
         '''Reject a changeset'''
         if arg:
             changeset_id = arg
@@ -339,15 +338,15 @@ class SchemanizerCLI(Cmd):
             review_status = response.get('review_status')
             if review_status == 'rejected':
                 print 'Rejected Changeset Details:'
-                self.do_schemanizer_show(changeset_id)
+                self.do_show_changeset(changeset_id)
                 print
                 print '*** Changeset rejection successful.'
             else:
                 raise Exception, '*** Changeset rejection failed: Unable to reject changeset.'
         else:
-            raise Exception, '*** Invalid syntax: schemanizer_reject requires 1 argument(id).'
+            raise Exception, '*** Invalid syntax: reject_changeset requires 1 argument(id).'
             
-    def do_schemanizer_apply(self, arg, opts=None):
+    def do_apply_changeset(self, arg, opts=None):
         '''Apply a changeset'''
         if arg:
             changeset_id = arg
@@ -374,6 +373,7 @@ class SchemanizerCLI(Cmd):
                         print message[1]
                     time.sleep(10)
                 thread_changeset_detail_apply_ids = response.get('thread_changeset_detail_apply_ids', [])
+                print 'Apply Changeset Result Log:'
                 for i,apply_id in enumerate(thread_changeset_detail_apply_ids):
                     r = requests.get('http://%s/api/v1/changeset_detail_apply/%d/' % (self.site, apply_id),
                                     auth=self.api_auth)
@@ -385,4 +385,4 @@ class SchemanizerCLI(Cmd):
             else:
                 raise Exception, '*** Changeset application failed: Unable to apply changeset.'
         else:
-            raise Exception, '*** Invalid syntax: schemanizer_apply requires 1 argument(id).'
+            raise Exception, '*** Invalid syntax: apply_changeset requires 1 argument(id).'
