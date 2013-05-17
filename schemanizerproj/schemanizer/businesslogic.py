@@ -63,7 +63,7 @@ def create_user(name, email, role, password, user):
         log.info(u'User [id=%s] was created.' % (schemanizer_user.id,))
         return schemanizer_user
     else:
-        raise exceptions.NotAllowed('User is now allowed to create user.')
+        raise exceptions.NotAllowed('User is not allowed to create user.')
 
 
 def delete_user(to_be_deleted_user, user):
