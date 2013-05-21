@@ -22,6 +22,10 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from schemanizer import businesslogic, exceptions, forms, models, utils
+from schemanizer.logic import (
+    changeset_apply as logic_changeset_apply,
+    changeset_review as logic_changeset_review,
+    privileges as logic_privileges)
 
 log = logging.getLogger(__name__)
 
@@ -402,7 +406,8 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                 changeset, user)
             can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
                 changeset, user)
-            can_apply = businesslogic.user_can_apply_changeset(user, changeset)
+            can_apply = logic_privileges.can_user_apply_changeset(
+                user, changeset)
 
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -427,7 +432,8 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
             changesets = []
             for r in qs:
                 extra=dict(
-                    can_apply=businesslogic.user_can_apply_changeset(user, r))
+                    can_apply=logic_privileges.can_user_apply_changeset(
+                        user, r))
                 changesets.append(dict(r=r, extra=extra))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -453,7 +459,7 @@ def changeset_apply(
             request_id = utils.generate_request_id(request)
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
-            if not businesslogic.user_can_apply_changeset(user, changeset):
+            if not logic_privileges.can_user_apply_changeset(user, changeset):
                 raise exceptions.NotAllowed(
                     'User is not allowed to apply changeset.')
 
@@ -463,7 +469,7 @@ def changeset_apply(
                 if form.is_valid():
                     server = models.Server.objects.get(pk=int(
                         form.cleaned_data['server']))
-                    thread = businesslogic.changeset_apply(
+                    thread = logic_changeset_apply.changeset_apply(
                         changeset, user, server)
                     apply_threads[request_id] = thread
                     poll_thread_status = True
@@ -484,7 +490,8 @@ def changeset_apply(
 def changeset_apply_status(
         request, request_id,
         template='schemanizer/changeset_apply_status.html',
-        changeset_detail_applies_template='schemanizer/changeset_apply_changeset_detail_applies.html'):
+        changeset_detail_applies_template=
+            'schemanizer/changeset_apply_changeset_detail_applies.html'):
 
     if not request.is_ajax():
         return HttpResponseForbidden(MSG_NOT_AJAX)
@@ -659,10 +666,10 @@ def changeset_review(
                 if schema_version:
                     #
                     # User has selected a schema version already,
-                    # proceed with changeset syntax validation.
+                    # proceed with changeset review.
                     #
-                    thread = businesslogic.changeset_review(
-                        changeset, schema_version, request_id, user)
+                    thread = logic_changeset_review.changeset_review(
+                        changeset, schema_version, user)
                     review_threads[request_id] = thread
                     thread_started = True
 

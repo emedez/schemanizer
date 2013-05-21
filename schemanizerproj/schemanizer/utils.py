@@ -1,15 +1,16 @@
 """Utility functions."""
+
 import hashlib
 import logging
 import re
 import shlex
-import StringIO
-import struct
+import string
 import subprocess
 import time
-import nmap
 
 import mmh3
+import sqlparse
+import nmap
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +134,9 @@ def mysql_load(db, query_string, host=None, port=None, user=None, passwd=None):
     cmd += u' %s' % (db,)
     log.debug(cmd)
     args = shlex.split(str(cmd))
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        args, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE)
     stdout_data = None
     try:
         stdout_data = p.communicate(input=query_string)[0]
@@ -196,3 +199,23 @@ def get_model_instance(obj, model_class):
         return model_class.objects.get(pk=obj)
     else:
         return obj
+
+
+def normalize_mysql_dump(dump):
+    """Normalizes MySQL dump."""
+
+    statement_list = sqlparse.split(dump)
+    new_statement_list = []
+    for statement in statement_list:
+        stripped_chars = unicode(string.whitespace + ';')
+        statement = statement.strip(stripped_chars)
+        if statement:
+            if not statement.startswith(u'/*!'):
+                # skip processing conditional comments
+                new_statement_list.append(statement)
+    return u';\n'.join(new_statement_list)
+
+
+def schema_hash(dump):
+    """Returns the hash string of a normalized dump."""
+    return hash_string(normalize_mysql_dump(dump))

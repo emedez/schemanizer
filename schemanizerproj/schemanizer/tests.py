@@ -1,3 +1,4 @@
+import json
 import logging
 from pprint import pformat
 import urllib
@@ -8,16 +9,19 @@ from django.db import connection, transaction
 from django.test import TestCase, Client, TransactionTestCase
 from django.utils import timezone
 
-from schemanizer import models
+from tastypie.test import ResourceTestCase
+
+from schemanizer import exceptions, models
 from schemanizer import businesslogic
+from schemanizer.logic import changeset_review as logic_changeset_review
 
 log = logging.getLogger(__name__)
 
-class ChangesetReviewViewTestCase(TransactionTestCase):
+class ChangesetReviewLogicTest(TransactionTestCase):
     fixtures = ['schemanizer/test.yaml']
 
     def setUp(self):
-        super(ChangesetReviewViewTestCase, self).setUp()
+        super(ChangesetReviewLogicTest, self).setUp()
 
         # usernames and passwords
         self.users = (
@@ -42,16 +46,24 @@ class ChangesetReviewViewTestCase(TransactionTestCase):
         models.ChangesetDetail.objects.create(
             changeset=changeset,
             type=models.ChangesetDetail.TYPE_ADD,
-            description='create table_1',
+            description='create table t2',
             apply_sql="""
-                create table `table_1` (
+                create table `t2` (
                     `id` int primary key auto_increment,
                     `name` varchar(255)
                 )
                 """,
             revert_sql="""
-                drop table `table_1`
+                drop table `t2`
                 """)
+        models.ChangesetDetail.objects.create(
+            changeset=changeset,
+            type=models.ChangesetDetail.TYPE_UPD,
+            description='test update data',
+            apply_sql="""
+                update t1 set id = 9999 where id = 9999;
+                """,
+            revert_sql='')
         log.info('Changeset [id=%s] was created.' % (changeset.id,))
         return changeset
 
@@ -61,82 +73,103 @@ class ChangesetReviewViewTestCase(TransactionTestCase):
         database_schema = models.DatabaseSchema.objects.create(
             name=schema_name
         )
-        database_schema_id = database_schema.id
-        log.debug('Database schema [id=%s] was created.' % (
-            database_schema.id,))
+        ddl = """
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `varchar_1` varchar(255) DEFAULT NULL,
+  `int_1` int(11) DEFAULT NULL,
+  `int_2` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-        c = Client()
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+        """
+        schema_version = models.SchemaVersion.objects.create(
+            database_schema=database_schema,
+            ddl=ddl,
+            checksum=businesslogic.schema_hash(ddl)
+        )
+
+        #c = Client()
         for u, p in self.users:
-            self._login(c, u, p)
-            log.debug('%s logged in.' % (u,))
+            #self._login(c, u, p)
+            #log.debug('%s logged in.' % (u,))
 
             user = models.User.objects.get(name=u)
-            changeset = None
-            schema_version = None
 
             try:
-                cursor = connection.cursor()
-                cursor.execute('drop schema if exists %s' % (schema_name,))
-                while cursor.nextset() is not None:
-                    pass
-                log.debug('%s was dropped (if exists).' % (schema_name,))
+#                cursor = connection.cursor()
+#                cursor.execute('drop schema if exists %s' % (schema_name,))
+#                while cursor.nextset() is not None:
+#                    pass
+#                log.debug('%s was dropped (if exists).' % (schema_name,))
 
                 changeset = self._create_changeset(database_schema)
-                changeset_id = changeset.id
-                ddl = ''
-                schema_version = models.SchemaVersion.objects.create(
-                    database_schema=database_schema,
-                    ddl=ddl,
-                    checksum=businesslogic.schema_hash(ddl)
-                )
-                schema_version_id = schema_version.id
 
-                user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
-                    changeset, user)
-                url = reverse('schemanizer_changeset_review', args=[changeset_id])
-                r = c.get(url)
-                if u in ('dba', 'admin'):
-                    self.assertTrue(user_has_access)
+                #user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
+                #    changeset, user)
+                changeset_review = logic_changeset_review.ChangesetReview(
+                    changeset, schema_version, user)
+                if u == 'dev':
+                    self.assertRaises(exceptions.NotAllowed, changeset_review.run)
                 else:
-                    self.assertFalse(user_has_access)
-                if user_has_access:
-                    self.assertTrue('select_schema_version_form' in r.context)
-
-                log.debug('Review thread section (dba-only).')
-                if u in ('dba', ):
-                    r = c.get(url, data=dict(schema_version=schema_version_id))
-                    if user_has_access:
-                        self.assertTrue('thread' in r.context)
-                        self.assertTrue(r.context['thread_started'])
-                        thread = r.context['thread']
-                        # wait for thread to end
-                        log.debug('Waiting for review thread to end...')
-                        thread.join()
-                        log.debug('Review thread ended.')
+                    changeset_review.run()
+#                url = reverse('schemanizer_changeset_review', args=[changeset_id])
+#                r = c.get(url)
+#                if u in ('dba', 'admin'):
+#                    self.assertTrue(user_has_access)
+#                else:
+#                    self.assertFalse(user_has_access)
+#                if user_has_access:
+#                    self.assertTrue('select_schema_version_form' in r.context)
+#
+#                log.debug('Review thread section (dba-only).')
+#                if u in ('dba', ):
+#                    r = c.get(url, data=dict(schema_version=schema_version_id))
+#                    if user_has_access:
+#                        self.assertTrue('thread' in r.context)
+#                        self.assertTrue(r.context['thread_started'])
+#                        thread = r.context['thread']
+#                        # wait for thread to end
+#                        log.debug('Waiting for review thread to end...')
+#                        thread.join()
+#                        log.debug('Review thread ended.')
 
             except:
                 log.exception('EXCEPTION')
                 raise
-            finally:
-                if schema_version:
-                    schema_version.delete()
-                    log.debug('Schema version was deleted.')
-                if changeset:
-                    changeset.delete()
-                    log.debug('Changeset was deleted.')
-
-                cursor.execute('drop schema if exists %s' % (schema_name,))
-                while cursor.nextset() is not None:
-                    pass
-                log.debug('%s was dropped (if exists).' % (schema_name,))
-
-            log.debug('-' * 80)
-
-        database_schema.delete()
-        log.debug('Database schema [id=%s] was deleted.' % (
-            database_schema_id,))
-
-        log.debug('=' * 80)
+#            finally:
+#                if schema_version:
+#                    schema_version.delete()
+#                    log.debug('Schema version was deleted.')
+#                if changeset:
+#                    changeset.delete()
+#                    log.debug('Changeset was deleted.')
+#        database_schema.delete()
+#        log.debug('Database schema [id=%s] was deleted.' % (
+#            database_schema_id,))
+#
+#        log.debug('=' * 80)
 
 
 class HomeViewTestCase(TestCase):
@@ -1176,3 +1209,133 @@ class SchemaVersionViewsTestCase(TestCase):
                 database_schema.delete()
             if schema_version:
                 schema_version.delete()
+
+
+class RestApiTest(ResourceTestCase):
+    """Tests for Schemanizer REST API."""
+
+    fixtures = ['schemanizer/test.yaml']
+
+    def setUp(self):
+        super(RestApiTest, self).setUp()
+
+    def get_admin_credentials(self):
+        """Returns admin credentials."""
+        return self.create_basic(username='admin', password='admin')
+
+    def get_dba_credentials(self):
+        return self.create_basic(username='dba', password='dba')
+
+    def get_developer_credentials(self):
+        """Returns developer credentials."""
+        return self.create_basic(username='dev', password='dev')
+
+    def create_database_schema(self):
+        database_schema = models.DatabaseSchema.objects.create(
+            name='schemanizer_test_schema_1')
+        return database_schema
+
+    def create_changeset(self):
+        database_schema = self.create_database_schema()
+        changeset = models.Changeset.objects.create(
+            database_schema=database_schema, type='DDL:Table:Create',
+            classification='painless')
+        return changeset
+
+    def test_user_create(self):
+        current_user_count = models.User.objects.count()
+        post_data = dict(
+            name='dev2',
+            email='dev2@example.com',
+            role_id=models.Role.objects.get(name='developer').pk,
+            password='dev2'
+        )
+        resp = self.api_client.post(
+            '/api/v1/user/create/', format='json', data=post_data,
+            authentication=self.get_admin_credentials())
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        self.assertEqual(models.User.objects.count(), current_user_count + 1)
+
+        # Scenario: Developer attempts to create user.
+        resp = self.api_client.post(
+            '/api/v1/user/create/', format='json', data=post_data,
+            authentication=self.get_developer_credentials())
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        obj = json.loads(resp.content)
+        self.assertEqual(obj['error_message'], 'User is not allowed to create user.')
+
+    def test_submit_changeset(self):
+        database_schema = self.create_database_schema()
+        post_data = dict(
+            changeset=dict(
+                database_schema_id=database_schema.id,
+                type='DDL:Table:Create',
+                classification='painless',
+                version_control_url=''
+            ),
+            changeset_details=[
+                dict(
+                    type='add',
+                    description='create_a_table',
+                    apply_sql='create table t1 (id int primary key auto_increment)',
+                    revert_sql='drop table t1'
+                )
+            ]
+        )
+        submit_changeset_url = '/api/v1/changeset/submit/'
+        resp = self.api_client.post(
+            submit_changeset_url, format='json', data=post_data,
+            authentication=self.get_developer_credentials())
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        obj = json.loads(resp.content)
+        self.assertTrue('id' in obj)
+
+    def test_reject_changeset(self):
+        #database_schema = models.DatabaseSchema.objects.create(
+        #    name='schemanizer_test_schema_1')
+        #changeset = models.Changeset.objects.create(
+        #    database_schema=database_schema, type='DDL:Table:Create',
+        #    classification='painless')
+        changeset = self.create_changeset()
+
+        reject_changeset_url='/api/v1/changeset/reject/%s/' % (changeset.id,)
+        resp = self.api_client.post(
+            reject_changeset_url, format='json',
+            authentication=self.get_dba_credentials())
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        obj = json.loads(resp.content)
+        self.assertEquals(obj['id'], changeset.id)
+        self.assertEquals(obj['review_status'], 'rejected')
+
+    def test_approve_changeset(self):
+        changeset = self.create_changeset()
+        changeset.review_status = 'in_progress'
+        changeset.save()
+
+        approve_changeset_url='/api/v1/changeset/approve/%s/' % (changeset.id,)
+        resp = self.api_client.post(
+            approve_changeset_url, format='json',
+            authentication=self.get_dba_credentials())
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        obj = json.loads(resp.content)
+        self.assertEquals(obj['id'], changeset.id)
+        self.assertEquals(obj['review_status'], 'approved')
+
+    def test_soft_delete_changeset(self):
+        changeset = self.create_changeset()
+        soft_delete_changeset_url = '/api/v1/changeset/soft_delete/%s/' % (changeset.id,)
+        resp = self.api_client.post(
+            soft_delete_changeset_url, format='json',
+            authentication=self.get_dba_credentials()
+        )
+        log.debug('status_code = %s' % (resp.status_code,))
+        log.debug(resp.content)
+        obj = json.loads(resp.content)
+        self.assertEquals(obj['id'], changeset.id)
+        self.assertEquals(obj['is_deleted'], 1)
+

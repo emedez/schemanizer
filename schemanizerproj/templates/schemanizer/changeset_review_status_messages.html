@@ -1,3 +1,3 @@
-{% for tm_class, tm in thread_messages %}
-    <p class="text-{{ tm_class }}">{{ tm }}</p>
+{% for tm in thread_messages %}
+    <p class="text-{{ tm.message_type }}">{{ tm.message }}</p>
 {% endfor %}
