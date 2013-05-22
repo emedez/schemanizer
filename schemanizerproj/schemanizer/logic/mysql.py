@@ -76,8 +76,8 @@ class MySQLServerConnectionTester(object):
                 log.info(msg)
                 self._store_message(msg)
                 break
-            except StandardError, e:
-                log.exception('ERROR')
+            except Exception, e:
+                log.exception('EXCEPTION')
                 self._store_message(
                     'ERROR %s: %s' % (type(e), e), 'error')
 

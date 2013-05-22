@@ -90,7 +90,7 @@ class UserPrivileges(object):
 
     def check_create_user(self):
         if not self.can_create_user():
-            raise exceptions.NotAllowed(MSG_CREATE_USER_NOT_ALLOWED)
+            raise exceptions.PrivilegeError(MSG_CREATE_USER_NOT_ALLOWED)
 
     def can_update_user(self):
         """Checks if user can update users."""
@@ -101,7 +101,7 @@ class UserPrivileges(object):
 
     def check_update_user(self):
         if not self.can_update_user():
-            raise exceptions.NotAllowed(MSG_UPDATE_USER_NOT_ALLOWED)
+            raise exceptions.PrivilegeError(MSG_UPDATE_USER_NOT_ALLOWED)
 
     def can_delete_user(self):
         """Checks if user can delete users."""
@@ -112,4 +112,4 @@ class UserPrivileges(object):
 
     def check_delete_user(self):
         if not self.can_delete_user():
-            raise exceptions.NotAllowed(MSG_DELETE_USER_NOT_ALLOWED)
+            raise exceptions.PrivilegeError(MSG_DELETE_USER_NOT_ALLOWED)

@@ -19,7 +19,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user):
     now = timezone.now()
 
     if not logic_privileges.can_user_review_changeset(user, changeset):
-        raise exceptions.NotAllowed(
+        raise exceptions.PrivilegeError(
             u"User '%s' is not allowed to review changeset [id=%s]." % (
                 user.name, changeset.id))
 
@@ -69,9 +69,10 @@ def changeset_validate_no_update_with_where_clause(changeset, user):
                         u'WHERE clause found on revert_sql. (changeset detail ID: %s).' % (
                             changeset_detail.id,))
                     where_clause_found = True
-            except StandardError, e:
-                log.exception('EXCEPTION')
-                validation_results.append(u'EXCEPTION %s: %s' % (type(e), e))
+            except Exception, e:
+                msg = 'ERROR %s: %s' % (type(e), e)
+                log.exception(msg)
+                validation_results.append(msg)
                 has_errors = True
 
         validation_results_text = u''

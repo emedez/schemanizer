@@ -7,7 +7,7 @@ from django.utils import timezone
 import MySQLdb
 import sqlparse
 
-from schemanizer import models, utils
+from schemanizer import exceptions, models, utils
 
 warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 log = logging.getLogger(__name__)
@@ -81,6 +81,36 @@ class ChangesetSyntaxTest(object):
                 cursor.execute(statement)
                 while cursor.nextset() is not None:
                     pass
+
+    def _execute_count_sql(self, cursor, count_sql):
+        """Executes count SQL."""
+
+        count = None
+        if count_sql:
+            count_sql = count_sql.strip(unicode(
+                string.whitespace + ';'))
+        if count_sql:
+            statements = sqlparse.split(count_sql)
+            if len(statements) > 1:
+                raise exceptions.Error(
+                    'The number of statements for Count SQL  should not be '
+                    'greater than 1.')
+            statement = statements[0].rstrip(unicode(string.whitespace + ';'))
+            if statement:
+                log.debug(u'STATEMENT: %s' % (statement,))
+                try:
+                    cursor.execute(statement)
+                    if len(cursor.description) > 1:
+                        raise exceptions.Error(
+                            'Count SQL should return a single value only.')
+                    row = cursor.fetchone()
+                    if row is None:
+                        raise exceptions.Error('Count SQL result is empty.')
+                    count = row[0]
+                finally:
+                    while cursor.nextset() is not None:
+                        pass
+        return count
 
     def run(self):
         """Main logic for testing changeset."""
@@ -188,6 +218,9 @@ class ChangesetSyntaxTest(object):
                     try:
                         cursor = conn.cursor()
 
+                        count_before = self._execute_count_sql(
+                            cursor, changeset_detail.count_sql)
+
                         # Test apply_sql
                         log.debug('Testing apply_sql')
                         self._execute_query(cursor, changeset_detail.apply_sql)
@@ -204,9 +237,10 @@ class ChangesetSyntaxTest(object):
                         hash_after_revert = utils.schema_hash(
                             structure_after_revert)
                         if hash_after_revert != hash_before:
-                            raise StandardError(
+                            raise exceptions.Error(
                                 'Checksum after revert_sql was applied was '
-                                'not the same as before apply_sql was applied.')
+                                'not the same as before apply_sql was '
+                                'applied.')
 
                         # revert_sql worked, reapply appy sql again
                         log.debug('Reapplying apply_sql')
@@ -224,19 +258,28 @@ class ChangesetSyntaxTest(object):
                                     while cursor.nextset() is not None:
                                         pass
 
+                        count_after = self._execute_count_sql(
+                            cursor, changeset_detail.count_sql)
+
                         changeset_detail.before_checksum = hash_before
                         changeset_detail.after_checksum = hash_after
+                        if (
+                                count_before is not None and
+                                count_after is not None):
+                            changeset_detail.volumetric_values = (
+                                u'%s' % (count_after - count_before))
                         changeset_detail.save()
 
                         self._structure_after = structure_after
                         self._hash_after = hash_after
-                    except StandardError, e:
-                        log.exception('EXCEPTION')
-                        self._store_message('EXCEPTION %s: %s' % (type(e), e))
+                    except Exception, e:
+                        msg = 'ERROR %s: %s' % (type(e), e)
+                        log.exception(msg)
+                        self._store_message(msg, 'error')
                         if cursor and cursor.messages:
                             log.error(cursor.messages)
                             for exc, val in cursor.messages:
-                                val_str = 'EXCEPTION %s: %s' % (exc, val)
+                                val_str = 'ERROR %s: %s' % (exc, val)
                                 if val_str not in results_log_items:
                                     results_log_items.append(val_str)
                         self._has_errors = True

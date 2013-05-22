@@ -133,7 +133,8 @@ CREATE TABLE `t1` (
                 changeset_review = logic_changeset_review.ChangesetReview(
                     changeset, schema_version, user)
                 if u == 'dev':
-                    self.assertRaises(exceptions.NotAllowed, changeset_review.run)
+                    self.assertRaises(
+                        exceptions.PrivilegeError, changeset_review.run)
                 else:
                     changeset_review.run()
 #                url = reverse('schemanizer_changeset_review', args=[changeset_id])

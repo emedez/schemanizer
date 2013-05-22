@@ -133,7 +133,7 @@ class ChangesetReview(object):
 
         if not logic_privileges.can_user_review_changeset(
                 self._user, self._changeset):
-            raise exceptions.NotAllowed(
+            raise exceptions.PrivilegeError(
                 MSG_CHANGESET_REVIEW_NOT_ALLOWED.format(
                     user=self._user.auth_user.username,
                     changeset_id=self._changeset.id))
@@ -156,7 +156,7 @@ class ChangesetReview(object):
                 ec2_instance_starter.run()
                 if ec2_instance_starter.instance and not (
                         ec2_instance_starter.instance.state == 'running'):
-                    raise StandardError(
+                    raise exceptions.Error(
                         'Instance did not reach \'running\' state.')
 
             if self._no_ec2_instance_launch or (
@@ -185,7 +185,7 @@ class ChangesetReview(object):
                 )
                 conn = connection_tester.run()
                 if not conn:
-                    raise StandardError('Unable to connect to MySQL server.')
+                    raise exceptions.Error('Unable to connect to MySQL server.')
 
                 now = timezone.now()
                 with transaction.commit_on_success():
@@ -259,15 +259,17 @@ class ChangesetReview(object):
                     url = reverse(
                         'schemanizer_changeset_view_review_results',
                         args=[self._changeset.id])
-                    query_string = urllib.urlencode(dict(
-                        changeset_validation_ids=changeset_validation_ids_string,
-                        changeset_test_ids=changeset_test_ids_string))
-                    self._review_results_url = 'http://%s%s?%s' % (
-                        site.domain,
-                        url,
-                        query_string)
+                    #query_string = urllib.urlencode(dict(
+                    #    changeset_validation_ids=changeset_validation_ids_string,
+                    #    changeset_test_ids=changeset_test_ids_string))
+                    #self._review_results_url = 'http://%s%s?%s' % (
+                    #    site.domain,
+                    #    url,
+                    #    query_string)
+                    self._review_results_url = 'http://%s%s' % (
+                        site.domain, url)
 
-                    log.info('Changeset [id=%s] was reviewed.' % (
+                    log.info('Changeset was reviewed, id=%s.' % (
                         self._changeset.id,))
                     logic_mail.send_changeset_reviewed_mail(self._changeset)
         finally:
@@ -384,9 +386,9 @@ class ChangesetReviewThread(threading.Thread):
             self._has_errors = changeset_review.has_errors
             self._review_results_url = changeset_review.review_results_url
 
-        except StandardError, e:
-            log.exception('ERROR')
+        except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
+            log.exception(msg)
             self._store_message(msg, 'error')
 
         finally:
@@ -412,5 +414,5 @@ def changeset_review(changeset, schema_version, user):
         thread.start()
         return thread
     else:
-        raise exceptions.NotAllowed(
+        raise exceptions.PrivilegeError(
             u'User is not allowed to set review status to \'in_progress\'.')

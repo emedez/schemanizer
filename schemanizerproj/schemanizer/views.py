@@ -394,7 +394,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                             u'Invalid post.\nrequest.POST=\n%s' % (
                                 pformat(request.POST),))
 
-                except exceptions.NotAllowed, e:
+                except exceptions.PrivilegeError, e:
                     log.exception('EXCEPTION')
                     messages.error(request, u'%s' % (e,))
 
@@ -462,7 +462,7 @@ def changeset_apply(
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
             if not logic_privileges.can_user_apply_changeset(user, changeset):
-                raise exceptions.NotAllowed(
+                raise exceptions.PrivilegeError(
                     'User is not allowed to apply changeset.')
 
             if request.method == 'POST':

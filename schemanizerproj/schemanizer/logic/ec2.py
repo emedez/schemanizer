@@ -89,9 +89,10 @@ class EC2InstanceStarter(object):
                 self._instance.update()
                 if self._instance.state == 'running':
                     break
-            except StandardError, e:
-                log.exception('EXCEPTION')
-                self._store_message('EXCEPTION %s: %s' % (type(e), e), 'error')
+            except Exception, e:
+                msg = 'ERROR %s: %s' % (type(e), e)
+                log.exception(msg)
+                self._store_message(msg, 'error')
 
             if (self._running_state_check_timeout and
                     time.time() - start_time >

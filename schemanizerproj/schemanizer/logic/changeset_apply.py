@@ -88,9 +88,9 @@ class ChangesetApply(object):
                 try:
                     if query:
                         cursor.execute(query)
-                except StandardError, e:
-                    log.exception('ERROR')
+                except Exception, e:
                     msg = 'ERROR %s: %s' % (type(e), e)
+                    log.exception(msg)
                     self._store_message(msg, 'error')
                     results_logs.append(msg)
                     has_errors = True
@@ -133,7 +133,7 @@ class ChangesetApply(object):
                     self._changeset.before_version.checksum == checksum):
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
-                raise StandardError(
+                raise exceptions.Error(
                     'Cannot apply changeset, existing schema checksum does '
                     'not match the expected value.')
 
@@ -147,12 +147,12 @@ class ChangesetApply(object):
                     self._changeset.after_version.checksum == checksum)):
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('after_version = %s' % (self._changeset.after_version,))
-                raise StandardError(
+                raise exceptions.Error(
                     'Final schema checksum does not match the expected value.')
 
-        except StandardError, e:
-            log.exception('ERROR')
+        except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
+            log.exception(msg)
             self._store_message(msg, 'error')
             self._has_errors = True
 
@@ -205,9 +205,9 @@ class ChangesetApplyThread(threading.Thread):
             self.changeset_detail_apply_ids = (
                 changeset_apply.changeset_detail_apply_ids)
 
-        except StandardError, e:
-            log.exception('ERROR')
+        except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
+            log.exception(msg)
             self._store_message(msg, 'error')
             self.has_errors = True
 
@@ -223,7 +223,8 @@ def changeset_apply(changeset, user, server):
     server = utils.get_model_instance(server, models.Server)
 
     if not logic_privileges.can_user_apply_changeset(user, changeset):
-        raise exceptions.NotAllowed('User is not allowed to apply changeset.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to apply changeset.')
 
     connection_options = {}
     if settings.AWS_MYSQL_USER:

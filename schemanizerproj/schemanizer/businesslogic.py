@@ -98,7 +98,8 @@ def soft_delete_changeset(changeset, user):
 
         return changeset
     else:
-        raise exceptions.NotAllowed('User is not allowed to soft delete the changeset.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to soft delete the changeset.')
 
 
 def delete_changeset(changeset):
@@ -263,7 +264,8 @@ def changeset_update_from_form(**kwargs):
         changeset_send_updated_mail(changeset)
 
     else:
-        raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to update changeset.')
 
     return changeset
 
@@ -306,7 +308,8 @@ def changeset_update(changeset, changeset_details, to_be_deleted_changeset_detai
 
         return changeset
     else:
-        raise exceptions.NotAllowed('User is not allowed to update changeset.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to update changeset.')
 
 
 def changeset_can_be_reviewed_by_user(changeset, user):
@@ -446,7 +449,8 @@ def changeset_approve(changeset, user):
         return changeset
 
     else:
-        raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to approve changeset.')
 
 
 def changeset_send_rejected_mail(changeset):
@@ -500,7 +504,8 @@ def changeset_reject(changeset, user):
 
     else:
         log.debug(u'changeset:\n%s\n\nuser=%s' % (changeset, user.name))
-        raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to reject changeset.')
 
 
 def get_applied_changesets(schema_version):
@@ -606,4 +611,5 @@ def save_schema_dump(server, database_schema_name, user):
 
         return schema_version
     else:
-        raise exceptions.NotAllowed('User is not allowed to save schema dumps.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to save schema dumps.')
