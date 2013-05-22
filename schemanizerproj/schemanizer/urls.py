@@ -8,8 +8,12 @@ urlpatterns = patterns('schemanizer.views',
     #
     url(r'^user/list/$', 'users', name='schemanizer_users'),
     url(r'^user/create/$', 'user_create', name='schemanizer_user_create'),
-    url(r'^user/update/(?P<id>\d+)/$', 'update_user', name='schemanizer_update_user'),
-    url(r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user', name='schemanizer_confirm_delete_user'),
+    url(
+        r'^user/update/(?P<id>\d+)/$', 'user_update',
+        name='schemanizer_update_user'),
+    url(
+        r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user',
+        name='schemanizer_confirm_delete_user'),
 
     #
     # changeset

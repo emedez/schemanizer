@@ -12,6 +12,7 @@ from tastypie import fields
 
 from schemanizer import models, businesslogic, exceptions, utils
 from schemanizer.api import authorizations
+from schemanizer.logic import user as logic_user
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +148,7 @@ class UserResource(ModelResource):
         data = {}
         try:
             user_id = int(kwargs.get('user_id'))
-            businesslogic.delete_user(user_id, request.user.schemanizer_user)
+            logic_user.delete_user(request.user.schemanizer_user, user_id)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)

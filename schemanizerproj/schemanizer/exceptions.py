@@ -1,3 +1,3 @@
-class NotAllowed(StandardError):
+class NotAllowed(Exception):
     pass
 

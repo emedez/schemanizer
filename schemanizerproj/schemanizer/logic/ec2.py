@@ -66,8 +66,9 @@ class EC2InstanceStarter(object):
         if self._running_state_check_pre_delay is not None:
             # Sleep, to give time for EC2 instance to reach running state,
             # before attempting to access it.
-            msg = 'Waiting for %s second(s) to give time for EC2 instance to reach running state.' % (
-                self._running_state_check_pre_delay)
+            msg = ('Waiting for %s second(s) to give time for EC2 instance '
+                'to reach running state.' % (
+                self._running_state_check_pre_delay,))
             log.info(msg)
             self._store_message(msg)
             time.sleep(self._running_state_check_pre_delay)
@@ -93,7 +94,8 @@ class EC2InstanceStarter(object):
                 self._store_message('EXCEPTION %s: %s' % (type(e), e), 'error')
 
             if (self._running_state_check_timeout and
-                    time.time() - start_time > self._running_state_check_timeout):
+                    time.time() - start_time >
+                    self._running_state_check_timeout):
                 msg = 'Gave up trying to wait for EC2 instance to run.'
                 log.error(msg)
                 self._store_message(msg, 'error')

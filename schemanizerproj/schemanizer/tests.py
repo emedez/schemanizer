@@ -13,7 +13,9 @@ from tastypie.test import ResourceTestCase
 
 from schemanizer import exceptions, models
 from schemanizer import businesslogic
-from schemanizer.logic import changeset_review as logic_changeset_review
+from schemanizer.logic import (
+    changeset_review as logic_changeset_review,
+    user as logic_user)
 
 log = logging.getLogger(__name__)
 
@@ -295,7 +297,7 @@ class UserViewsTestCase(TestCase):
                 self.assertRedirects(r, reverse('schemanizer_users'))
                 # user should now exist
                 created_user = models.User.objects.get(name=data['name'])
-                businesslogic.delete_user(created_user, self.admin_user)
+                logic_user.delete_user(self.admin_user, created_user)
             else:
                 self.assertFalse(r.context['user_has_access'])
 
@@ -336,7 +338,7 @@ class UserViewsTestCase(TestCase):
                     self.assertFalse(r.context['user_has_access'])
                     self.assertFalse('form' in r.context)
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_update_post(self):
         created_user = self._create_user_dev()
@@ -368,7 +370,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete(self):
         created_user = self._create_user_dev()
@@ -392,7 +394,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete_post(self):
         created_user = self._create_user_dev()
