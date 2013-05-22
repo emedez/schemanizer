@@ -8,13 +8,19 @@ urlpatterns = patterns('schemanizer.views',
     #
     url(r'^user/list/$', 'users', name='schemanizer_users'),
     url(r'^user/create/$', 'user_create', name='schemanizer_user_create'),
-    url(r'^user/update/(?P<id>\d+)/$', 'update_user', name='schemanizer_update_user'),
-    url(r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user', name='schemanizer_confirm_delete_user'),
+    url(
+        r'^user/update/(?P<id>\d+)/$', 'user_update',
+        name='schemanizer_update_user'),
+    url(
+        r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user',
+        name='schemanizer_confirm_delete_user'),
 
     #
     # changeset
     #
-    url(r'^changeset/list/$', 'changeset_list', name='schemanizer_changeset_list'),
+    url(
+        r'^changeset/list/$', 'changeset_list',
+        name='schemanizer_changeset_list'),
     url(r'^changeset/(?P<id>\d+)/$', 'changeset_view', name='schemanizer_changeset_view'),
     url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
 #    url(
@@ -30,7 +36,10 @@ urlpatterns = patterns('schemanizer.views',
     #url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
     #url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
     #url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
-    url(r'^changeset/view-review-results/(?P<changeset_id>\d+)/', 'changeset_view_review_results', name='schemanizer_changeset_view_review_results'),
+    url(
+        r'^changeset/view-review-results/(?P<changeset_id>\d+)/',
+        'changeset_view_review_results',
+        name='schemanizer_changeset_view_review_results'),
     url(r'^changeset/review/(?P<changeset_id>\d+)/', 'changeset_review', name='schemanizer_changeset_review'),
     url(r'^changeset/review-status/(?P<request_id>.+?)/$', 'changeset_review_status', name='schemanizer_changeset_review_status'),
 
@@ -58,7 +67,9 @@ urlpatterns = patterns('schemanizer.views',
     #
     # environments
     #
-    url(r'^environments/list/$', 'environment_list', name='schemanizer_environment_list'),
+    url(
+        r'^environments/list/$', 'environment_list',
+        name='schemanizer_environment_list'),
     url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
     url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
     url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),

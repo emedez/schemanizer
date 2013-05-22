@@ -12,6 +12,10 @@ from tastypie import fields
 
 from schemanizer import models, businesslogic, exceptions, utils
 from schemanizer.api import authorizations
+from schemanizer.logic import (
+    changeset_review as logic_changeset_review,
+    changeset_apply as logic_changeset_apply,
+    user as logic_user)
 
 log = logging.getLogger(__name__)
 
@@ -95,8 +99,8 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = businesslogic.create_user(
-                name, email, role_id, password, request.user.schemanizer_user)
+            user = logic_user.create_user(
+                request.user.schemanizer_user, name, email, role_id, password)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -127,8 +131,8 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = businesslogic.update_user(
-                user_id, name, email, role_id, request.user.schemanizer_user)
+            user = logic_user.update_user(
+                request.user.schemanizer_user, user_id, name, email, role_id)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -147,7 +151,7 @@ class UserResource(ModelResource):
         data = {}
         try:
             user_id = int(kwargs.get('user_id'))
-            businesslogic.delete_user(user_id, request.user.schemanizer_user)
+            logic_user.delete_user(request.user.schemanizer_user, user_id)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -353,7 +357,7 @@ class ChangesetResource(ModelResource):
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
 
-            thread = businesslogic.changeset_apply(
+            thread = logic_changeset_apply.changeset_apply(
                 changeset_id, request.user.schemanizer_user, server_id)
             apply_threads[request_id] = thread
 
@@ -485,8 +489,8 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
 
-            thread = businesslogic.changeset_review(
-                changeset_id, schema_version_id, request_id,
+            thread = logic_changeset_review.changeset_review(
+                changeset_id, schema_version_id,
                 request.user.schemanizer_user
             )
 

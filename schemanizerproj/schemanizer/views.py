@@ -25,7 +25,8 @@ from schemanizer import businesslogic, exceptions, forms, models, utils
 from schemanizer.logic import (
     changeset_apply as logic_changeset_apply,
     changeset_review as logic_changeset_review,
-    privileges as logic_privileges)
+    privileges as logic_privileges,
+    user as logic_user)
 
 log = logging.getLogger(__name__)
 
@@ -65,11 +66,9 @@ def confirm_delete_user(
             to_be_del_user = models.User.objects.get(id=id)
             if request.method == 'POST':
                 if 'confirm_delete' in request.POST:
-                    with transaction.commit_on_success():
-                        to_be_del_user.auth_user.delete()
-                    log.info('User [id=%s] was deleted.' % (id,))
+                    logic_user.delete_user(user, to_be_del_user)
                     messages.success(
-                        request, 'User [id=%s] was deleted.' % (id,))
+                        request, 'User was deleted, id=%s.' % (id,))
                     return redirect('schemanizer_users')
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -81,7 +80,7 @@ def confirm_delete_user(
 
 
 @login_required
-def update_user(request, id, template='schemanizer/update_user.html'):
+def user_update(request, id, template='schemanizer/update_user.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
@@ -101,9 +100,11 @@ def update_user(request, id, template='schemanizer/update_user.html'):
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
                     role = models.Role.objects.get(id=role_id)
-                    with transaction.commit_on_success():
-                        businesslogic.update_user(id, name, email, role, user)
-                    messages.success(request, u'User updated.')
+                    schemanizer_user = logic_user.update_user(
+                        user, id, name, email, role)
+                    messages.success(
+                        request, u'User was updated, id=%s.' % (
+                            schemanizer_user.id,))
                     return redirect('schemanizer_users')
             else:
                 form = forms.UpdateUserForm(initial=initial)
@@ -132,10 +133,11 @@ def user_create(request, template='schemanizer/user_create.html'):
                     role_id = form.cleaned_data['role']
                     password = form.cleaned_data['password']
                     role = models.Role.objects.get(id=role_id)
-                    with transaction.commit_on_success():
-                        businesslogic.create_user(
-                            name, email, role, password, user)
-                    messages.success(request, u'User created.')
+                    schemanizer_user = logic_user.create_user(
+                        user, name, email, role, password)
+                    messages.success(
+                        request, u'User was created, id=%s.' % (
+                            schemanizer_user.id,))
                     return redirect('schemanizer_users')
             else:
                 form = forms.CreateUserForm(initial=initial)
@@ -392,7 +394,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                             u'Invalid post.\nrequest.POST=\n%s' % (
                                 pformat(request.POST),))
 
-                except exceptions.NotAllowed, e:
+                except exceptions.PrivilegeError, e:
                     log.exception('EXCEPTION')
                     messages.error(request, u'%s' % (e,))
 
@@ -460,7 +462,7 @@ def changeset_apply(
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
             if not logic_privileges.can_user_apply_changeset(user, changeset):
-                raise exceptions.NotAllowed(
+                raise exceptions.PrivilegeError(
                     'User is not allowed to apply changeset.')
 
             if request.method == 'POST':

@@ -22,105 +22,11 @@ import boto.ec2
 import sqlparse
 
 from schemanizer import exceptions, models, utils
+from schemanizer.logic import (
+    mail as logic_mail,
+    privileges as logic_privileges)
 
 log = logging.getLogger(__name__)
-
-
-def update_user(id, name, email, role, user):
-    """Updates user."""
-    role = utils.get_model_instance(role, models.Role)
-    user = utils.get_model_instance(user, models.User)
-
-    if UserPrivileges.can_update_users(user):
-        with transaction.commit_on_success():
-            user = models.User.objects.get(id=id)
-            user.name = name
-            user.email = email
-            user.role = role
-            user.save()
-
-            auth_user = user.auth_user
-            auth_user.username = user.name
-            auth_user.email = user.email
-            auth_user.save()
-
-        log.info(u'User [id=%s] was updated.' % (id,))
-
-        return user
-    else:
-        raise exceptions.NotAllowed('User is now allowed to update user.')
-
-
-def create_user(name, email, role, password, user):
-    """Creates user."""
-    role = utils.get_model_instance(role, models.Role)
-    user = utils.get_model_instance(user, models.User)
-
-    if UserPrivileges.can_create_users(user):
-        with transaction.commit_on_success():
-            auth_user = AuthUser.objects.create_user(name, email, password)
-            schemanizer_user = models.User.objects.create(name=name, email=email, role=role, auth_user=auth_user)
-        log.info(u'User [id=%s] was created.' % (schemanizer_user.id,))
-        return schemanizer_user
-    else:
-        raise exceptions.NotAllowed('User is not allowed to create user.')
-
-
-def delete_user(to_be_deleted_user, user):
-    """Deletes user."""
-    to_be_deleted_user = utils.get_model_instance(to_be_deleted_user, models.User)
-    user = utils.get_model_instance(user, models.User)
-
-    if UserPrivileges.can_delete_users(user):
-        with transaction.commit_on_success():
-            auth_user = to_be_deleted_user.auth_user
-            user_id = to_be_deleted_user.id
-            auth_user.delete()
-        log.info(u'User [id=%s] was deleted.' % (user_id,))
-    else:
-        raise exceptions.NotAllowed('User is not allowed to delete user.')
-
-
-def send_mail(
-        subject='', body='', from_email=None, to=None, bcc=None,
-        connection=None, attachments=None, headers=None,
-        cc=None):
-    text_content = body
-
-    if to and not isinstance(to, list) and not isinstance(to, tuple):
-        to = [to]
-    if bcc and not isinstance(bcc, list) and not isinstance(bcc, tuple):
-        bcc = [bcc]
-    if cc and not isinstance(cc, list) and not isinstance(cc, tuple):
-        cc = [cc]
-    msg = EmailMessage(
-        subject, text_content, from_email, to,
-        bcc=bcc,
-        connection=connection,
-        attachments=attachments,
-        headers=headers,
-        cc=cc)
-    msg.send()
-
-
-def send_changeset_submitted_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list((
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA)))
-
-    if to:
-        subject = u'New submitted changeset'
-        body = (
-            u'New changeset was submitted by %s: \n'
-            u'%s') % (changeset.submitted_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info(u'New submitted changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
 
 
 def changeset_can_be_soft_deleted_by_user(changeset, user):
@@ -172,7 +78,8 @@ def soft_delete_changeset(changeset, user):
 
         return changeset
     else:
-        raise exceptions.NotAllowed('User is not allowed to soft delete the changeset.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to soft delete the changeset.')
 
 
 def delete_changeset(changeset):
@@ -214,9 +121,8 @@ def changeset_submit_from_form(**kwargs):
         type=models.ChangesetAction.TYPE_CREATED,
         timestamp=now)
 
-    log.info(u'A changeset was submitted:\n%s' % (changeset,))
-
-    send_changeset_submitted_mail(changeset)
+    log.info(u'A changeset was submitted, id=%s.' % (changeset.id,))
+    logic_mail.send_changeset_submitted_mail(changeset)
 
     return changeset
 
@@ -249,8 +155,8 @@ def changeset_submit(changeset, changeset_details, user):
             timestamp=now
         )
 
-    send_changeset_submitted_mail(changeset)
-    log.info('A changeset [id=%s] was submitted.' % (changeset.id,))
+    logic_mail.send_changeset_submitted_mail(changeset)
+    log.info(u'A changeset was submitted, id=%s.' % (changeset.id,))
 
     return changeset
 
@@ -277,27 +183,6 @@ def changeset_can_be_updated_by_user(changeset, user):
             return True
 
     return False
-
-
-def changeset_send_updated_mail(changeset):
-    """Sends updated changeset email to dbas."""
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(
-        models.User.objects.values_list('email', flat=True)
-            .filter(role__name=models.Role.ROLE_DBA)
-    )
-
-    if to:
-        subject = u'Changeset updated'
-        body = u'The following is the URL for the changeset that was updated: \n%s' % (
-            changeset_url)
-        send_mail(subject=subject, body=body, to=to)
-        log.info(u'Updated changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
 
 
 def changeset_update_from_form(**kwargs):
@@ -334,10 +219,11 @@ def changeset_update_from_form(**kwargs):
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        changeset_send_updated_mail(changeset)
+        logic_mail.send_changeset_updated_mail(changeset)
 
     else:
-        raise exceptions.NotAllowed(u'User is not allowed to update changeset.')
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to update changeset.')
 
     return changeset
 
@@ -376,11 +262,12 @@ def changeset_update(changeset, changeset_details, to_be_deleted_changeset_detai
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        changeset_send_updated_mail(changeset)
+        logic_mail.send_changeset_updated_mail(changeset)
 
         return changeset
     else:
-        raise exceptions.NotAllowed('User is not allowed to update changeset.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to update changeset.')
 
 
 def changeset_can_be_reviewed_by_user(changeset, user):
@@ -401,25 +288,6 @@ def changeset_can_be_reviewed_by_user(changeset, user):
 
     # allow reviews anytime
     return True
-
-
-def changeset_send_reviewed_mail(changeset):
-    """Sends reviewed changeset email to dbas."""
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
-
-    if to:
-        subject = u'Changeset reviewed'
-        body = u'The following is the URL for the changeset that was reviewed by %s: \n%s' % (
-            changeset.reviewed_by.name, changeset_url)
-        send_mail(subject=subject, body=body, to=to)
-        log.info(u'Reviewed changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
 
 
 def changeset_can_be_approved_by_user(changeset, user):
@@ -468,26 +336,6 @@ def changeset_can_be_rejected_by_user(changeset, user):
         return False
 
 
-def changeset_send_approved_mail(changeset):
-    """Send email to dbas."""
-
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
-
-    if to:
-        subject = u'Changeset approved'
-        body = u'The following is the URL of the changeset that was approved by %s: \n%s' % (
-            changeset.approved_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info(u'Approved changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
-
-
 def changeset_approve(changeset, user):
     """Approves changeset."""
 
@@ -515,30 +363,13 @@ def changeset_approve(changeset, user):
 
         log.info(u'Changeset [id=%s] was approved.' % (changeset.id,))
 
-        changeset_send_approved_mail(changeset)
+        logic_mail.send_changeset_approved_mail(changeset)
 
         return changeset
 
     else:
-        raise exceptions.NotAllowed(u'User is not allowed to approve changeset.')
-
-
-def changeset_send_rejected_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
-
-    if to:
-        subject = u'Changeset rejected'
-        body = u'The following is the URL of the changeset that was rejected by %s: \n%s' % (
-            changeset.approved_by.name, changeset_url,)
-        send_mail(subject=subject, body=body, to=to)
-        log.info(u'Rejected changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to approve changeset.')
 
 
 def changeset_reject(changeset, user):
@@ -568,192 +399,14 @@ def changeset_reject(changeset, user):
 
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
 
-        changeset_send_rejected_mail(changeset)
+        logic_mail.send_changeset_rejected_mail(changeset)
 
         return changeset
 
     else:
         log.debug(u'changeset:\n%s\n\nuser=%s' % (changeset, user.name))
-        raise exceptions.NotAllowed(u'User is not allowed to reject changeset.')
-
-
-def apply_changeset(schema_version_id, changeset_id):
-    """Launches and EC2 instance and applies changesets for the schema."""
-
-    no_ec2 = settings.DEV_NO_EC2_APPLY_CHANGESET
-    if no_ec2:
-        log.info(u'No EC2 instances will be started.')
-
-    schema_version = models.SchemaVersion.objects.get(pk=schema_version_id)
-    database_schema = schema_version.database_schema
-    changeset = models.Changeset.objects.get(pk=changeset_id)
-    if changeset.database_schema_id != schema_version.database_schema_id:
-        raise Exception(u'Schema version and changeset do not have the same database schema.')
-
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-
-    region = settings.AWS_REGION
-    ami_id = settings.AWS_AMI_ID
-    key_name = settings.AWS_KEY_NAME
-    security_groups = settings.AWS_SECURITY_GROUPS
-    instance_type = settings.AWS_INSTANCE_TYPE
-
-    if not no_ec2:
-        conn = boto.ec2.connect_to_region(
-            region,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key)
-
-        reservation = conn.run_instances(
-            ami_id,
-            key_name=key_name,
-            instance_type=instance_type,
-            security_groups=security_groups)
-        log.debug('reservation: %s' % (reservation,))
-
-    if no_ec2 or reservation:
-        if not no_ec2:
-            instances = reservation.instances
-        try:
-            if not no_ec2:
-                log.debug('instances: %s' % (instances,))
-
-            if no_ec2 or instances:
-                if not no_ec2:
-                    instance = instances[0]
-                    time.sleep(settings.AWS_EC2_INSTANCE_START_WAIT)
-                    tries = 0
-                    start_time = time.time()
-                    while True:
-                        try:
-                            tries += 1
-                            log.debug(u'Waiting for instance to run... (tries=%s)' % (tries,))
-                            instance.update()
-                            if instance.state == 'running':
-                                break
-                        except:
-                            log.exception(u'EXCEPTION')
-                        finally:
-                            time.sleep(1)
-                            elapsed_time = time.time() - start_time
-                            if elapsed_time > settings.AWS_EC2_INSTANCE_STATE_CHECK_TIMEOUT:
-                                log.debug(u'Gave up trying to wait for EC2 instance to run.')
-                                break
-
-                if no_ec2 or (instance.state == 'running'):
-                    if not no_ec2:
-                        msg = u'EC2 instance running.'
-                        log.info(msg)
-                        host = instance.public_dns_name
-                        log.debug('instance.public_dns_name=%s' % (host,))
-                    else:
-                        host = None
-                    mysql_conn = create_aws_mysql_connection(host=host, wait=True)
-                    if mysql_conn:
-                        query = 'CREATE SCHEMA IF NOT EXISTS %s' % (database_schema.name,)
-                        utils.execute(mysql_conn, query)
-                        log.debug(u'Database schema \'%s\' was created (if not existed).' % (
-                            database_schema.name,))
-
-                        mysql_conn.close()
-                        mysql_conn = create_aws_mysql_connection(
-                            db=database_schema.name, host=host)
-                        utils.execute(mysql_conn, schema_version.ddl)
-
-                        for changeset_detail in changeset.changeset_details.select_related().order_by('id'):
-                            cur = None
-                            try:
-                                cur = mysql_conn.cursor()
-                                results_log_items = []
-                                affected_rows = cur.execute(changeset_detail.apply_sql)
-                                results_log_items.append(u'Affected rows: %s' % (affected_rows,))
-                                if cur.messages:
-                                    for exc, val in cur.messages:
-                                        val_str = u'%s' % (val,)
-                                        if val_str not in results_log_items:
-                                            results_log_items.append(val_str)
-                                if results_log_items:
-                                    results_log = u'\n'.join(results_log_items)
-                                else:
-                                    results_log = ''
-                                models.ChangesetDetailApply.objects.create(
-                                    changeset_detail=changeset_detail,
-                                    before_version=schema_version.id,
-                                    results_log=results_log)
-                            except Exception, e:
-                                if cur:
-                                    log.error(cur.messages)
-                                log.exception('EXCEPTION')
-                                raise
-                            finally:
-                                if cur:
-                                    cur.close()
-
-                        msg = u'Changeset was applied.'
-                        log.info(msg)
-
-                    else:
-                        msg = u'Unable to connect to MySQL server on EC2 instance.'
-                        log.info(msg)
-                        raise Exception(msg)
-                else:
-                    msg = u"Instance state did not reach 'running' state after checking for %s times." % (tries,)
-                    log.error(msg)
-                    raise Exception(msg)
-
-            else:
-                msg = u'No EC2 instances were returned.'
-                log.warn(msg)
-                raise Exception(msg)
-        finally:
-            if not no_ec2:
-                if instances:
-                    for instance in instances:
-                        instance.terminate()
-                        msg = u'EC2 instance terminated.'
-                        log.info(msg)
-    else:
-        msg = u'No AWS reservation was returned.'
-        log.error(msg)
-        raise Exception(msg)
-
-
-def create_aws_mysql_connection(db=None, host=None, wait=False):
-    """Creates connection to MySQL on EC2 instance."""
-    conn = None
-    connection_options = {}
-    if settings.AWS_MYSQL_HOST:
-        connection_options['host'] = settings.AWS_MYSQL_HOST
-    elif host:
-        connection_options['host'] = host
-    if settings.AWS_MYSQL_PORT:
-        connection_options['port'] = settings.AWS_MYSQL_PORT
-    if settings.AWS_MYSQL_USER:
-        connection_options['user'] = settings.AWS_MYSQL_USER
-    if settings.AWS_MYSQL_PASSWORD:
-        connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
-    if db:
-        connection_options['db'] = db
-    if wait:
-        time.sleep(settings.AWS_MYSQL_START_WAIT)
-    tries = 0
-    start_time = time.time()
-    while True:
-        try:
-            tries += 1
-            log.debug(u'Connecting to MySQL server on EC2 instance... (tries=%s)' % (tries,))
-            conn = MySQLdb.connect(**connection_options)
-            log.debug(u'Connected to MySQL server on EC2 instance.')
-            break
-        except:
-            log.exception(u'EXCEPTION')
-            time.sleep(1)
-            elapsed_time = time.time() - start_time
-            if elapsed_time > settings.AWS_MYSQL_CONNECT_TIMEOUT:
-                log.debug(u'Gave up trying to connect to MySQL server on EC2 instance.')
-                break
-    return conn
+        raise exceptions.PrivilegeError(
+            u'User is not allowed to reject changeset.')
 
 
 def get_applied_changesets(schema_version):
@@ -831,30 +484,6 @@ class UserPrivileges:
         # Everyone can save schema dumps.
         return True
 
-    @classmethod
-    def can_create_users(cls, user):
-        """Checks if user can create users."""
-        if user.role.name in [models.Role.ROLE_ADMIN]:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def can_update_users(cls, user):
-        """Checks if user can update users."""
-        if user.role.name in [models.Role.ROLE_ADMIN]:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def can_delete_users(cls, user):
-        """Checks if user can delete users."""
-        if user.role.name in [models.Role.ROLE_ADMIN]:
-            return True
-        else:
-            return False
-
 
 def save_schema_dump(server, database_schema_name, user):
     """Creates database schema (if needed) and schema version."""
@@ -883,4 +512,5 @@ def save_schema_dump(server, database_schema_name, user):
 
         return schema_version
     else:
-        raise exceptions.NotAllowed('User is not allowed to save schema dumps.')
+        raise exceptions.PrivilegeError(
+            'User is not allowed to save schema dumps.')

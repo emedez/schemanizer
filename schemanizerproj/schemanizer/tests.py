@@ -13,7 +13,10 @@ from tastypie.test import ResourceTestCase
 
 from schemanizer import exceptions, models
 from schemanizer import businesslogic
-from schemanizer.logic import changeset_review as logic_changeset_review
+from schemanizer.logic import (
+    privileges as logic_privileges,
+    changeset_review as logic_changeset_review,
+    user as logic_user)
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +134,8 @@ CREATE TABLE `t1` (
                 changeset_review = logic_changeset_review.ChangesetReview(
                     changeset, schema_version, user)
                 if u == 'dev':
-                    self.assertRaises(exceptions.NotAllowed, changeset_review.run)
+                    self.assertRaises(
+                        exceptions.PrivilegeError, changeset_review.run)
                 else:
                     changeset_review.run()
 #                url = reverse('schemanizer_changeset_review', args=[changeset_id])
@@ -295,19 +299,19 @@ class UserViewsTestCase(TestCase):
                 self.assertRedirects(r, reverse('schemanizer_users'))
                 # user should now exist
                 created_user = models.User.objects.get(name=data['name'])
-                businesslogic.delete_user(created_user, self.admin_user)
+                logic_user.delete_user(self.admin_user, created_user)
             else:
                 self.assertFalse(r.context['user_has_access'])
 
     def _create_user_dev(self):
         user = models.User.objects.get(name='admin')
         role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
-        created_user = businesslogic.create_user(
+        created_user = logic_user.create_user(
+            user=user,
             name='test_dev',
             email='test_dev@example.com',
             role=role,
-            password='test_dev',
-            user=user)
+            password='test_dev')
         return created_user
 
     def test_user_update(self):
@@ -336,7 +340,7 @@ class UserViewsTestCase(TestCase):
                     self.assertFalse(r.context['user_has_access'])
                     self.assertFalse('form' in r.context)
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_update_post(self):
         created_user = self._create_user_dev()
@@ -368,7 +372,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete(self):
         created_user = self._create_user_dev()
@@ -392,7 +396,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            businesslogic.delete_user(created_user_id, self.admin_user)
+            logic_user.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete_post(self):
         created_user = self._create_user_dev()
@@ -1239,7 +1243,9 @@ class RestApiTest(ResourceTestCase):
         database_schema = self.create_database_schema()
         changeset = models.Changeset.objects.create(
             database_schema=database_schema, type='DDL:Table:Create',
-            classification='painless')
+            classification='painless',
+            submitted_by=models.User.objects.get(name='dev'),
+            submitted_at=timezone.now())
         return changeset
 
     def test_user_create(self):
@@ -1264,7 +1270,9 @@ class RestApiTest(ResourceTestCase):
         log.debug('status_code = %s' % (resp.status_code,))
         log.debug(resp.content)
         obj = json.loads(resp.content)
-        self.assertEqual(obj['error_message'], 'User is not allowed to create user.')
+        self.assertEqual(
+            obj['error_message'],
+            logic_privileges.MSG_CREATE_USER_NOT_ALLOWED)
 
     def test_submit_changeset(self):
         database_schema = self.create_database_schema()
