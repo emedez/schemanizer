@@ -18,7 +18,9 @@ urlpatterns = patterns('schemanizer.views',
     #
     # changeset
     #
-    url(r'^changeset/list/$', 'changeset_list', name='schemanizer_changeset_list'),
+    url(
+        r'^changeset/list/$', 'changeset_list',
+        name='schemanizer_changeset_list'),
     url(r'^changeset/(?P<id>\d+)/$', 'changeset_view', name='schemanizer_changeset_view'),
     url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
 #    url(
@@ -65,7 +67,9 @@ urlpatterns = patterns('schemanizer.views',
     #
     # environments
     #
-    url(r'^environments/list/$', 'environment_list', name='schemanizer_environment_list'),
+    url(
+        r'^environments/list/$', 'environment_list',
+        name='schemanizer_environment_list'),
     url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
     url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
     url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),

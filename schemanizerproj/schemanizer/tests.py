@@ -14,6 +14,7 @@ from tastypie.test import ResourceTestCase
 from schemanizer import exceptions, models
 from schemanizer import businesslogic
 from schemanizer.logic import (
+    privileges as logic_privileges,
     changeset_review as logic_changeset_review,
     user as logic_user)
 
@@ -305,12 +306,12 @@ class UserViewsTestCase(TestCase):
     def _create_user_dev(self):
         user = models.User.objects.get(name='admin')
         role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
-        created_user = businesslogic.create_user(
+        created_user = logic_user.create_user(
+            user=user,
             name='test_dev',
             email='test_dev@example.com',
             role=role,
-            password='test_dev',
-            user=user)
+            password='test_dev')
         return created_user
 
     def test_user_update(self):
@@ -1242,7 +1243,9 @@ class RestApiTest(ResourceTestCase):
         database_schema = self.create_database_schema()
         changeset = models.Changeset.objects.create(
             database_schema=database_schema, type='DDL:Table:Create',
-            classification='painless')
+            classification='painless',
+            submitted_by=models.User.objects.get(name='dev'),
+            submitted_at=timezone.now())
         return changeset
 
     def test_user_create(self):
@@ -1267,7 +1270,9 @@ class RestApiTest(ResourceTestCase):
         log.debug('status_code = %s' % (resp.status_code,))
         log.debug(resp.content)
         obj = json.loads(resp.content)
-        self.assertEqual(obj['error_message'], 'User is not allowed to create user.')
+        self.assertEqual(
+            obj['error_message'],
+            logic_privileges.MSG_CREATE_USER_NOT_ALLOWED)
 
     def test_submit_changeset(self):
         database_schema = self.create_database_schema()

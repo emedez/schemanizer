@@ -29,26 +29,6 @@ from schemanizer.logic import (
 log = logging.getLogger(__name__)
 
 
-def send_changeset_submitted_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list((
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA)))
-
-    if to:
-        subject = u'New submitted changeset'
-        body = (
-            u'New changeset was submitted by %s: \n'
-            u'%s') % (changeset.submitted_by.name, changeset_url,)
-        logic_mail.send_mail(subject=subject, body=body, to=to)
-        log.info(u'New submitted changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
-
-
 def changeset_can_be_soft_deleted_by_user(changeset, user):
     """Checks if the changeset can be soft deleted by user."""
 
@@ -141,9 +121,8 @@ def changeset_submit_from_form(**kwargs):
         type=models.ChangesetAction.TYPE_CREATED,
         timestamp=now)
 
-    log.info(u'A changeset was submitted:\n%s' % (changeset,))
-
-    send_changeset_submitted_mail(changeset)
+    log.info(u'A changeset was submitted, id=%s.' % (changeset.id,))
+    logic_mail.send_changeset_submitted_mail(changeset)
 
     return changeset
 
@@ -176,8 +155,8 @@ def changeset_submit(changeset, changeset_details, user):
             timestamp=now
         )
 
-    send_changeset_submitted_mail(changeset)
-    log.info('A changeset [id=%s] was submitted.' % (changeset.id,))
+    logic_mail.send_changeset_submitted_mail(changeset)
+    log.info(u'A changeset was submitted, id=%s.' % (changeset.id,))
 
     return changeset
 
@@ -204,27 +183,6 @@ def changeset_can_be_updated_by_user(changeset, user):
             return True
 
     return False
-
-
-def changeset_send_updated_mail(changeset):
-    """Sends updated changeset email to dbas."""
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(
-        models.User.objects.values_list('email', flat=True)
-            .filter(role__name=models.Role.ROLE_DBA)
-    )
-
-    if to:
-        subject = u'Changeset updated'
-        body = u'The following is the URL for the changeset that was updated: \n%s' % (
-            changeset_url)
-        logic_mail.send_mail(subject=subject, body=body, to=to)
-        log.info(u'Updated changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
 
 
 def changeset_update_from_form(**kwargs):
@@ -261,7 +219,7 @@ def changeset_update_from_form(**kwargs):
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        changeset_send_updated_mail(changeset)
+        logic_mail.send_changeset_updated_mail(changeset)
 
     else:
         raise exceptions.PrivilegeError(
@@ -304,7 +262,7 @@ def changeset_update(changeset, changeset_details, to_be_deleted_changeset_detai
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        changeset_send_updated_mail(changeset)
+        logic_mail.send_changeset_updated_mail(changeset)
 
         return changeset
     else:
@@ -330,25 +288,6 @@ def changeset_can_be_reviewed_by_user(changeset, user):
 
     # allow reviews anytime
     return True
-
-
-#def changeset_send_reviewed_mail(changeset):
-#    """Sends reviewed changeset email to dbas."""
-#    site = Site.objects.get_current()
-#    changeset_url = 'http://%s%s' % (
-#        site.domain,
-#        reverse('schemanizer_changeset_view', args=[changeset.id]))
-#    to = list(models.User.objects.values_list('email', flat=True)
-#        .filter(role__name=models.Role.ROLE_DBA))
-#
-#    if to:
-#        subject = u'Changeset reviewed'
-#        body = u'The following is the URL for the changeset that was reviewed by %s: \n%s' % (
-#            changeset.reviewed_by.name, changeset_url)
-#        logic_mail.send_mail(subject=subject, body=body, to=to)
-#        log.info(u'Reviewed changeset email sent to: %s' % (to,))
-#    else:
-#        log.warn(u'No email recipients.')
 
 
 def changeset_can_be_approved_by_user(changeset, user):
@@ -397,26 +336,6 @@ def changeset_can_be_rejected_by_user(changeset, user):
         return False
 
 
-def changeset_send_approved_mail(changeset):
-    """Send email to dbas."""
-
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
-
-    if to:
-        subject = u'Changeset approved'
-        body = u'The following is the URL of the changeset that was approved by %s: \n%s' % (
-            changeset.approved_by.name, changeset_url,)
-        logic_mail.send_mail(subject=subject, body=body, to=to)
-        log.info(u'Approved changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
-
-
 def changeset_approve(changeset, user):
     """Approves changeset."""
 
@@ -444,31 +363,13 @@ def changeset_approve(changeset, user):
 
         log.info(u'Changeset [id=%s] was approved.' % (changeset.id,))
 
-        changeset_send_approved_mail(changeset)
+        logic_mail.send_changeset_approved_mail(changeset)
 
         return changeset
 
     else:
         raise exceptions.PrivilegeError(
             u'User is not allowed to approve changeset.')
-
-
-def changeset_send_rejected_mail(changeset):
-    site = Site.objects.get_current()
-    changeset_url = 'http://%s%s' % (
-        site.domain,
-        reverse('schemanizer_changeset_view', args=[changeset.id]))
-    to = list(models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
-
-    if to:
-        subject = u'Changeset rejected'
-        body = u'The following is the URL of the changeset that was rejected by %s: \n%s' % (
-            changeset.approved_by.name, changeset_url,)
-        logic_mail.send_mail(subject=subject, body=body, to=to)
-        log.info(u'Rejected changeset email sent to: %s' % (to,))
-    else:
-        log.warn(u'No email recipients.')
 
 
 def changeset_reject(changeset, user):
@@ -498,7 +399,7 @@ def changeset_reject(changeset, user):
 
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
 
-        changeset_send_rejected_mail(changeset)
+        logic_mail.send_changeset_rejected_mail(changeset)
 
         return changeset
 
