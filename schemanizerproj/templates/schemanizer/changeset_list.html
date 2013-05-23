@@ -22,8 +22,6 @@
                     <th>Reviewed at</th>
                     <th>Approved by</th>
                     <th>Approved at</th>
-                    <th>Created at</th>
-                    <th>Updated at</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -42,8 +40,6 @@
                     <td>{{ c.r.reviewed_at|default_if_none:'' }}</td>
                     <td>{{ c.r.approved_by|default_if_none:'' }}</td>
                     <td>{{ c.r.approved_at|default_if_none:'' }}</td>
-                    <td>{{ c.r.created_at }}</td>
-                    <td>{{ c.r.updated_at }}</td>
                     {% comment %}
                     <td>
                         <a href="{% url 'schemanizer_changeset_view' c.r.id %}">View</a>&nbsp;&nbsp;

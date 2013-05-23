@@ -13,8 +13,6 @@
             <tr>
                 <th>ID</th>
                 <th>Name</th>
-                <th>Created at</th>
-                <th>Updated at</th>
                 <th>Action</th>
             </tr>
             </thead>
@@ -23,8 +21,6 @@
                 <tr>
                     <td>{{ r.id }}</td>
                     <td>{{ r.name }}</td>
-                    <td>{{ r.created_at }}</td>
-                    <td>{{ r.updated_at }}</td>
                     <td><a href="{% url 'schemanizer_schema_version_list' %}?database_schema={{ r.id }}">View schema versions</a></td>
                 </tr>
             {% endfor %}

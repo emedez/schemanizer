@@ -201,20 +201,29 @@ class ChangesetDetail(models.Model):
     updated_at = models.DateTimeField(
         null=True, blank=True, auto_now_add=True, auto_now=True)
 
+    CHANGESET_TEST_STATUS_NONE = 0
+    CHANGESET_TEST_STATUS_SUCCESS = 1
+    CHANGESET_TEST_STATUS_FAILED = 2
+
     class Meta:
         db_table = 'changeset_details'
 
-#    def __unicode__(self):
-#        ret = u''
-#        for k, v in vars(self).iteritems():
-#            if not k.startswith('_'):
-#                if ret:
-#                    ret += u', '
-#                ret += u'%s=%s' % (k, v)
-#        return ret
-
     def __unicode__(self):
         return u'<ChangesetDetail id=%s>' % (self.pk,)
+
+    def changeset_test_status(self):
+        """Returns changeset test status."""
+
+        changeset_tests = ChangesetTest.objects.filter(changeset_detail=self)
+        if not changeset_tests.exists():
+            return ChangesetDetail.CHANGESET_TEST_STATUS_NONE
+        status = ChangesetDetail.CHANGESET_TEST_STATUS_SUCCESS
+        for changeset_test in changeset_tests:
+            if changeset_test.results_log and changeset_test.results_log.strip():
+                # results log, if not empty contains the error message
+                status = ChangesetDetail.CHANGESET_TEST_STATUS_FAILED
+                break
+        return status
 
 
 class ChangesetAction(models.Model):

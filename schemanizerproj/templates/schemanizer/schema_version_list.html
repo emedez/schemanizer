@@ -15,8 +15,6 @@
                 <th>Database schema</th>
                 <th>DDL</th>
                 <th>Checksum</th>
-                <th>Created at</th>
-                <th>Updated at</th>
             </tr>
             </thead>
             <tbody>
@@ -26,8 +24,6 @@
                     <td>{{ r.database_schema }}</td>
                     <td><code>{{ r.ddl|truncatewords:8 }}</code></td>
                     <td>{{ r.checksum }}</td>
-                    <td>{{ r.created_at }}</td>
-                    <td>{{ r.updated_at }}</td>
                 </tr>
             {% endfor %}
             </tbody>

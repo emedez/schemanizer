@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from tastypie.test import ResourceTestCase
 
-from schemanizer import exceptions, models
+from schemanizer import exceptions, models, utils
 from schemanizer import businesslogic
 from schemanizer.logic import (
     privileges as logic_privileges,
@@ -110,7 +110,7 @@ CREATE TABLE `t1` (
         schema_version = models.SchemaVersion.objects.create(
             database_schema=database_schema,
             ddl=ddl,
-            checksum=businesslogic.schema_hash(ddl)
+            checksum=utils.schema_hash(ddl)
         )
 
         #c = Client()
@@ -604,6 +604,7 @@ class ChangesetViewsTestCase(TestCase):
             for u, p in self.users:
                 self._login(c, u, p)
                 user = models.User.objects.get(name=u)
+                user_privileges = logic_privileges.UserPrivileges(user)
                 can_update = businesslogic.changeset_can_be_updated_by_user(
                     changeset, user)
                 can_set_review_status_to_in_progress = businesslogic.changeset_can_be_reviewed_by_user(
@@ -612,8 +613,8 @@ class ChangesetViewsTestCase(TestCase):
                     changeset, user)
                 can_reject = businesslogic.changeset_can_be_rejected_by_user(
                     changeset, user)
-                can_soft_delete = businesslogic.changeset_can_be_soft_deleted_by_user(
-                    changeset, user)
+                can_soft_delete = user_privileges.can_soft_delete_changeset(
+                    changeset)
                 if can_update:
                     r = c.post(url, data=dict(submit_update=u'Submit'))
                     self.assertRedirects(
@@ -751,11 +752,13 @@ class ChangesetViewsTestCase(TestCase):
                 url = reverse(
                     'schemanizer_changeset_soft_delete',
                     args=[changeset_id])
-                if businesslogic.changeset_can_be_soft_deleted_by_user(
-                        changeset, user):
-                    r = c.post(url, data=dict(confirm_soft_delete='Submit'))
-                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
-                    self.assertTrue(tmp_changeset.is_deleted)
+
+                logic_privileges.UserPrivileges(
+                    user).check_soft_delete_changeset(changeset)
+
+                r = c.post(url, data=dict(confirm_soft_delete='Submit'))
+                tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                self.assertTrue(tmp_changeset.is_deleted)
             finally:
                 businesslogic.delete_changeset(changeset)
 
@@ -1194,14 +1197,12 @@ class SchemaVersionViewsTestCase(TestCase):
         schema_version = None
         try:
             database_schema = models.DatabaseSchema.objects.create(
-                name='schemanizer_test_schema'
-            )
+                name='schemanizer_test_schema')
             schema_version = models.SchemaVersion.objects.create(
-                database_schema=database_schema,
-                ddl='',
-                checksum=businesslogic.schema_hash('')
-            )
-            url = reverse('schemanizer_schema_version_view', args=[schema_version.id])
+                database_schema=database_schema, ddl='',
+                checksum=utils.schema_hash(''))
+            url = reverse(
+                'schemanizer_schema_version_view', args=[schema_version.id])
             c = Client()
             for u, p in self.users:
                 self._login(c, u, p)

@@ -29,43 +29,43 @@ from schemanizer.logic import (
 log = logging.getLogger(__name__)
 
 
-def changeset_can_be_soft_deleted_by_user(changeset, user):
-    """Checks if the changeset can be soft deleted by user."""
-
-    if type(changeset) in (int, long):
-        changeset = models.Changeset.objects.get(pk=changeset)
-    if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
-
-    if not changeset.pk:
-        # Cannot soft delete unsaved changeset.
-        return False
-
-    if changeset.is_deleted:
-        # Cannot soft delete that was already soft deleted.
-        return False
-
-    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
-        # dbas and admins can soft delete changeset
-        return True
-
-    if user.role.name in (models.Role.ROLE_DEVELOPER,):
-        if changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED:
-            # developers can only soft delete changesets that were not yet approved
-            return True
-
-    return False
+#def changeset_can_be_soft_deleted_by_user(changeset, user):
+#    """Checks if the changeset can be soft deleted by user."""
+#
+#    if type(changeset) in (int, long):
+#        changeset = models.Changeset.objects.get(pk=changeset)
+#    if type(user) in (int, long):
+#        user = models.User.objects.get(pk=user)
+#
+#    if not changeset.pk:
+#        # Cannot soft delete unsaved changeset.
+#        return False
+#
+#    if changeset.is_deleted:
+#        # Cannot soft delete that was already soft deleted.
+#        return False
+#
+#    if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+#        # dbas and admins can soft delete changeset
+#        return True
+#
+#    if user.role.name in (models.Role.ROLE_DEVELOPER,):
+#        if changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED:
+#            # developers can only soft delete changesets that were not yet approved
+#            return True
+#
+#    return False
 
 
 def soft_delete_changeset(changeset, user):
     """Soft deletes changeset."""
 
-    if type(changeset) in (int, long):
-        changeset = models.Changeset.objects.get(pk=changeset)
-    if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
+    changeset = utils.get_model_instance(changeset, models.Changeset)
+    user = utils.get_model_instance(user, models.User)
 
-    if changeset_can_be_soft_deleted_by_user(changeset, user):
+    logic_privileges.UserPrivileges(user).check_soft_delete_changeset(changeset)
+
+    with transaction.commit_on_success():
         changeset.is_deleted = 1
         changeset.save()
 
@@ -74,12 +74,10 @@ def soft_delete_changeset(changeset, user):
             type=models.ChangesetAction.TYPE_DELETED,
             timestamp=timezone.now()
         )
-        log.info('Changeset [id=%s] was soft deleted.' % (changeset.id,))
 
-        return changeset
-    else:
-        raise exceptions.PrivilegeError(
-            'User is not allowed to soft delete the changeset.')
+    log.info('Changeset was soft deleted, id=%s.' % (changeset.id,))
+
+    return changeset
 
 
 def delete_changeset(changeset):
@@ -409,108 +407,30 @@ def changeset_reject(changeset, user):
             u'User is not allowed to reject changeset.')
 
 
-def get_applied_changesets(schema_version):
-    if isinstance(schema_version, int):
-        schema_version = models.SchemaVersion.objects.get(pk=schema_version)
-
-    selected_changesets = []
-
-    changesets = models.Changeset.objects.all()
-    for changeset in changesets:
-        changeset_detail_applies = models.ChangesetDetailApply.objects.get_by_schema_version_changeset(
-            schema_version.id, changeset.id)
-        if changeset_detail_applies.count():
-            selected_changesets.append(changeset)
-
-    return selected_changesets
-
-
-def user_can_validate_changeset(user, changeset):
-    """Returns True, if user can validate changeset, otherwise False."""
-
-    if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
-    if type(changeset) in (int, long):
-        changeset = models.Changeset.objects.get(pk=changeset)
-
-    if (changeset.review_status == models.Changeset.REVIEW_STATUS_APPROVED and
-            user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN)):
-        return True
-    else:
-        return False
-
-
-def normalize_mysql_dump(dump):
-    statement_list = sqlparse.split(dump)
-    new_statement_list = []
-    for statement in statement_list:
-        stripped_chars = unicode(string.whitespace + ';')
-        statement = statement.strip(stripped_chars)
-        if statement:
-            if not statement.startswith(u'/*!'):
-                # skip processing conditional comments
-                new_statement_list.append(statement)
-    return u';\n'.join(new_statement_list)
-
-
-def schema_hash(dump):
-    return utils.hash_string(normalize_mysql_dump(dump))
-
-
-class UserPrivileges:
-    """Encapsulates user privilege logic."""
-
-    @classmethod
-    def can_update_environments(cls, user):
-        """Checks if user can update environments."""
-        user = utils.get_model_instance(user, models.User)
-        if user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def can_delete_environments(cls, user):
-        """Checks if user can delete environments."""
-        user = utils.get_model_instance(user, models.User)
-        if user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def can_save_schema_dumps(cls, user):
-        """Checks if user can save schema dumps."""
-        # Everyone can save schema dumps.
-        return True
-
-
 def save_schema_dump(server, database_schema_name, user):
     """Creates database schema (if needed) and schema version."""
 
     server = utils.get_model_instance(server, models.Server)
     user = utils.get_model_instance(user, models.User)
 
-    if UserPrivileges.can_save_schema_dumps(user):
-        conn_opts = {}
-        conn_opts['host'] = server.hostname
-        if server.port:
-            conn_opts['port'] = server.port
-        if settings.AWS_MYSQL_USER:
-            conn_opts['user'] = settings.AWS_MYSQL_USER
-        if settings.AWS_MYSQL_PASSWORD:
-            conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
+    logic_privileges.UserPrivileges(user).check_save_schema_dump()
 
-        structure = utils.mysql_dump(database_schema_name, **conn_opts)
+    conn_opts = {}
+    conn_opts['host'] = server.hostname
+    if server.port:
+        conn_opts['port'] = server.port
+    if settings.AWS_MYSQL_USER:
+        conn_opts['user'] = settings.AWS_MYSQL_USER
+    if settings.AWS_MYSQL_PASSWORD:
+        conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
 
-        with transaction.commit_on_success():
-            database_schema, __ = models.DatabaseSchema.objects.get_or_create(name=database_schema_name)
-            schema_version = models.SchemaVersion.objects.create(
-                database_schema=database_schema,
-                ddl=structure,
-                checksum=schema_hash(structure))
+    structure = utils.mysql_dump(database_schema_name, **conn_opts)
 
-        return schema_version
-    else:
-        raise exceptions.PrivilegeError(
-            'User is not allowed to save schema dumps.')
+    with transaction.commit_on_success():
+        database_schema, __ = models.DatabaseSchema.objects.get_or_create(
+            name=database_schema_name)
+        schema_version = models.SchemaVersion.objects.create(
+            database_schema=database_schema, ddl=structure,
+            checksum=utils.schema_hash(structure))
+
+    return schema_version

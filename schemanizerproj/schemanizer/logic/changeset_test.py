@@ -220,6 +220,8 @@ class ChangesetSyntaxTest(object):
 
                         count_before = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
+                        log.debug('Row count before apply_sql: %s' % (
+                            count_before,))
 
                         # Test apply_sql
                         log.debug('Testing apply_sql')
@@ -228,6 +230,11 @@ class ChangesetSyntaxTest(object):
                         hash_after = utils.schema_hash(structure_after)
                         log.debug('Structure=\n%s\nChecksum=%s' % (
                             structure_after, hash_after))
+
+                        count_after = self._execute_count_sql(
+                            cursor, changeset_detail.count_sql)
+                        log.debug('Row count after apply_sql: %s' % (
+                            count_after,))
 
                         # Test revert_sql
                         log.debug('Testing revert_sql')
@@ -242,24 +249,41 @@ class ChangesetSyntaxTest(object):
                                 'not the same as before apply_sql was '
                                 'applied.')
 
+                        test_count = self._execute_count_sql(
+                            cursor, changeset_detail.count_sql)
+                        log.debug('Row count after revert_sql: %s' % (
+                            test_count,))
+                        if test_count != count_before:
+                            raise exceptions.Error(
+                                'Row count after revert_sql does not match '
+                                'the count before apply_sql was applied.')
+
                         # revert_sql worked, reapply appy sql again
                         log.debug('Reapplying apply_sql')
-                        ddls = sqlparse.split(changeset_detail.apply_sql)
-                        for ddl in ddls:
-                            ddl = ddl.rstrip(unicode(string.whitespace + ';'))
-                            if ddl:
-                                tmp_ddl = ddl.strip().lower()
-                                if not (
-                                        tmp_ddl.startswith('insert') or
-                                        tmp_ddl.startswith('update') or
-                                        tmp_ddl.startswith('del')):
-                                    log.debug(ddl)
-                                    cursor.execute(ddl)
-                                    while cursor.nextset() is not None:
-                                        pass
+                        self._execute_query(cursor, changeset_detail.apply_sql)
 
-                        count_after = self._execute_count_sql(
+                        test_count = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
+                        log.debug('Row count after reapplying apply_sql: %s' % (
+                            test_count,))
+                        if test_count != count_after:
+                            raise exceptions.Error(
+                                'Row count after apply_sql was reapplied '
+                                'was different from expected value.')
+
+                        #ddls = sqlparse.split(changeset_detail.apply_sql)
+                        #for ddl in ddls:
+                        #    ddl = ddl.rstrip(unicode(string.whitespace + ';'))
+                        #    if ddl:
+                        #        tmp_ddl = ddl.strip().lower()
+                        #        if not (
+                        #                tmp_ddl.startswith('insert') or
+                        #                tmp_ddl.startswith('update') or
+                        #                tmp_ddl.startswith('del')):
+                        #            log.debug(ddl)
+                        #            cursor.execute(ddl)
+                        #            while cursor.nextset() is not None:
+                        #                pass
 
                         changeset_detail.before_checksum = hash_before
                         changeset_detail.after_checksum = hash_after
@@ -282,6 +306,8 @@ class ChangesetSyntaxTest(object):
                                 val_str = 'ERROR %s: %s' % (exc, val)
                                 if val_str not in results_log_items:
                                     results_log_items.append(val_str)
+                        else:
+                            results_log_items.append(msg)
                         self._has_errors = True
                     finally:
                         if cursor:

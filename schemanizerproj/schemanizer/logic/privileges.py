@@ -6,6 +6,8 @@ from schemanizer import exceptions, models, utils
 
 MSG_CREATE_USER_NOT_ALLOWED = 'Creating user is not allowed.'
 MSG_DELETE_USER_NOT_ALLOWED = 'Deleting user is not allowed.'
+MSG_SAVE_SCHEMA_DUMP_NOT_ALLOWED = 'Save schema dump is not allowed.'
+MSG_SOFT_DELETE_CHANGESET_NOT_ALLOWED = 'Soft delete changeset is not allowed.'
 MSG_UPDATE_USER_NOT_ALLOWED = 'Updating user is not allowed.'
 
 log = logging.getLogger(__name__)
@@ -89,6 +91,7 @@ class UserPrivileges(object):
             return False
 
     def check_create_user(self):
+        """Raises PrivilegeError if can_create_user() returns False."""
         if not self.can_create_user():
             raise exceptions.PrivilegeError(MSG_CREATE_USER_NOT_ALLOWED)
 
@@ -100,6 +103,7 @@ class UserPrivileges(object):
             return False
 
     def check_update_user(self):
+        """Raises PrivilegeError if can_update_user() returns False."""
         if not self.can_update_user():
             raise exceptions.PrivilegeError(MSG_UPDATE_USER_NOT_ALLOWED)
 
@@ -111,5 +115,69 @@ class UserPrivileges(object):
             return False
 
     def check_delete_user(self):
+        """Raises PrivilegeError if can_delete_user() returns False."""
         if not self.can_delete_user():
             raise exceptions.PrivilegeError(MSG_DELETE_USER_NOT_ALLOWED)
+
+    def can_update_environment(self):
+        """Checks if user can update environments."""
+        if self._user.role.name in [
+                models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+            return True
+        else:
+            return False
+
+    def can_delete_environment(self):
+        """Checks if user can delete environments."""
+        if (
+                self._user.role.name in [
+                    models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]
+                ):
+            return True
+        else:
+            return False
+
+    def can_save_schema_dump(self):
+        """Checks if user can save schema dumps."""
+        # Everyone can save schema dumps.
+        return True
+
+    def check_save_schema_dump(self):
+        """Raises PrivilegeError if can_save_schema_dump() returns False."""
+        if not self.can_save_schema_dump():
+            raise exceptions.PrivilegeError(MSG_SAVE_SCHEMA_DUMP_NOT_ALLOWED)
+
+    def can_soft_delete_changeset(self, changeset):
+        """Checks if user can soft delete changeset."""
+
+        changeset = utils.get_model_instance(changeset, models.Changeset)
+
+        if not changeset.pk:
+            # Cannot soft delete unsaved changeset.
+            return False
+
+        if changeset.is_deleted:
+            # Cannot soft delete that was already soft deleted.
+            return False
+
+        if (
+                self._user.role.name in [
+                    models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]
+                ):
+            # dbas and admins can soft delete changeset
+            return True
+
+        if (
+                self._user.role.name in [models.Role.ROLE_DEVELOPER] and
+                changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED
+                ):
+            # developers can only soft delete changesets that were not yet approved
+            return True
+
+        return False
+
+    def check_soft_delete_changeset(self, changeset):
+        """Raises PrivilegeError if can_soft_delete_changeset() returns False."""
+        if not self.can_soft_delete_changeset(changeset):
+            raise exceptions.PrivilegeError(
+                MSG_SOFT_DELETE_CHANGESET_NOT_ALLOWED)

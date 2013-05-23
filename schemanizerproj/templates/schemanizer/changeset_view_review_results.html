@@ -6,6 +6,13 @@
     {% if user_has_access %}
         <h2>Changeset Review Results</h2>
 
+        {% if changeset_review_success %}
+            <h3><span class="text-success">ACCEPTED</span></h3>
+        {% endif %}
+        {% if changeset_review_failed %}
+            <h3><span class="text-error">REJECTED</span></h3>
+        {% endif %}
+
         <h3>Changeset Validations</h3>
         <table class="table table-striped table-condensed table-bordered table-hover">
             <thead>
@@ -15,8 +22,6 @@
                     <th>Validation type</th>
                     <th>Timestamp</th>
                     <th>Result</th>
-                    <th>Create at</th>
-                    <th>Updated at</th>
                 </tr>
             </thead>
             <tbody>
@@ -27,8 +32,6 @@
                         <td>{{ changeset_validation.validation_type }}</td>
                         <td>{{ changeset_validation.timestamp }}</td>
                         <td>{{ changeset_validation.result }}</td>
-                        <td>{{ changeset_validation.created_at }}</td>
-                        <td>{{ changeset_validation.updated_at }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -46,8 +49,6 @@
                     <th>Started at</th>
                     <th>Ended at</th>
                     <th>Results log</th>
-                    <th>Created at</th>
-                    <th>Update at</th>
                 </tr>
             </thead>
             <tbody>
@@ -61,8 +62,6 @@
                     <td>{{ changeset_test.started_at }}</td>
                     <td>{{ changeset_test.ended_at }}</td>
                     <td>{{ changeset_test.results_log }}</td>
-                    <td>{{ changeset_test.created_at }}</td>
-                    <td>{{ changeset_test.updated_at }}</td>
                 </tr>
             {% endfor %}
             </tbody>
