@@ -410,6 +410,12 @@ class ChangesetValidation(models.Model):
     class Meta:
         db_table = 'changeset_validations'
 
+    def has_errors(self):
+        if self.result and self.result.strip():
+            return True
+        else:
+            return False
+
 
 class TestTypeManager(models.Manager):
     def get_syntax_test_type(self):
@@ -455,3 +461,9 @@ class ChangesetTest(models.Model):
 
     def __unicode__(self):
         return u'<ChangesetTest id=%s>' % (self.pk,)
+
+    def has_errors(self):
+        if self.results_log and self.results_log.strip():
+            return True
+        else:
+            return False
