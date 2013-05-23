@@ -456,7 +456,10 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
             for r in qs:
                 extra=dict(
                     can_apply=logic_privileges.can_user_apply_changeset(
-                        user, r))
+                        user, r),
+                    can_review=
+                        businesslogic.changeset_can_be_reviewed_by_user(
+                            r, user))
                 changesets.append(dict(r=r, extra=extra))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)

@@ -64,6 +64,9 @@
                                 {% if can_soft_delete %}
                                     <li><a href="{% url 'schemanizer_changeset_soft_delete' c.r.id %}">Delete</a></li>
                                 {% endif %}
+                                {% if c.extra.can_review %}
+                                    <li><a href="{% url 'schemanizer_changeset_review' c.r.id %}">Review</a></li>
+                                {% endif %}
                                 {% if c.extra.can_apply %}
                                     <li><a href="{% url 'schemanizer_changeset_apply' c.r.id %}">Apply</a></li>
                                 {% endif %}
