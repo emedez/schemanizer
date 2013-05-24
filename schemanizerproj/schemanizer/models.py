@@ -230,11 +230,25 @@ class ChangesetAction(models.Model):
     TYPE_CREATED = u'created'
     TYPE_CHANGED = u'changed'
     TYPE_DELETED = u'deleted'
+    TYPE_REVIEWED = u'reviewed'
+    TYPE_VALIDATIONS_PASSED = u'validations passed'
+    TYPE_VALIDATIONS_FAILED = u'validations failed'
+    TYPE_TESTS_PASSED = u'tests passed'
+    TYPE_TESTS_FAILED = u'tests failed'
+    TYPE_APPROVED = u'approved'
+    TYPE_REJECTED = u'rejected'
 
     TYPE_CHOICES = (
         (TYPE_CREATED, TYPE_CREATED),
         (TYPE_CHANGED, TYPE_CHANGED),
-        (TYPE_DELETED, TYPE_DELETED)
+        (TYPE_DELETED, TYPE_DELETED),
+        (TYPE_REVIEWED, TYPE_REVIEWED),
+        (TYPE_VALIDATIONS_PASSED, TYPE_VALIDATIONS_PASSED),
+        (TYPE_VALIDATIONS_FAILED, TYPE_VALIDATIONS_FAILED),
+        (TYPE_TESTS_PASSED, TYPE_TESTS_PASSED),
+        (TYPE_TESTS_FAILED, TYPE_TESTS_FAILED),
+        (TYPE_APPROVED, TYPE_APPROVED),
+        (TYPE_REJECTED, TYPE_REJECTED)
     )
 
     changeset = models.ForeignKey(

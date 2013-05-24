@@ -188,6 +188,11 @@ class ChangesetReview(object):
                     raise exceptions.Error('Unable to connect to MySQL server.')
 
                 now = timezone.now()
+                # Create changeset action entry.
+                models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_REVIEWED,
+                    timestamp=now)
                 with transaction.commit_on_success():
 
                     # clear existing changeset tests
@@ -208,6 +213,15 @@ class ChangesetReview(object):
                         self._changeset_test_ids.append(changeset_test.id)
                     if syntax_test.has_errors:
                         self._has_errors = True
+                        models.ChangesetAction.objects.create(
+                            changeset=self._changeset,
+                            type=models.ChangesetAction.TYPE_TESTS_FAILED,
+                            timestamp=timezone.now())
+                    else:
+                        models.ChangesetAction.objects.create(
+                            changeset=self._changeset,
+                            type=models.ChangesetAction.TYPE_TESTS_PASSED,
+                            timestamp=timezone.now())
 
                     # clear existing changeset validations
                     models.ChangesetValidation.objects.filter(
@@ -255,10 +269,10 @@ class ChangesetReview(object):
                     self._changeset.save()
                     #
                     # Create entry on changeset actions.
-                    models.ChangesetAction.objects.create(
-                        changeset=self._changeset,
-                        type=models.ChangesetAction.TYPE_CHANGED,
-                        timestamp=timezone.now())
+                    #models.ChangesetAction.objects.create(
+                    #    changeset=self._changeset,
+                    #    type=models.ChangesetAction.TYPE_CHANGED,
+                    #    timestamp=timezone.now())
 
                     changeset_test_ids_string = u','.join(
                         [str(obj.id) for obj in self._changeset_tests])

@@ -356,7 +356,7 @@ def changeset_approve(changeset, user):
             # Create changeset action entry.
             models.ChangesetAction.objects.create(
                 changeset=changeset,
-                type=models.ChangesetAction.TYPE_CHANGED,
+                type=models.ChangesetAction.TYPE_APPROVED,
                 timestamp=now)
 
         log.info(u'Changeset [id=%s] was approved.' % (changeset.id,))
@@ -392,7 +392,7 @@ def changeset_reject(changeset, user):
             # Create changeset actions entry.
             models.ChangesetAction.objects.create(
                 changeset=changeset,
-                type=models.ChangesetAction.TYPE_CHANGED,
+                type=models.ChangesetAction.TYPE_REJECTED,
                 timestamp=now)
 
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))

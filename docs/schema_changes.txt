@@ -42,12 +42,14 @@ DROP COLUMN `before_version` ;
 
 2013-05-04 GMT+08
 =================
+
 ALTER TABLE `servers`
 ADD COLUMN `port` INT NULL  AFTER `environment_id` ;
 
 
 2013-05-14 GMT+08
 =================
+
 ALTER TABLE `statements` ADD COLUMN `hostname` TEXT NULL  AFTER `updated_at` ;
 
 ALTER TABLE `explained_statements` ADD COLUMN `server_id` INT NULL  AFTER `updated_at` ;
@@ -55,4 +57,14 @@ ALTER TABLE `explained_statements` ADD COLUMN `server_id` INT NULL  AFTER `updat
 ALTER TABLE `explain_results`
 CHANGE COLUMN `table_name` `table` TEXT NULL DEFAULT NULL  ,
 CHANGE COLUMN `key_name` `key` TEXT NULL DEFAULT NULL  ;
+
+
+2013-05-25 GMT+08
+=================
+
+ALTER TABLE `changeset_actions`
+CHANGE COLUMN `type` `type` ENUM(
+    'created','changed','deleted','reviewed','validations passed',
+    'validations failed','tests passed','tests failed','approved',
+    'rejected') NULL DEFAULT NULL  ;
 
