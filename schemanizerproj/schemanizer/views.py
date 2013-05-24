@@ -5,7 +5,7 @@ import urllib
 import warnings
 
 import MySQLdb
-warnings.filterwarnings('ignore', category=MySQLdb.Warning)
+#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 import sqlparse
 
 from django.conf import settings

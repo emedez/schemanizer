@@ -189,6 +189,11 @@ class ChangesetReview(object):
 
                 now = timezone.now()
                 with transaction.commit_on_success():
+
+                    # clear existing changeset tests
+                    models.ChangesetTest.objects.filter(
+                        changeset_detail__changeset=self._changeset).delete()
+
                     syntax_test = logic_changeset_test.ChangesetSyntaxTest(
                         changeset=self._changeset,
                         schema_version=self._schema_version,
@@ -204,17 +209,21 @@ class ChangesetReview(object):
                     if syntax_test.has_errors:
                         self._has_errors = True
 
-                    validation_results = (
-                        logic_changeset_validation
-                            .changeset_validate_no_update_with_where_clause(
-                                self._changeset, self._user))
-                    if validation_results['changeset_validation']:
-                        self._changeset_validations.append(
-                                validation_results['changeset_validation'])
-                        self._changeset_validation_ids.append(
-                            validation_results['changeset_validation'].id)
-                    if validation_results['has_errors']:
-                        self._has_errors = True
+                    # clear existing changeset validations
+                    models.ChangesetValidation.objects.filter(
+                        changeset=self._changeset).delete()
+
+                    #validation_results = (
+                    #    logic_changeset_validation
+                    #        .changeset_validate_no_update_with_where_clause(
+                    #            self._changeset, self._user))
+                    #if validation_results['changeset_validation']:
+                    #    self._changeset_validations.append(
+                    #            validation_results['changeset_validation'])
+                    #    self._changeset_validation_ids.append(
+                    #        validation_results['changeset_validation'].id)
+                    #if validation_results['has_errors']:
+                    #    self._has_errors = True
 
                     #
                     # Update changeset.

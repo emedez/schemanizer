@@ -1,4 +1,5 @@
 import logging
+import pprint
 import string
 import threading
 
@@ -74,17 +75,20 @@ class ChangesetApply(object):
         if self._message_callback:
             self._message_callback(self, message, message_type)
 
-    def _apply_changeset_detail(self, changeset_detail):
+    def _apply_changeset_detail(self, changeset_detail, cursor):
         has_errors = False
 
         queries = sqlparse.split(changeset_detail.apply_sql)
         results_logs = []
-        conn = MySQLdb.connect(**self._connection_options)
+        log.debug('connection options:\n%s' % (
+            pprint.pformat(self._connection_options),))
+        #conn = MySQLdb.connect(**self._connection_options)
         try:
             self._store_message(changeset_detail.apply_sql)
             for query in queries:
                 query = query.rstrip(string.whitespace + ';')
-                cursor = conn.cursor()
+                log.debug(u'STATEMENT: %s' % (query,))
+                #cursor = conn.cursor()
                 try:
                     if query:
                         cursor.execute(query)
@@ -98,7 +102,7 @@ class ChangesetApply(object):
                 finally:
                     while cursor.nextset() is not None:
                         pass
-                    cursor.close()
+                    #cursor.close()
         finally:
             results_log = '\n'.join(results_logs)
             changeset_detail_apply = models.ChangesetDetailApply.objects.create(
@@ -106,22 +110,31 @@ class ChangesetApply(object):
                 environment=self._server.environment,
                 server=self._server,
                 results_log=results_log)
-            conn.close()
+            #conn.close()
 
         return dict(
             has_errors=has_errors,
             changeset_detail_apply=changeset_detail_apply)
 
     def _apply_changeset_details(self):
-        for changeset_detail in self._changeset.changeset_details.all().order_by(
-                'id'):
-            ret = self._apply_changeset_detail(changeset_detail)
-            if ret['has_errors']:
-                self._has_errors = True
-            self._changeset_detail_applies.append(
-                ret['changeset_detail_apply'])
-            self._changeset_detail_apply_ids.append(
-                ret['changeset_detail_apply'].id)
+        conn = MySQLdb.connect(**self._connection_options)
+        cursor = conn.cursor()
+        try:
+            for changeset_detail in (
+                    self._changeset.changeset_details.all().order_by('id')
+                    ):
+                ret = self._apply_changeset_detail(
+                    changeset_detail, cursor)
+                if ret['has_errors']:
+                    self._has_errors = True
+                self._changeset_detail_applies.append(
+                    ret['changeset_detail_apply'])
+                self._changeset_detail_apply_ids.append(
+                    ret['changeset_detail_apply'].id)
+        finally:
+            cursor.execute('FLUSH TABLES')
+            cursor.close()
+            conn.close()
 
     def run(self):
         self._init_run_vars()
@@ -198,7 +211,9 @@ class ChangesetApplyThread(threading.Thread):
                 self._message_callback)
             changeset_apply.run()
 
-            self.messages = changeset_apply.messages
+            self.messages = []
+            self._store_message(msg)
+            self.messages.extend(changeset_apply.messages)
             self.has_errors = changeset_apply.has_errors
             self.changeset_detail_applies = (
                 changeset_apply.changeset_detail_applies)

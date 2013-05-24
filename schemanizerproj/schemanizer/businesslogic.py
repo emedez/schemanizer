@@ -6,7 +6,7 @@ import urllib
 import warnings
 
 import MySQLdb
-warnings.filterwarnings('ignore', category=MySQLdb.Warning)
+#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 
 from django.conf import settings
 from django.contrib.auth.models import User as AuthUser

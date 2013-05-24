@@ -1,4 +1,6 @@
+import itertools
 import logging
+import pprint
 import string
 import warnings
 
@@ -9,7 +11,7 @@ import sqlparse
 
 from schemanizer import exceptions, models, utils
 
-warnings.filterwarnings('ignore', category=MySQLdb.Warning)
+#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 log = logging.getLogger(__name__)
 
 
@@ -85,32 +87,44 @@ class ChangesetSyntaxTest(object):
     def _execute_count_sql(self, cursor, count_sql):
         """Executes count SQL."""
 
-        count = None
+        counts = []
         if count_sql:
             count_sql = count_sql.strip(unicode(
                 string.whitespace + ';'))
         if count_sql:
             statements = sqlparse.split(count_sql)
-            if len(statements) > 1:
-                raise exceptions.Error(
-                    'The number of statements for Count SQL  should not be '
-                    'greater than 1.')
-            statement = statements[0].rstrip(unicode(string.whitespace + ';'))
-            if statement:
-                log.debug(u'STATEMENT: %s' % (statement,))
-                try:
-                    cursor.execute(statement)
-                    if len(cursor.description) > 1:
-                        raise exceptions.Error(
-                            'Count SQL should return a single value only.')
-                    row = cursor.fetchone()
-                    if row is None:
-                        raise exceptions.Error('Count SQL result is empty.')
-                    count = row[0]
-                finally:
-                    while cursor.nextset() is not None:
-                        pass
-        return count
+            for statement in statements:
+                count = None
+                statement = statement.rstrip(unicode(string.whitespace + ';'))
+                if statement:
+                    try:
+                        log.debug(u'Executing statement: %s' % (statement,))
+                        row_count = cursor.execute(statement)
+                        if len(cursor.description) > 1:
+                            raise exceptions.Error(
+                                'Count SQL should return a single value only.')
+                        if row_count > 1:
+                            raise exceptions.Error(
+                                u'Count SQL should return a single row only. '
+                                u'Count SQL was: %s' % (statement,)
+                            )
+                        if not row_count:
+                            raise exceptions.Error(
+                                u'Count SQL returned an empty set. '
+                                u'Count SQL was: %s' % (statement,)
+                            )
+                        row = cursor.fetchone()
+                        if row is None:
+                            raise exceptions.Error(
+                                u'Count SQL returned an empty set. '
+                                u'Count SQL was: %s' % (statement,)
+                            )
+                        count = row[0]
+                    finally:
+                        while cursor.nextset() is not None:
+                            pass
+                counts.append(count)
+        return counts
 
     def run(self):
         """Main logic for testing changeset."""
@@ -119,6 +133,8 @@ class ChangesetSyntaxTest(object):
 
         if (self._changeset.database_schema_id !=
                 self._schema_version.database_schema_id):
+            log.debug('self._changeset.id = %s' % (self._changeset.id,))
+            log.debug('self._schema_version.id = %s' % (self._schema_version.id,))
             msg = 'Schema version and changeset do have the same database schema.'
             log.error(msg)
             self._store_message(msg, 'error')
@@ -129,54 +145,71 @@ class ChangesetSyntaxTest(object):
         log.info(msg)
         self._store_message(msg)
 
-        conn = MySQLdb.connect(**self._connection_options)
-        schema_name = self._changeset.database_schema.name
-        with conn as cursor:
-            #
-            # Create schema
-            #
-            cursor.execute('DROP SCHEMA IF EXISTS %s' % (schema_name,))
-            while cursor.nextset() is not None:
-                pass
-            cursor.execute('CREATE SCHEMA %s' % (schema_name,))
-            while cursor.nextset() is not None:
-                pass
-            msg = "Database schema '%s' was created." % (schema_name,)
-            log.info(msg)
-            self._store_message(msg)
-        conn.close()
-
+#        conn = MySQLdb.connect(**self._connection_options)
+#        schema_name = self._changeset.database_schema.name
+#        with conn as cursor:
+#            #
+#            # Create schema
+#            #
+#            cursor.execute('DROP SCHEMA IF EXISTS %s' % (schema_name,))
+#            while cursor.nextset() is not None:
+#                pass
+#            cursor.execute('CREATE SCHEMA %s' % (schema_name,))
+#            while cursor.nextset() is not None:
+#                pass
+#            msg = "Database schema '%s' was created." % (schema_name,)
+#            log.info(msg)
+#            self._store_message(msg)
+#        conn.close()
+#
         with transaction.commit_on_success():
 
-            # delete existing results
-            models.ChangesetTest.objects.filter(
-                changeset_detail__changeset=self._changeset).delete()
-
-            #
-            # reconnect using the newly created schema
-            #
-            connection_options = self._connection_options.copy()
-            connection_options['db'] = schema_name
-            conn = MySQLdb.connect(**connection_options)
-
+            schema_name = self._changeset.database_schema.name
+            conn = MySQLdb.connect(**self._connection_options)
+            cursor = None
             try:
+                cursor = conn.cursor()
+                #
+                # Create schema
+                #
+                try:
+                    cursor.execute('DROP SCHEMA IF EXISTS %s' % (schema_name,))
+                except Warning, e:
+                    log.warn('EXCEPTION %s: %s' % (type(e), e))
+                    # ignore warnings
+                    pass
+                while cursor.nextset() is not None:
+                    pass
+                cursor.execute('CREATE SCHEMA %s' % (schema_name,))
+                while cursor.nextset() is not None:
+                    pass
+                msg = "Database schema '%s' was created." % (schema_name,)
+                log.info(msg)
+                self._store_message(msg)
+                #
+                # connect to newly created schema
+                cursor.execute('USE %s' % (schema_name,))
+
+                dump_connection_options = self._connection_options.copy()
+                dump_connection_options['db'] = schema_name
+
                 #
                 # load initial schema
                 #
+                log.debug('Initial schema:\n%s' % (self._schema_version.ddl,))
                 ddls = sqlparse.split(self._schema_version.ddl)
                 for ddl in ddls:
-                    cursor = None
                     try:
                         ddl = ddl.rstrip(unicode(string.whitespace + ';'))
-                        log.debug(ddl)
-                        cursor = conn.cursor()
                         if ddl:
                             cursor.execute(ddl)
                     finally:
-                        if cursor:
-                            while cursor.nextset() is not None:
-                                pass
-                        cursor.close()
+                        while cursor.nextset() is not None:
+                            pass
+
+                # delete existing results
+                models.ChangesetTest.objects.filter(
+                    changeset_detail__changeset=self._changeset).delete()
 
                 #
                 # Apply all changeset details.
@@ -213,34 +246,36 @@ class ChangesetSyntaxTest(object):
                     self._store_message(msg)
 
                     started_at = timezone.now()
-                    cursor = None
                     results_log_items = []
                     try:
-                        cursor = conn.cursor()
-
-                        count_before = self._execute_count_sql(
+                        counts_before = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
-                        log.debug('Row count before apply_sql: %s' % (
-                            count_before,))
+                        log.debug('Row count(s) before apply_sql: %s' % (
+                            counts_before,))
 
                         # Test apply_sql
                         log.debug('Testing apply_sql')
                         self._execute_query(cursor, changeset_detail.apply_sql)
-                        structure_after = utils.mysql_dump(**connection_options)
+                        cursor.execute('FLUSH TABLES')
+
+                        structure_after = utils.mysql_dump(
+                            **dump_connection_options)
                         hash_after = utils.schema_hash(structure_after)
                         log.debug('Structure=\n%s\nChecksum=%s' % (
                             structure_after, hash_after))
 
-                        count_after = self._execute_count_sql(
+                        counts_after = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
-                        log.debug('Row count after apply_sql: %s' % (
-                            count_after,))
+                        log.debug('Row count(s) after apply_sql: %s' % (
+                            counts_after,))
 
                         # Test revert_sql
                         log.debug('Testing revert_sql')
                         self._execute_query(cursor, changeset_detail.revert_sql)
+                        cursor.execute('FLUSH TABLES')
+
                         structure_after_revert = utils.mysql_dump(
-                            **connection_options)
+                            **dump_connection_options)
                         hash_after_revert = utils.schema_hash(
                             structure_after_revert)
                         if hash_after_revert != hash_before:
@@ -249,49 +284,38 @@ class ChangesetSyntaxTest(object):
                                 'not the same as before apply_sql was '
                                 'applied.')
 
-                        test_count = self._execute_count_sql(
+                        test_counts = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
-                        log.debug('Row count after revert_sql: %s' % (
-                            test_count,))
-                        if test_count != count_before:
+                        log.debug('Row count(s) after revert_sql: %s' % (
+                            test_counts,))
+                        if test_counts != counts_before:
                             raise exceptions.Error(
-                                'Row count after revert_sql does not match '
-                                'the count before apply_sql was applied.')
+                                'Count SQL result after revert_sql does not '
+                                'match the result before apply_sql was '
+                                'applied.')
 
                         # revert_sql worked, reapply appy sql again
                         log.debug('Reapplying apply_sql')
                         self._execute_query(cursor, changeset_detail.apply_sql)
 
-                        test_count = self._execute_count_sql(
+                        test_counts = self._execute_count_sql(
                             cursor, changeset_detail.count_sql)
-                        log.debug('Row count after reapplying apply_sql: %s' % (
-                            test_count,))
-                        if test_count != count_after:
+                        log.debug('Row count(s) after reapplying apply_sql: %s' % (
+                            test_counts,))
+                        if test_counts != counts_after:
                             raise exceptions.Error(
-                                'Row count after apply_sql was reapplied '
+                                'Count SQL result after apply_sql was reapplied '
                                 'was different from expected value.')
-
-                        #ddls = sqlparse.split(changeset_detail.apply_sql)
-                        #for ddl in ddls:
-                        #    ddl = ddl.rstrip(unicode(string.whitespace + ';'))
-                        #    if ddl:
-                        #        tmp_ddl = ddl.strip().lower()
-                        #        if not (
-                        #                tmp_ddl.startswith('insert') or
-                        #                tmp_ddl.startswith('update') or
-                        #                tmp_ddl.startswith('del')):
-                        #            log.debug(ddl)
-                        #            cursor.execute(ddl)
-                        #            while cursor.nextset() is not None:
-                        #                pass
 
                         changeset_detail.before_checksum = hash_before
                         changeset_detail.after_checksum = hash_after
-                        if (
-                                count_before is not None and
-                                count_after is not None):
-                            changeset_detail.volumetric_values = (
-                                u'%s' % (count_after - count_before))
+                        changeset_detail.volumetric_values = u','.join(
+                            itertools.imap(
+                                lambda before, after:
+                                    unicode(after - before)
+                                    if (before is not None and after is not None)
+                                    else '',
+                                counts_before, counts_after))
                         changeset_detail.save()
 
                         self._structure_after = structure_after
@@ -300,7 +324,7 @@ class ChangesetSyntaxTest(object):
                         msg = 'ERROR %s: %s' % (type(e), e)
                         log.exception(msg)
                         self._store_message(msg, 'error')
-                        if cursor and cursor.messages:
+                        if cursor.messages:
                             log.error(cursor.messages)
                             for exc, val in cursor.messages:
                                 val_str = 'ERROR %s: %s' % (exc, val)
@@ -310,10 +334,8 @@ class ChangesetSyntaxTest(object):
                             results_log_items.append(msg)
                         self._has_errors = True
                     finally:
-                        if cursor:
-                            while cursor.nextset() is not None:
-                                pass
-                            cursor.close()
+                        while cursor.nextset() is not None:
+                            pass
 
                     ended_at = timezone.now()
                     results_log = u'\n'.join(results_log_items)
@@ -327,11 +349,16 @@ class ChangesetSyntaxTest(object):
                     self._changeset_tests.append(changeset_test)
 
             except Exception, e:
-                log.exception('EXCEPTION')
-                self._store_message('EXCEPTION %s: %s' % (type(e), e), 'error')
+                msg = 'ERROR %s: %s' % (type(e), e)
+                log.exception(msg)
+                self._store_message(msg, 'error')
                 self._has_errors = True
 
             finally:
+                if cursor:
+                    cursor.execute('FLUSH TABLES')
+                    while cursor.nextset() is not None:
+                        pass
                 conn.close()
 
         msg = 'Changeset syntax test was completed.'
