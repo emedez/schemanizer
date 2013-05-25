@@ -13,9 +13,11 @@ from tastypie import fields
 from schemanizer import models, businesslogic, exceptions, utils
 from schemanizer.api import authorizations
 from schemanizer.logic import (
+    changeset as logic_changeset,
     changeset_review as logic_changeset_review,
     changeset_apply as logic_changeset_apply,
-    user as logic_user)
+    user as logic_user,
+    server as logic_server)
 
 log = logging.getLogger(__name__)
 
@@ -243,7 +245,7 @@ class SchemaVersionResource(ModelResource):
             server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = businesslogic.save_schema_dump(
+            schema_version = logic_server.save_schema_dump(
                 server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -556,7 +558,7 @@ class ChangesetResource(ModelResource):
                 changeset_detail = models.ChangesetDetail(**changeset_detail_data)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_submit(
+            changeset = logic_changeset.changeset_submit(
                 changeset, changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -640,7 +642,7 @@ class ChangesetResource(ModelResource):
                         setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = businesslogic.changeset_update(
+            changeset = logic_changeset.changeset_update(
                 changeset, changeset_details,
                 to_be_deleted_changeset_details, request.user.schemanizer_user)
         except Exception, e:
@@ -660,7 +662,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_reject(
+            changeset = logic_changeset.changeset_reject(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -680,7 +682,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.changeset_approve(
+            changeset = logic_changeset.changeset_approve(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -700,7 +702,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = businesslogic.soft_delete_changeset(
+            changeset = logic_changeset.soft_delete_changeset(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')

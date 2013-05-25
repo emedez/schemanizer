@@ -23,6 +23,7 @@ from django.utils import timezone
 
 from schemanizer import businesslogic, exceptions, forms, models, utils
 from schemanizer.logic import (
+    changeset as logic_changeset,
     changeset_apply as logic_changeset_apply,
     changeset_review as logic_changeset_review,
     privileges as logic_privileges,
@@ -179,8 +180,7 @@ def changeset_soft_delete(
             .can_soft_delete_changeset(changeset))
         if user_has_access:
             if request.method == 'POST':
-                with transaction.commit_on_success():
-                    businesslogic.soft_delete_changeset(changeset, user)
+                logic_changeset.soft_delete_changeset(changeset, user)
                 messages.success(
                     request, 'Changeset [id=%s] was soft deleted.' % (id,))
                 return redirect('schemanizer_changeset_list')
@@ -212,7 +212,7 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                     request.POST, instance=changeset)
                 if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                     with transaction.commit_on_success():
-                        changeset = businesslogic.changeset_submit_from_form(
+                        changeset = logic_changeset.changeset_submit_from_form(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user)
@@ -246,7 +246,8 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
 
         if user_has_access:
             changeset = models.Changeset.objects.get(pk=int(id))
-            if businesslogic.changeset_can_be_updated_by_user(changeset, user):
+            if logic_privileges.UserPrivileges(user).can_update_changeset(
+                    changeset):
                 ChangesetDetailFormSet = inlineformset_factory(
                     models.Changeset, models.ChangesetDetail,
                     form=forms.ChangesetDetailForm,
@@ -258,7 +259,7 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                         request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset = businesslogic.changeset_update_from_form(
+                            changeset = logic_changeset.changeset_update_from_form(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
@@ -368,7 +369,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         # Approve changeset.
                         #
                         with transaction.commit_on_success():
-                            businesslogic.changeset_approve(
+                            logic_changeset.changeset_approve(
                                 changeset=changeset, user=user)
                         messages.success(
                             request, u'Changeset [id=%s] was approved.' % (
@@ -379,7 +380,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         # Reject changeset.
                         #
                         with transaction.commit_on_success():
-                            businesslogic.changeset_reject(
+                            logic_changeset.changeset_reject(
                                 changeset=changeset, user=user)
                         messages.success(
                             request, u'Changeset [id=%s] was rejected.' % (
@@ -410,14 +411,12 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                     log.exception('EXCEPTION')
                     messages.error(request, u'%s' % (e,))
 
-            can_update = businesslogic.changeset_can_be_updated_by_user(
-                changeset, user)
-            can_set_review_status_to_in_progress = businesslogic.changeset_can_be_reviewed_by_user(
-                changeset, user)
-            can_approve = businesslogic.changeset_can_be_approved_by_user(
-                changeset, user)
-            can_reject = businesslogic.changeset_can_be_rejected_by_user(
-                changeset, user)
+            user_privileges = logic_privileges.UserPrivileges(user)
+            can_update = user_privileges.can_update_changeset(changeset)
+            can_set_review_status_to_in_progress = (
+                logic_privileges.can_user_review_changeset(user, changeset))
+            can_approve = user_privileges.can_approve_changeset(changeset)
+            can_reject = user_privileges.can_reject_changeset(changeset)
             can_soft_delete = (
                 logic_privileges.UserPrivileges(user)
                 .can_soft_delete_changeset(changeset))
@@ -458,8 +457,7 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
                     can_apply=logic_privileges.can_user_apply_changeset(
                         user, r),
                     can_review=
-                        businesslogic.changeset_can_be_reviewed_by_user(
-                            r, user))
+                        logic_privileges.can_user_review_changeset(user, r))
                 changesets.append(dict(r=r, extra=extra))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -649,8 +647,8 @@ def changeset_review(
         request_id = utils.generate_request_id(request)
         changeset = models.Changeset.objects.get(pk=int(changeset_id))
         user = request.user.schemanizer_user
-        user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
-            changeset, user)
+        user_has_access = logic_privileges.can_user_review_changeset(
+            user, changeset)
         schema_version = request.GET.get('schema_version', None)
         if schema_version:
             schema_version = models.SchemaVersion.objects.get(

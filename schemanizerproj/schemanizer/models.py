@@ -254,7 +254,7 @@ class ChangesetAction(models.Model):
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True)
     type = models.CharField(
-        max_length=7, blank=True, choices=TYPE_CHOICES,
+        max_length=18, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])
     timestamp = models.DateTimeField(null=True, blank=True)
 

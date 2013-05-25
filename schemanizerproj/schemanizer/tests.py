@@ -14,8 +14,9 @@ from tastypie.test import ResourceTestCase
 from schemanizer import exceptions, models, utils
 from schemanizer import businesslogic
 from schemanizer.logic import (
-    privileges as logic_privileges,
+    changeset as logic_changeset,
     changeset_review as logic_changeset_review,
+    privileges as logic_privileges,
     user as logic_user)
 
 log = logging.getLogger(__name__)
@@ -129,8 +130,6 @@ CREATE TABLE `t1` (
 
                 changeset = self._create_changeset(database_schema)
 
-                #user_has_access = businesslogic.changeset_can_be_reviewed_by_user(
-                #    changeset, user)
                 changeset_review = logic_changeset_review.ChangesetReview(
                     changeset, schema_version, user)
                 if u == 'dev':
@@ -568,7 +567,7 @@ class ChangesetViewsTestCase(TestCase):
                     self.assertEqual(changeset.changeset_details.all().count(), 2)
             finally:
                 if changeset:
-                    businesslogic.delete_changeset(changeset)
+                    logic_changeset.delete_changeset(changeset)
 
     def test_changeset_view(self):
         changeset = self._create_changeset()
@@ -589,7 +588,7 @@ class ChangesetViewsTestCase(TestCase):
                 self.assertTrue('can_reject' in r.context)
                 self.assertTrue('can_soft_delete' in r.context)
         finally:
-            businesslogic.delete_changeset(changeset_id)
+            logic_changeset.delete_changeset(changeset_id)
 
     def test_changeset_view_post(self):
         """Test changeset posts."""
@@ -605,14 +604,11 @@ class ChangesetViewsTestCase(TestCase):
                 self._login(c, u, p)
                 user = models.User.objects.get(name=u)
                 user_privileges = logic_privileges.UserPrivileges(user)
-                can_update = businesslogic.changeset_can_be_updated_by_user(
-                    changeset, user)
-                can_set_review_status_to_in_progress = businesslogic.changeset_can_be_reviewed_by_user(
-                    changeset, user)
-                can_approve = businesslogic.changeset_can_be_approved_by_user(
-                    changeset, user)
-                can_reject = businesslogic.changeset_can_be_rejected_by_user(
-                    changeset, user)
+                can_update = user_privileges.can_update_changeset(changeset)
+                can_set_review_status_to_in_progress = (
+                    logic_privileges.can_user_review_changeset(user, changeset))
+                can_approve = user_privileges.can_approve_changeset(changeset)
+                can_reject = user_privileges.can_reject_changeset(changeset)
                 can_soft_delete = user_privileges.can_soft_delete_changeset(
                     changeset)
                 if can_update:
@@ -654,7 +650,7 @@ class ChangesetViewsTestCase(TestCase):
                             args=[changeset_id]))
 
         finally:
-            businesslogic.delete_changeset(changeset_id)
+            logic_changeset.delete_changeset(changeset_id)
 
     def test_changeset_update(self):
         c = Client()
@@ -668,11 +664,13 @@ class ChangesetViewsTestCase(TestCase):
                 r = c.get(url)
 
                 self.assertTrue(r.context['user_has_access'])
-                if businesslogic.changeset_can_be_updated_by_user(changeset, user):
+                if (
+                        logic_privileges.UserPrivileges(user)
+                        .can_update_changeset(changeset)):
                     self.assertTrue('changeset_form' in r.context)
                     self.assertTrue('changeset_detail_formset' in r.context)
             finally:
-                businesslogic.delete_changeset(changeset_id)
+                logic_changeset.delete_changeset(changeset_id)
 
     def test_changeset_update_post(self):
         c = Client()
@@ -684,7 +682,9 @@ class ChangesetViewsTestCase(TestCase):
             try:
                 changeset_detail = changeset.changeset_details.all()[0]
                 url = reverse('schemanizer_changeset_update', args=[changeset_id])
-                if businesslogic.changeset_can_be_updated_by_user(changeset, user):
+                if (
+                        logic_privileges.UserPrivileges(user)
+                        .can_update_changeset(changeset)):
                     data = {}
                     # changeset data
                     data.update(dict(
@@ -721,7 +721,7 @@ class ChangesetViewsTestCase(TestCase):
                         models.Changeset.REVIEW_STATUS_NEEDS)
 
             finally:
-                businesslogic.delete_changeset(changeset_id)
+                logic_changeset.delete_changeset(changeset_id)
 
     def test_confirm_soft_delete_changeset(self):
         c = Client()
@@ -738,7 +738,7 @@ class ChangesetViewsTestCase(TestCase):
                 r = c.get(url)
                 self.assertTrue('user_has_access' in r.context)
             finally:
-                businesslogic.delete_changeset(changeset)
+                logic_changeset.delete_changeset(changeset)
 
     def test_confirm_soft_delete_changeset_post(self):
         c = Client()
@@ -760,7 +760,7 @@ class ChangesetViewsTestCase(TestCase):
                 tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                 self.assertTrue(tmp_changeset.is_deleted)
             finally:
-                businesslogic.delete_changeset(changeset)
+                logic_changeset.delete_changeset(changeset)
 
 
 class ServerViewsTestCase(TestCase):
@@ -1171,7 +1171,10 @@ class SchemaVersionViewsTestCase(TestCase):
     def test_schema_version_create_post(self):
         schema_name = 'schemanizer_test_schema'
         cursor = connection.cursor()
-        cursor.execute('create schema if not exists %s' % (schema_name,))
+        try:
+            cursor.execute('create schema if not exists %s' % (schema_name,))
+        except Warning:
+            pass
         environment = models.Environment.objects.get(name='test')
         server = models.Server.objects.create(
             name='test_server_1',

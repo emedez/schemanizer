@@ -181,3 +181,62 @@ class UserPrivileges(object):
         if not self.can_soft_delete_changeset(changeset):
             raise exceptions.PrivilegeError(
                 MSG_SOFT_DELETE_CHANGESET_NOT_ALLOWED)
+
+    def can_update_changeset(self, changeset):
+        """Checks if user can update changeset."""
+
+        changeset = utils.get_model_instance(changeset, models.Changeset)
+
+        if not changeset.pk:
+            # Cannot update unsaved changesets.
+            return False
+
+        if self._user.role.name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+            # dbas and admins can always update changeset.
+            return True
+
+        if self._user.role.name in [models.Role.ROLE_DEVELOPER]:
+            # developers can update changesets only if it was not yet approved.
+            if changeset.review_status != models.Changeset.REVIEW_STATUS_APPROVED:
+                return True
+
+        return False
+
+    def can_approve_changeset(self, changeset):
+        """Checks if user can approve changeset."""
+
+        changeset = utils.get_model_instance(changeset, models.Changeset)
+
+        if not changeset.pk:
+            # Cannot approve unsaved changeset.
+            return False
+
+        if changeset.review_status == models.Changeset.REVIEW_STATUS_APPROVED:
+            # cannot approve, it is already approved
+            return False
+
+        if self._user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+            if changeset.review_status in (models.Changeset.REVIEW_STATUS_IN_PROGRESS):
+                return True
+        else:
+            return False
+
+    def can_reject_changeset(self, changeset):
+        """Checks if user can reject changeset."""
+
+        if type(changeset) in (int, long):
+            changeset = models.Changeset.objects.get(pk=changeset)
+
+        if not changeset.pk:
+            # Cannot reject unsaved changeset.
+            return False
+
+        if changeset.review_status == models.Changeset.REVIEW_STATUS_REJECTED:
+            # cannot reject, it is already rejected
+            return False
+
+        if self._user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+            # allow reject regardless of review status
+            return True
+        else:
+            return False
