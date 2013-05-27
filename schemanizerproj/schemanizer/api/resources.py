@@ -10,7 +10,7 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
 
-from schemanizer import models, businesslogic, exceptions, utils
+from schemanizer import models, exceptions, utils
 from schemanizer.api import authorizations
 from schemanizer.logic import (
     changeset as logic_changeset,

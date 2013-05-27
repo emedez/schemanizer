@@ -12,7 +12,6 @@ from django.utils import timezone
 from tastypie.test import ResourceTestCase
 
 from schemanizer import exceptions, models, utils
-from schemanizer import businesslogic
 from schemanizer.logic import (
     changeset as logic_changeset,
     changeset_review as logic_changeset_review,
@@ -20,6 +19,7 @@ from schemanizer.logic import (
     user as logic_user)
 
 log = logging.getLogger(__name__)
+
 
 class ChangesetReviewLogicTest(TransactionTestCase):
     fixtures = ['schemanizer/test.yaml']

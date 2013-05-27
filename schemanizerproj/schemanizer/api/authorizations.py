@@ -1,7 +1,6 @@
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.exceptions import Unauthorized
 
-from schemanizer import businesslogic
 from schemanizer.logic import privileges as logic_privileges
 
 MSG_UNAUTHORIZED = 'You are not allowed to access that resource.'

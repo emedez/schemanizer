@@ -21,7 +21,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from schemanizer import businesslogic, exceptions, forms, models, utils
+from schemanizer import exceptions, forms, models, utils
 from schemanizer.logic import (
     changeset as logic_changeset,
     changeset_apply as logic_changeset_apply,
@@ -567,74 +567,6 @@ def changeset_apply_status(
         data_json = json.dumps(data)
 
     return HttpResponse(data_json, mimetype='application/json')
-
-
-#@login_required
-#def changeset_validate_no_update_with_where_clause(
-#        request, id, template='schemanizer/changeset_validate_no_update_with_where_clause.html'):
-#    """Changeset validate no update with where clause view."""
-#
-#    user_has_access = False
-#    try:
-#        changeset = models.Changeset.objects.get(pk=int(id))
-#        user_has_access = businesslogic.user_can_validate_changeset(
-#            request.user.schemanizer_user, changeset)
-#
-#        if user_has_access:
-#            validation_results = []
-#
-#            for cd in changeset.changeset_details.all():
-#                log.debug(
-#                    u'changeset detail >>\nid: %s\napply_sql:\n%s' % (
-#                        cd.id, cd.apply_sql))
-#                msg = u"Validating [%s]... " % (cd.apply_sql)
-#                parsed = sqlparse.parse(cd.apply_sql)
-#                where_clause_found = False
-#                for stmt in parsed:
-#                    if stmt.get_type() in [u'INSERT', u'UPDATE', u'DELETE']:
-#                        for token in stmt.tokens:
-#                            if type(token) in [sqlparse.sql.Where]:
-#                                msg += u'WHERE clause found!'
-#                                where_clause_found = True
-#                                break
-#                    if where_clause_found:
-#                        break
-#                if where_clause_found:
-#                    validation_results.append(
-#                        u'Changeset Detail [id=%s] contains WHERE clause.' % (
-#                            cd.id,))
-#                    messages.error(request, msg)
-#                else:
-#                    msg += u'OK.'
-#                    messages.success(request, msg)
-#
-#            validation_results_text = u''
-#            if validation_results:
-#                validation_results_text = u'\n'.join(validation_results)
-#            validation_type = models.ValidationType.objects.get(
-#                name=u'no update with where clause')
-#            models.ChangesetValidation.objects.create(
-#                changeset=changeset,
-#                validation_type=validation_type,
-#                timestamp=timezone.now(),
-#                result=validation_results_text)
-#
-#            msg = u'Changeset no update with where clause validation was completed.'
-#            log.info(msg)
-#
-#            if len(validation_results_text) <= 0:
-#                validation_results_text = '< No Errors >'
-#            msg = u'Results:\n%s' % (validation_results_text,)
-#            log.info(msg)
-#
-#            return redirect(
-#                reverse('schemanizer_changeset_view', args=[changeset.id]))
-#
-#    except Exception, e:
-#        log.exception('EXCEPTION')
-#        messages.error(request, u'%s' % (e,))
-#    return render_to_response(
-#        template, locals(), context_instance=RequestContext(request))
 
 
 @login_required
