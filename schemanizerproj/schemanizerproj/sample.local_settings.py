@@ -132,3 +132,12 @@ SITE_DOMAIN = '127.0.0.1:8000'
 NMAP_HOSTS = '192.168.43.0/24'
 NMAP_PORTS = '3306'
 
+
+#=============================================================================
+# DB settings used by test cases for test data
+#=============================================================================
+TEST_DB_NAME = 'schemanizer_django_test_db'
+TEST_DB_HOST = None
+TEST_DB_PORT = None
+TEST_DB_USER = 'sandbox'
+TEST_DB_PASSWORD = 'sandbox'

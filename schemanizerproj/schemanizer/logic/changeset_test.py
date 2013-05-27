@@ -1,8 +1,6 @@
 import itertools
 import logging
-import pprint
 import string
-import warnings
 
 from django.db import transaction
 from django.utils import timezone
@@ -11,7 +9,6 @@ import sqlparse
 
 from schemanizer import exceptions, models, utils
 
-#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
 log = logging.getLogger(__name__)
 
 
@@ -84,48 +81,6 @@ class ChangesetSyntaxTest(object):
                 while cursor.nextset() is not None:
                     pass
 
-    def _execute_count_sql(self, cursor, count_sql):
-        """Executes count SQL."""
-
-        counts = []
-        if count_sql:
-            count_sql = count_sql.strip(unicode(
-                string.whitespace + ';'))
-        if count_sql:
-            statements = sqlparse.split(count_sql)
-            for statement in statements:
-                count = None
-                statement = statement.rstrip(unicode(string.whitespace + ';'))
-                if statement:
-                    try:
-                        log.debug(u'Executing statement: %s' % (statement,))
-                        row_count = cursor.execute(statement)
-                        if len(cursor.description) > 1:
-                            raise exceptions.Error(
-                                'Count SQL should return a single value only.')
-                        if row_count > 1:
-                            raise exceptions.Error(
-                                u'Count SQL should return a single row only. '
-                                u'Count SQL was: %s' % (statement,)
-                            )
-                        if not row_count:
-                            raise exceptions.Error(
-                                u'Count SQL returned an empty set. '
-                                u'Count SQL was: %s' % (statement,)
-                            )
-                        row = cursor.fetchone()
-                        if row is None:
-                            raise exceptions.Error(
-                                u'Count SQL returned an empty set. '
-                                u'Count SQL was: %s' % (statement,)
-                            )
-                        count = row[0]
-                    finally:
-                        while cursor.nextset() is not None:
-                            pass
-                counts.append(count)
-        return counts
-
     def run(self):
         """Main logic for testing changeset."""
 
@@ -145,23 +100,6 @@ class ChangesetSyntaxTest(object):
         log.info(msg)
         self._store_message(msg)
 
-#        conn = MySQLdb.connect(**self._connection_options)
-#        schema_name = self._changeset.database_schema.name
-#        with conn as cursor:
-#            #
-#            # Create schema
-#            #
-#            cursor.execute('DROP SCHEMA IF EXISTS %s' % (schema_name,))
-#            while cursor.nextset() is not None:
-#                pass
-#            cursor.execute('CREATE SCHEMA %s' % (schema_name,))
-#            while cursor.nextset() is not None:
-#                pass
-#            msg = "Database schema '%s' was created." % (schema_name,)
-#            log.info(msg)
-#            self._store_message(msg)
-#        conn.close()
-#
         with transaction.commit_on_success():
 
             schema_name = self._changeset.database_schema.name
@@ -248,7 +186,7 @@ class ChangesetSyntaxTest(object):
                     started_at = timezone.now()
                     results_log_items = []
                     try:
-                        counts_before = self._execute_count_sql(
+                        counts_before = utils.execute_count_statements(
                             cursor, changeset_detail.count_sql)
                         log.debug('Row count(s) before apply_sql: %s' % (
                             counts_before,))
@@ -264,7 +202,7 @@ class ChangesetSyntaxTest(object):
                         log.debug('Structure=\n%s\nChecksum=%s' % (
                             structure_after, hash_after))
 
-                        counts_after = self._execute_count_sql(
+                        counts_after = utils.execute_count_statements(
                             cursor, changeset_detail.count_sql)
                         log.debug('Row count(s) after apply_sql: %s' % (
                             counts_after,))
@@ -284,7 +222,7 @@ class ChangesetSyntaxTest(object):
                                 'not the same as before apply_sql was '
                                 'applied.')
 
-                        test_counts = self._execute_count_sql(
+                        test_counts = utils.execute_count_statements(
                             cursor, changeset_detail.count_sql)
                         log.debug('Row count(s) after revert_sql: %s' % (
                             test_counts,))
@@ -298,7 +236,7 @@ class ChangesetSyntaxTest(object):
                         log.debug('Reapplying apply_sql')
                         self._execute_query(cursor, changeset_detail.apply_sql)
 
-                        test_counts = self._execute_count_sql(
+                        test_counts = utils.execute_count_statements(
                             cursor, changeset_detail.count_sql)
                         log.debug('Row count(s) after reapplying apply_sql: %s' % (
                             test_counts,))

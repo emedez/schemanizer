@@ -12,6 +12,8 @@ import mmh3
 import sqlparse
 import nmap
 
+from schemanizer import exceptions
+
 log = logging.getLogger(__name__)
 
 
@@ -219,3 +221,64 @@ def normalize_mysql_dump(dump):
 def schema_hash(dump):
     """Returns the hash string of a normalized dump."""
     return hash_string(normalize_mysql_dump(dump))
+
+
+def execute_count_statements(cursor, statements):
+    """Executes count statement(s)."""
+
+    log.debug('statements:\n%s' % (statements,))
+
+    counts = []
+    if not statements:
+        return counts
+
+    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
+    statement_list = None
+    if statements:
+        statement_list = sqlparse.split(statements)
+
+    if not statements:
+        return counts
+
+    try:
+        for statement in statement_list:
+            count = None
+            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
+
+            if not statement:
+                counts.append(count)
+                continue
+
+            log.debug(u'statement: %s' % (statement,))
+            row_count = cursor.execute(statement)
+
+            if len(cursor.description) > 1:
+                raise exceptions.Error(
+                    'Statement should return a single value only.')
+
+            if row_count > 1:
+                raise exceptions.Error(
+                    u'Statement should return a single row only. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            if not row_count:
+                raise exceptions.Error(
+                    u'Statement returned an empty set. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            row = cursor.fetchone()
+            if row is None:
+                raise exceptions.Error(
+                    u'Statement returned an empty set. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            counts.append(row[0])
+
+    finally:
+        while cursor.nextset() is not None:
+            pass
+
+    return counts
