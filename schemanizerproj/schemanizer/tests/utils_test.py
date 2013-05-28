@@ -20,18 +20,25 @@ class ExecuteCountStatementsTest(TestCase):
     """execute_count_statements() tests."""
 
     def setUp(self):
-        connect_args = dict(
-            db=settings.TEST_DB_NAME,
+        no_db_connect_args = dict(
             host=getattr(settings, 'TEST_DB_HOST', None),
             port=getattr(settings, 'TEST_DB_PORT', None),
             user=getattr(settings, 'TEST_DB_USER', None),
             passwd=getattr(settings, 'TEST_DB_PASSWORD', None)
         )
         # exclude elements with None values
-        self.connect_args = dict(
-            [(k, v) for k, v in connect_args.iteritems() if v is not None])
+        self.no_db_connect_args = dict(
+            [(k, v) for k, v in no_db_connect_args.iteritems() if v is not None])
+        utils.drop_schema_if_exists(
+            settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
+        utils.create_schema(
+            settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
+
+        self.connect_args = self.no_db_connect_args.copy()
+        self.connect_args['db'] = settings.TEST_DB_NAME
 
         self.table_name = random_table()
+
         conn = MySQLdb.connect(**self.connect_args)
         try:
             with conn as cursor:
@@ -63,16 +70,8 @@ class ExecuteCountStatementsTest(TestCase):
             conn.close()
 
     def tearDown(self):
-        conn = MySQLdb.connect(**self.connect_args)
-        try:
-            with conn as cursor:
-                try:
-                    cursor.execute('drop table if exists %s' % (
-                        self.table_name,))
-                except Warning, e:
-                    log.debug('WARNING %s: %s' % (type(e), e))
-        finally:
-            conn.close()
+        utils.drop_schema_if_exists(
+            settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
     def test_single_statement(self):
         """Tests execute_count_statements() with single statement."""

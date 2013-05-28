@@ -9,6 +9,7 @@ import subprocess
 import time
 
 import mmh3
+import MySQLdb
 import sqlparse
 import nmap
 
@@ -282,3 +283,59 @@ def execute_count_statements(cursor, statements):
             pass
 
     return counts
+
+
+def create_schema(schema_name, cursor=None, connect_args=None):
+    """Creates schema.
+
+    If cursor is not None, it will be used,
+    otherwise, connect_args will be used.
+    """
+
+    locally_created_cursor = False
+    conn = None
+    if not cursor:
+        if connect_args is None:
+            connect_args = {}
+        conn = MySQLdb.connect(**connect_args)
+        cursor = conn.cursor()
+        locally_created_cursor = True
+
+    try:
+        cursor.execute('CREATE SCHEMA %s' % (schema_name,))
+    except Warning, e:
+        # log and ignore warnings
+        log.warning('WARNING %s: %s', type(e), e, exc_info=1)
+    finally:
+        if locally_created_cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def drop_schema_if_exists(schema_name, cursor=None, connect_args=None):
+    """Drops schema.
+
+    If cursor is not None, it will be used,
+    otherwise, connect_args will be used.
+    """
+
+    locally_created_cursor = False
+    conn = None
+    if not cursor:
+        if connect_args is None:
+            connect_args = {}
+        conn = MySQLdb.connect(**connect_args)
+        cursor = conn.cursor()
+        locally_created_cursor = True
+
+    try:
+        cursor.execute('DROP SCHEMA IF EXISTS %s' % (schema_name,))
+    except Warning, e:
+        # log and ignore warnings
+        log.warning('WARNING %s: %s', type(e), e, exc_info=1)
+    finally:
+        if locally_created_cursor:
+            cursor.close()
+        if conn:
+            conn.close()

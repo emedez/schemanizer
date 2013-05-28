@@ -17,6 +17,7 @@ from schemanizer.logic import (
     changeset_review as logic_changeset_review,
     privileges as logic_privileges,
     user as logic_user)
+from schemanizer.tests.changeset_apply_test import ChangesetApplyTest
 from schemanizer.tests.utils_test import ExecuteCountStatementsTest
 
 log = logging.getLogger(__name__)
