@@ -1,3 +1,4 @@
+import itertools
 import logging
 import pprint
 import string
@@ -77,18 +78,27 @@ class ChangesetApply(object):
 
     def _apply_changeset_detail(self, changeset_detail, cursor):
         has_errors = False
-
-        queries = sqlparse.split(changeset_detail.apply_sql)
         results_logs = []
-        log.debug('connection options:\n%s' % (
-            pprint.pformat(self._connection_options),))
-        #conn = MySQLdb.connect(**self._connection_options)
+
         try:
-            self._store_message(changeset_detail.apply_sql)
+            counts_before = None
+            if (
+                    changeset_detail.count_sql and
+                    changeset_detail.count_sql.strip()):
+                counts_before = utils.execute_count_statements(
+                    cursor, changeset_detail.count_sql)
+                log.debug('Row count(s) before apply_sql: %s' % (
+                    counts_before,))
+
+            queries = sqlparse.split(changeset_detail.apply_sql)
+            log.debug(
+                'connection options:\n%s' % (
+                    pprint.pformat(self._connection_options),))
+            self._store_message(
+                u'apply_sql: %s' % (changeset_detail.apply_sql,))
             for query in queries:
                 query = query.rstrip(string.whitespace + ';')
-                log.debug(u'STATEMENT: %s' % (query,))
-                #cursor = conn.cursor()
+                log.debug(u'apply_sql: %s' % (query,))
                 try:
                     if query:
                         cursor.execute(query)
@@ -102,7 +112,35 @@ class ChangesetApply(object):
                 finally:
                     while cursor.nextset() is not None:
                         pass
-                    #cursor.close()
+
+            counts_after = None
+            if (
+                    changeset_detail.count_sql and
+                    changeset_detail.count_sql.strip()):
+                counts_after = utils.execute_count_statements(
+                    cursor, changeset_detail.count_sql)
+                log.debug('Row count(s) after apply_sql: %s' % (
+                    counts_after,))
+
+            if counts_before is not None and counts_after is not None:
+                volumetric_values = u','.join(
+                    itertools.imap(
+                        lambda before, after:
+                        unicode(after - before)
+                        if (before is not None and after is not None)
+                        else '',
+                        counts_before, counts_after))
+                if volumetric_values != changeset_detail.volumetric_values:
+                    msg = (
+                        'Volumetric values "%s" is different from expected '
+                        'value "%s"' % (
+                            volumetric_values,
+                            changeset_detail.volumetric_values))
+                    log.error(msg)
+                    self._store_message(msg, 'error')
+                    results_logs.append(msg)
+                    has_errors = True
+
         finally:
             results_log = '\n'.join(results_logs)
             changeset_detail_apply = models.ChangesetDetailApply.objects.create(
