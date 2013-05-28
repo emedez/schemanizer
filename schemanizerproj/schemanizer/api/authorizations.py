@@ -1,7 +1,7 @@
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.exceptions import Unauthorized
 
-from schemanizer.logic import privileges as logic_privileges
+from schemanizer.logic import privileges_logic
 
 MSG_UNAUTHORIZED = 'You are not allowed to access that resource.'
 
@@ -9,7 +9,7 @@ MSG_UNAUTHORIZED = 'You are not allowed to access that resource.'
 class EnvironmentAuthorization(ReadOnlyAuthorization):
     def create_list(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_update_environment()):
             return object_list
@@ -18,7 +18,7 @@ class EnvironmentAuthorization(ReadOnlyAuthorization):
 
     def create_detail(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_update_environment()):
             return True
@@ -27,7 +27,7 @@ class EnvironmentAuthorization(ReadOnlyAuthorization):
 
     def update_list(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_update_environment()):
             return object_list
@@ -36,7 +36,7 @@ class EnvironmentAuthorization(ReadOnlyAuthorization):
 
     def update_detail(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_update_environment()):
             return True
@@ -45,7 +45,7 @@ class EnvironmentAuthorization(ReadOnlyAuthorization):
 
     def delete_list(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_delete_environment()
                 ):
@@ -55,7 +55,7 @@ class EnvironmentAuthorization(ReadOnlyAuthorization):
 
     def delete_detail(self, object_list, bundle):
         if (
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     bundle.request.user.schemanizer_user)
                 .can_delete_environment()
                 ):

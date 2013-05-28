@@ -10,8 +10,8 @@ from django.utils import timezone
 import MySQLdb
 
 from schemanizer import models, utils
-from schemanizer.logic import changeset_apply as changeset_apply_logic
-from schemanizer.logic import changeset_review as changeset_review_logic
+from schemanizer.logic import changeset_apply_logic
+from schemanizer.logic import changeset_review_logic
 
 log = logging.getLogger(__name__)
 

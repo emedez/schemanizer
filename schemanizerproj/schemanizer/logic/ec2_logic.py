@@ -2,7 +2,7 @@
 import logging
 import time
 
-import boto
+import boto.ec2
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +66,10 @@ class EC2InstanceStarter(object):
         if self._running_state_check_pre_delay is not None:
             # Sleep, to give time for EC2 instance to reach running state,
             # before attempting to access it.
-            msg = ('Waiting for %s second(s) to give time for EC2 instance '
+            msg = (
+                'Waiting for %s second(s) to give time for EC2 instance '
                 'to reach running state.' % (
-                self._running_state_check_pre_delay,))
+                    self._running_state_check_pre_delay,))
             log.info(msg)
             self._store_message(msg)
             time.sleep(self._running_state_check_pre_delay)

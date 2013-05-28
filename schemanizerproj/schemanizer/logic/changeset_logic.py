@@ -5,9 +5,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from schemanizer import exceptions, models, utils
-from schemanizer.logic import (
-    mail as logic_mail,
-    privileges as logic_privileges)
+from schemanizer.logic import mail_logic
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +17,8 @@ def soft_delete_changeset(changeset, user):
     changeset = utils.get_model_instance(changeset, models.Changeset)
     user = utils.get_model_instance(user, models.User)
 
-    logic_privileges.UserPrivileges(user).check_soft_delete_changeset(changeset)
+    privileges_logic.UserPrivileges(user).check_soft_delete_changeset(
+        changeset)
 
     with transaction.commit_on_success():
         changeset.is_deleted = 1
@@ -74,7 +74,7 @@ def changeset_submit_from_form(**kwargs):
         timestamp=now)
 
     log.info('Changeset [id=%s] was submitted.' % (changeset.id,))
-    logic_mail.send_changeset_submitted_mail(changeset)
+    mail_logic.send_changeset_submitted_mail(changeset)
 
     return changeset
 
@@ -108,7 +108,7 @@ def changeset_submit(changeset, changeset_details, user):
             timestamp=now
         )
 
-    logic_mail.send_changeset_submitted_mail(changeset)
+    mail_logic.send_changeset_submitted_mail(changeset)
     log.info('Changeset [id=%s] was submitted.' % (changeset.id,))
 
     return changeset
@@ -127,7 +127,7 @@ def changeset_update_from_form(**kwargs):
     user = kwargs.get('user')
 
     changeset = changeset_form.save(commit=False)
-    if logic_privileges.UserPrivileges(user).can_update_changeset(changeset):
+    if privileges_logic.UserPrivileges(user).can_update_changeset(changeset):
         with transaction.commit_on_success():
             #
             # Update changeset
@@ -148,7 +148,7 @@ def changeset_update_from_form(**kwargs):
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        logic_mail.send_changeset_updated_mail(changeset)
+        mail_logic.send_changeset_updated_mail(changeset)
 
     else:
         raise exceptions.PrivilegeError(
@@ -160,7 +160,7 @@ def changeset_update_from_form(**kwargs):
 def changeset_update(changeset, changeset_details, to_be_deleted_changeset_details, user):
     user = utils.get_model_instance(user, models.User)
 
-    if logic_privileges.UserPrivileges(user).can_update_changeset(changeset):
+    if privileges_logic.UserPrivileges(user).can_update_changeset(changeset):
         with transaction.commit_on_success():
             now = timezone.now()
 
@@ -191,7 +191,7 @@ def changeset_update(changeset, changeset_details, to_be_deleted_changeset_detai
 
         log.info(u'Changeset [id=%s] was updated.' % (changeset.id,))
 
-        logic_mail.send_changeset_updated_mail(changeset)
+        mail_logic.send_changeset_updated_mail(changeset)
 
         return changeset
     else:
@@ -207,7 +207,7 @@ def changeset_approve(changeset, user):
     if type(user) in (int, long):
         user = models.User.objects.get(pk=user)
 
-    if logic_privileges.UserPrivileges(user).can_approve_changeset(changeset):
+    if privileges_logic.UserPrivileges(user).can_approve_changeset(changeset):
         now = timezone.now()
         with transaction.commit_on_success():
             #
@@ -226,7 +226,7 @@ def changeset_approve(changeset, user):
 
         log.info(u'Changeset [id=%s] was approved.' % (changeset.id,))
 
-        logic_mail.send_changeset_approved_mail(changeset)
+        mail_logic.send_changeset_approved_mail(changeset)
 
         return changeset
 
@@ -243,7 +243,7 @@ def changeset_reject(changeset, user):
     if type(user) in (int, long):
         user = models.User.objects.get(pk=user)
 
-    if logic_privileges.UserPrivileges(user).can_reject_changeset(changeset):
+    if privileges_logic.UserPrivileges(user).can_reject_changeset(changeset):
         now = timezone.now()
         with transaction.commit_on_success():
             #
@@ -262,7 +262,7 @@ def changeset_reject(changeset, user):
 
         log.info(u'Changeset [id=%s] was rejected.' % (changeset.id,))
 
-        logic_mail.send_changeset_rejected_mail(changeset)
+        mail_logic.send_changeset_rejected_mail(changeset)
 
         return changeset
 

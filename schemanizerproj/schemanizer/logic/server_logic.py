@@ -5,8 +5,7 @@ from django.conf import settings
 from django.db import transaction
 
 from schemanizer import models, utils
-from schemanizer.logic import (
-    privileges as logic_privileges)
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ def save_schema_dump(server, database_schema_name, user):
     server = utils.get_model_instance(server, models.Server)
     user = utils.get_model_instance(user, models.User)
 
-    logic_privileges.UserPrivileges(user).check_save_schema_dump()
+    privileges_logic.UserPrivileges(user).check_save_schema_dump()
 
     conn_opts = {}
     conn_opts['host'] = server.hostname

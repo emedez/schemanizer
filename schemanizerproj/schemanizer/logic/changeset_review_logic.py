@@ -10,14 +10,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from schemanizer import models, exceptions, utils
-from schemanizer.logic import changeset_test as logic_changeset_test
-from schemanizer.logic import (
-    changeset_validation as logic_changeset_validation)
-from schemanizer.logic import ec2 as logic_ec2
-from schemanizer.logic import mail as logic_mail
-from schemanizer.logic import mysql as logic_mysql
-from schemanizer.logic import privileges as logic_privileges
-
+from schemanizer.logic import changeset_test_logic
+from schemanizer.logic import changeset_validation_logic
+from schemanizer.logic import ec2_logic
+from schemanizer.logic import mail_logic
+from schemanizer.logic import mysql_logic
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +129,7 @@ class ChangesetReview(object):
 
         self._init_run_vars()
 
-        if not logic_privileges.can_user_review_changeset(
+        if not privileges_logic.can_user_review_changeset(
                 self._user, self._changeset):
             raise exceptions.PrivilegeError(
                 MSG_CHANGESET_REVIEW_NOT_ALLOWED.format(
@@ -141,7 +139,7 @@ class ChangesetReview(object):
         ec2_instance_starter = None
         try:
             if not self._no_ec2_instance_launch:
-                ec2_instance_starter = logic_ec2.EC2InstanceStarter(
+                ec2_instance_starter = ec2_logic.EC2InstanceStarter(
                     region=settings.AWS_REGION,
                     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -177,7 +175,7 @@ class ChangesetReview(object):
                 if settings.AWS_MYSQL_PASSWORD:
                     connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
 
-                connection_tester = logic_mysql.MySQLServerConnectionTester(
+                connection_tester = mysql_logic.MySQLServerConnectionTester(
                     connection_options=connection_options,
                     connect_pre_delay=settings.AWS_MYSQL_START_WAIT,
                     connect_timeout=settings.AWS_MYSQL_CONNECT_TIMEOUT,
@@ -199,7 +197,7 @@ class ChangesetReview(object):
                     models.ChangesetTest.objects.filter(
                         changeset_detail__changeset=self._changeset).delete()
 
-                    syntax_test = logic_changeset_test.ChangesetSyntaxTest(
+                    syntax_test = changeset_test_logic.ChangesetSyntaxTest(
                         changeset=self._changeset,
                         schema_version=self._schema_version,
                         connection_options=connection_options,
@@ -228,7 +226,7 @@ class ChangesetReview(object):
                         changeset=self._changeset).delete()
 
                     #validation_results = (
-                    #    logic_changeset_validation
+                    #    changeset_validation_logic
                     #        .changeset_validate_no_update_with_where_clause(
                     #            self._changeset, self._user))
                     #if validation_results['changeset_validation']:
@@ -294,7 +292,7 @@ class ChangesetReview(object):
 
                     log.info('Changeset was reviewed, id=%s.' % (
                         self._changeset.id,))
-                    logic_mail.send_changeset_reviewed_mail(self._changeset)
+                    mail_logic.send_changeset_reviewed_mail(self._changeset)
         finally:
             if ec2_instance_starter:
                 ec2_instance_starter.terminate_instances()
@@ -432,7 +430,7 @@ def changeset_review(changeset, schema_version, user):
     #    thread = ReviewThread(changeset, schema_version, request_id, user, server)
     #    thread.start()
     #    return thread
-    if logic_privileges.can_user_review_changeset(user, changeset):
+    if privileges_logic.can_user_review_changeset(user, changeset):
         thread = ChangesetReviewThread(changeset, schema_version, user)
         thread.start()
         return thread

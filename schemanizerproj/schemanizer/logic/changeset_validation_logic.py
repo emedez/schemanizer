@@ -7,7 +7,7 @@ from django.utils import timezone
 import sqlparse
 
 from schemanizer import models, exceptions, utils
-from schemanizer.logic import privileges as logic_privileges
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def changeset_validate_no_update_with_where_clause(changeset, user):
     user = utils.get_model_instance(user, models.User)
     now = timezone.now()
 
-    if not logic_privileges.can_user_review_changeset(user, changeset):
+    if not privileges_logic.can_user_review_changeset(user, changeset):
         raise exceptions.PrivilegeError(
             u"User '%s' is not allowed to review changeset [id=%s]." % (
                 user.name, changeset.id))

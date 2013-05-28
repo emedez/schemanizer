@@ -22,12 +22,11 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from schemanizer import exceptions, forms, models, utils
-from schemanizer.logic import (
-    changeset as logic_changeset,
-    changeset_apply as logic_changeset_apply,
-    changeset_review as logic_changeset_review,
-    privileges as logic_privileges,
-    user as logic_user)
+from schemanizer.logic import changeset_logic
+from schemanizer.logic import changeset_apply_logic
+from schemanizer.logic import changeset_review_logic
+from schemanizer.logic import privileges_logic
+from schemanizer.logic import user_logic
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ def confirm_delete_user(
             to_be_del_user = models.User.objects.get(id=id)
             if request.method == 'POST':
                 if 'confirm_delete' in request.POST:
-                    logic_user.delete_user(user, to_be_del_user)
+                    user_logic.delete_user(user, to_be_del_user)
                     messages.success(
                         request, 'User was deleted, id=%s.' % (id,))
                     return redirect('schemanizer_users')
@@ -101,7 +100,7 @@ def user_update(request, id, template='schemanizer/update_user.html'):
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
                     role = models.Role.objects.get(id=role_id)
-                    schemanizer_user = logic_user.update_user(
+                    schemanizer_user = user_logic.update_user(
                         user, id, name, email, role)
                     messages.success(
                         request, u'User was updated, id=%s.' % (
@@ -134,7 +133,7 @@ def user_create(request, template='schemanizer/user_create.html'):
                     role_id = form.cleaned_data['role']
                     password = form.cleaned_data['password']
                     role = models.Role.objects.get(id=role_id)
-                    schemanizer_user = logic_user.create_user(
+                    schemanizer_user = user_logic.create_user(
                         user, name, email, role, password)
                     messages.success(
                         request, u'User was created, id=%s.' % (
@@ -176,11 +175,11 @@ def changeset_soft_delete(
         user = request.user.schemanizer_user
         changeset = models.Changeset.objects.get(pk=int(id))
         user_has_access = (
-            logic_privileges.UserPrivileges(user)
+            privileges_logic.UserPrivileges(user)
             .can_soft_delete_changeset(changeset))
         if user_has_access:
             if request.method == 'POST':
-                logic_changeset.soft_delete_changeset(changeset, user)
+                changeset_logic.soft_delete_changeset(changeset, user)
                 messages.success(
                     request, 'Changeset [id=%s] was soft deleted.' % (id,))
                 return redirect('schemanizer_changeset_list')
@@ -212,7 +211,7 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                     request.POST, instance=changeset)
                 if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                     with transaction.commit_on_success():
-                        changeset = logic_changeset.changeset_submit_from_form(
+                        changeset = changeset_logic.changeset_submit_from_form(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user)
@@ -246,7 +245,7 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
 
         if user_has_access:
             changeset = models.Changeset.objects.get(pk=int(id))
-            if logic_privileges.UserPrivileges(user).can_update_changeset(
+            if privileges_logic.UserPrivileges(user).can_update_changeset(
                     changeset):
                 ChangesetDetailFormSet = inlineformset_factory(
                     models.Changeset, models.ChangesetDetail,
@@ -259,7 +258,7 @@ def changeset_update(request, id, template='schemanizer/changeset_update.html'):
                         request.POST, instance=changeset)
                     if changeset_form.is_valid() and changeset_detail_formset.is_valid():
                         with transaction.commit_on_success():
-                            changeset = logic_changeset.changeset_update_from_form(
+                            changeset = changeset_logic.changeset_update_from_form(
                                 changeset_form=changeset_form,
                                 changeset_detail_formset=changeset_detail_formset,
                                 user=user)
@@ -369,7 +368,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         # Approve changeset.
                         #
                         with transaction.commit_on_success():
-                            logic_changeset.changeset_approve(
+                            changeset_logic.changeset_approve(
                                 changeset=changeset, user=user)
                         messages.success(
                             request, u'Changeset [id=%s] was approved.' % (
@@ -380,7 +379,7 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                         # Reject changeset.
                         #
                         with transaction.commit_on_success():
-                            logic_changeset.changeset_reject(
+                            changeset_logic.changeset_reject(
                                 changeset=changeset, user=user)
                         messages.success(
                             request, u'Changeset [id=%s] was rejected.' % (
@@ -411,16 +410,16 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                     log.exception('EXCEPTION')
                     messages.error(request, u'%s' % (e,))
 
-            user_privileges = logic_privileges.UserPrivileges(user)
+            user_privileges = privileges_logic.UserPrivileges(user)
             can_update = user_privileges.can_update_changeset(changeset)
             can_set_review_status_to_in_progress = (
-                logic_privileges.can_user_review_changeset(user, changeset))
+                privileges_logic.can_user_review_changeset(user, changeset))
             can_approve = user_privileges.can_approve_changeset(changeset)
             can_reject = user_privileges.can_reject_changeset(changeset)
             can_soft_delete = (
-                logic_privileges.UserPrivileges(user)
+                privileges_logic.UserPrivileges(user)
                 .can_soft_delete_changeset(changeset))
-            can_apply = logic_privileges.can_user_apply_changeset(
+            can_apply = privileges_logic.can_user_apply_changeset(
                 user, changeset)
 
             if (
@@ -454,10 +453,10 @@ def changeset_list(request, template='schemanizer/changeset_list.html'):
             changesets = []
             for r in qs:
                 extra=dict(
-                    can_apply=logic_privileges.can_user_apply_changeset(
+                    can_apply=privileges_logic.can_user_apply_changeset(
                         user, r),
                     can_review=
-                        logic_privileges.can_user_review_changeset(user, r))
+                        privileges_logic.can_user_review_changeset(user, r))
                 changesets.append(dict(r=r, extra=extra))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -483,7 +482,7 @@ def changeset_apply(
             request_id = utils.generate_request_id(request)
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
-            if not logic_privileges.can_user_apply_changeset(user, changeset):
+            if not privileges_logic.can_user_apply_changeset(user, changeset):
                 raise exceptions.PrivilegeError(
                     'User is not allowed to apply changeset.')
 
@@ -493,7 +492,7 @@ def changeset_apply(
                 if form.is_valid():
                     server = models.Server.objects.get(pk=int(
                         form.cleaned_data['server']))
-                    thread = logic_changeset_apply.changeset_apply(
+                    thread = changeset_apply_logic.changeset_apply(
                         changeset, user, server)
                     apply_threads[request_id] = thread
                     poll_thread_status = True
@@ -579,7 +578,7 @@ def changeset_review(
         request_id = utils.generate_request_id(request)
         changeset = models.Changeset.objects.get(pk=int(changeset_id))
         user = request.user.schemanizer_user
-        user_has_access = logic_privileges.can_user_review_changeset(
+        user_has_access = privileges_logic.can_user_review_changeset(
             user, changeset)
         schema_version = request.GET.get('schema_version', None)
         if schema_version:
@@ -624,7 +623,7 @@ def changeset_review(
                     # User has selected a schema version already,
                     # proceed with changeset review.
                     #
-                    thread = logic_changeset_review.changeset_review(
+                    thread = changeset_review_logic.changeset_review(
                         changeset, schema_version, user)
                     review_threads[request_id] = thread
                     thread_started = True

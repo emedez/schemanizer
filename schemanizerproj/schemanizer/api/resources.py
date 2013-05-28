@@ -12,12 +12,11 @@ from tastypie import fields
 
 from schemanizer import models, exceptions, utils
 from schemanizer.api import authorizations
-from schemanizer.logic import (
-    changeset as logic_changeset,
-    changeset_review as logic_changeset_review,
-    changeset_apply as logic_changeset_apply,
-    user as logic_user,
-    server as logic_server)
+from schemanizer.logic import changeset_apply_logic
+from schemanizer.logic import changeset_logic
+from schemanizer.logic import changeset_review_logic
+from schemanizer.logic import user_logic
+from schemanizer.logic import server_logic
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = logic_user.create_user(
+            user = user_logic.create_user(
                 request.user.schemanizer_user, name, email, role_id, password)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -133,7 +132,7 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = logic_user.update_user(
+            user = user_logic.update_user(
                 request.user.schemanizer_user, user_id, name, email, role_id)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -153,7 +152,7 @@ class UserResource(ModelResource):
         data = {}
         try:
             user_id = int(kwargs.get('user_id'))
-            logic_user.delete_user(request.user.schemanizer_user, user_id)
+            user_logic.delete_user(request.user.schemanizer_user, user_id)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -245,7 +244,7 @@ class SchemaVersionResource(ModelResource):
             server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = logic_server.save_schema_dump(
+            schema_version = server_logic.save_schema_dump(
                 server_id, database_schema_name, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -359,7 +358,7 @@ class ChangesetResource(ModelResource):
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
 
-            thread = logic_changeset_apply.changeset_apply(
+            thread = changeset_apply_logic.changeset_apply(
                 changeset_id, request.user.schemanizer_user, server_id)
             apply_threads[request_id] = thread
 
@@ -491,7 +490,7 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
 
-            thread = logic_changeset_review.changeset_review(
+            thread = changeset_review_logic.changeset_review(
                 changeset_id, schema_version_id,
                 request.user.schemanizer_user
             )
@@ -558,7 +557,7 @@ class ChangesetResource(ModelResource):
                 changeset_detail = models.ChangesetDetail(**changeset_detail_data)
                 changeset_details.append(changeset_detail)
 
-            changeset = logic_changeset.changeset_submit(
+            changeset = changeset_logic.changeset_submit(
                 changeset, changeset_details, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -642,7 +641,7 @@ class ChangesetResource(ModelResource):
                         setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = logic_changeset.changeset_update(
+            changeset = changeset_logic.changeset_update(
                 changeset, changeset_details,
                 to_be_deleted_changeset_details, request.user.schemanizer_user)
         except Exception, e:
@@ -662,7 +661,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = logic_changeset.changeset_reject(
+            changeset = changeset_logic.changeset_reject(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -682,7 +681,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = logic_changeset.changeset_approve(
+            changeset = changeset_logic.changeset_approve(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -702,7 +701,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = logic_changeset.soft_delete_changeset(
+            changeset = changeset_logic.soft_delete_changeset(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')

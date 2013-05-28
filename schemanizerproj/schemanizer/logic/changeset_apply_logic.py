@@ -10,7 +10,7 @@ import MySQLdb
 import sqlparse
 
 from schemanizer import exceptions, models, utils
-from schemanizer.logic import privileges as logic_privileges
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -275,7 +275,7 @@ def changeset_apply(changeset, user, server):
     user = utils.get_model_instance(user, models.User)
     server = utils.get_model_instance(server, models.Server)
 
-    if not logic_privileges.can_user_apply_changeset(user, changeset):
+    if not privileges_logic.can_user_apply_changeset(user, changeset):
         raise exceptions.PrivilegeError(
             'User is not allowed to apply changeset.')
 

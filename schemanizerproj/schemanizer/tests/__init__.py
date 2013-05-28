@@ -12,11 +12,10 @@ from django.utils import timezone
 from tastypie.test import ResourceTestCase
 
 from schemanizer import exceptions, models, utils
-from schemanizer.logic import (
-    changeset as logic_changeset,
-    changeset_review as logic_changeset_review,
-    privileges as logic_privileges,
-    user as logic_user)
+from schemanizer.logic import changeset_logic
+from schemanizer.logic import changeset_review_logic
+from schemanizer.logic import privileges_logic
+from schemanizer.logic import user_logic
 from schemanizer.tests.changeset_apply_test import ChangesetApplyTest
 from schemanizer.tests.utils_test import ExecuteCountStatementsTest
 
@@ -132,7 +131,7 @@ CREATE TABLE `t1` (
 
                 changeset = self._create_changeset(database_schema)
 
-                changeset_review = logic_changeset_review.ChangesetReview(
+                changeset_review = changeset_review_logic.ChangesetReview(
                     changeset, schema_version, user)
                 if u == 'dev':
                     self.assertRaises(
@@ -300,14 +299,14 @@ class UserViewsTestCase(TestCase):
                 self.assertRedirects(r, reverse('schemanizer_users'))
                 # user should now exist
                 created_user = models.User.objects.get(name=data['name'])
-                logic_user.delete_user(self.admin_user, created_user)
+                user_logic.delete_user(self.admin_user, created_user)
             else:
                 self.assertFalse(r.context['user_has_access'])
 
     def _create_user_dev(self):
         user = models.User.objects.get(name='admin')
         role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
-        created_user = logic_user.create_user(
+        created_user = user_logic.create_user(
             user=user,
             name='test_dev',
             email='test_dev@example.com',
@@ -341,7 +340,7 @@ class UserViewsTestCase(TestCase):
                     self.assertFalse(r.context['user_has_access'])
                     self.assertFalse('form' in r.context)
         finally:
-            logic_user.delete_user(self.admin_user, created_user_id)
+            user_logic.delete_user(self.admin_user, created_user_id)
 
     def test_user_update_post(self):
         created_user = self._create_user_dev()
@@ -373,7 +372,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            logic_user.delete_user(self.admin_user, created_user_id)
+            user_logic.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete(self):
         created_user = self._create_user_dev()
@@ -397,7 +396,7 @@ class UserViewsTestCase(TestCase):
                 else:
                     self.assertFalse(r.context['user_has_access'])
         finally:
-            logic_user.delete_user(self.admin_user, created_user_id)
+            user_logic.delete_user(self.admin_user, created_user_id)
 
     def test_user_delete_post(self):
         created_user = self._create_user_dev()
@@ -569,7 +568,7 @@ class ChangesetViewsTestCase(TestCase):
                     self.assertEqual(changeset.changeset_details.all().count(), 2)
             finally:
                 if changeset:
-                    logic_changeset.delete_changeset(changeset)
+                    changeset_logic.delete_changeset(changeset)
 
     def test_changeset_view(self):
         changeset = self._create_changeset()
@@ -590,7 +589,7 @@ class ChangesetViewsTestCase(TestCase):
                 self.assertTrue('can_reject' in r.context)
                 self.assertTrue('can_soft_delete' in r.context)
         finally:
-            logic_changeset.delete_changeset(changeset_id)
+            changeset_logic.delete_changeset(changeset_id)
 
     def test_changeset_view_post(self):
         """Test changeset posts."""
@@ -605,10 +604,10 @@ class ChangesetViewsTestCase(TestCase):
             for u, p in self.users:
                 self._login(c, u, p)
                 user = models.User.objects.get(name=u)
-                user_privileges = logic_privileges.UserPrivileges(user)
+                user_privileges = privileges_logic.UserPrivileges(user)
                 can_update = user_privileges.can_update_changeset(changeset)
                 can_set_review_status_to_in_progress = (
-                    logic_privileges.can_user_review_changeset(user, changeset))
+                    privileges_logic.can_user_review_changeset(user, changeset))
                 can_approve = user_privileges.can_approve_changeset(changeset)
                 can_reject = user_privileges.can_reject_changeset(changeset)
                 can_soft_delete = user_privileges.can_soft_delete_changeset(
@@ -652,7 +651,7 @@ class ChangesetViewsTestCase(TestCase):
                             args=[changeset_id]))
 
         finally:
-            logic_changeset.delete_changeset(changeset_id)
+            changeset_logic.delete_changeset(changeset_id)
 
     def test_changeset_update(self):
         c = Client()
@@ -667,12 +666,12 @@ class ChangesetViewsTestCase(TestCase):
 
                 self.assertTrue(r.context['user_has_access'])
                 if (
-                        logic_privileges.UserPrivileges(user)
+                        privileges_logic.UserPrivileges(user)
                         .can_update_changeset(changeset)):
                     self.assertTrue('changeset_form' in r.context)
                     self.assertTrue('changeset_detail_formset' in r.context)
             finally:
-                logic_changeset.delete_changeset(changeset_id)
+                changeset_logic.delete_changeset(changeset_id)
 
     def test_changeset_update_post(self):
         c = Client()
@@ -685,7 +684,7 @@ class ChangesetViewsTestCase(TestCase):
                 changeset_detail = changeset.changeset_details.all()[0]
                 url = reverse('schemanizer_changeset_update', args=[changeset_id])
                 if (
-                        logic_privileges.UserPrivileges(user)
+                        privileges_logic.UserPrivileges(user)
                         .can_update_changeset(changeset)):
                     data = {}
                     # changeset data
@@ -723,7 +722,7 @@ class ChangesetViewsTestCase(TestCase):
                         models.Changeset.REVIEW_STATUS_NEEDS)
 
             finally:
-                logic_changeset.delete_changeset(changeset_id)
+                changeset_logic.delete_changeset(changeset_id)
 
     def test_confirm_soft_delete_changeset(self):
         c = Client()
@@ -740,7 +739,7 @@ class ChangesetViewsTestCase(TestCase):
                 r = c.get(url)
                 self.assertTrue('user_has_access' in r.context)
             finally:
-                logic_changeset.delete_changeset(changeset)
+                changeset_logic.delete_changeset(changeset)
 
     def test_confirm_soft_delete_changeset_post(self):
         c = Client()
@@ -755,14 +754,14 @@ class ChangesetViewsTestCase(TestCase):
                     'schemanizer_changeset_soft_delete',
                     args=[changeset_id])
 
-                logic_privileges.UserPrivileges(
+                privileges_logic.UserPrivileges(
                     user).check_soft_delete_changeset(changeset)
 
                 r = c.post(url, data=dict(confirm_soft_delete='Submit'))
                 tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
                 self.assertTrue(tmp_changeset.is_deleted)
             finally:
-                logic_changeset.delete_changeset(changeset)
+                changeset_logic.delete_changeset(changeset)
 
 
 class ServerViewsTestCase(TestCase):
@@ -1278,7 +1277,7 @@ class RestApiTest(ResourceTestCase):
         obj = json.loads(resp.content)
         self.assertEqual(
             obj['error_message'],
-            logic_privileges.MSG_CREATE_USER_NOT_ALLOWED)
+            privileges_logic.MSG_CREATE_USER_NOT_ALLOWED)
 
     def test_submit_changeset(self):
         database_schema = self.create_database_schema()

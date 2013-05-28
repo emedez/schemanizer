@@ -6,7 +6,7 @@ from django.contrib.auth.models import User as AuthUser
 from django.db import transaction
 
 from schemanizer import exceptions, models, utils
-from schemanizer.logic import privileges as logic_privileges
+from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def create_user(user, name, email, role, password):
     user = utils.get_model_instance(user, models.User)
     role = utils.get_model_instance(role, models.Role)
 
-    logic_privileges.UserPrivileges(user).check_create_user()
+    privileges_logic.UserPrivileges(user).check_create_user()
 
     with transaction.commit_on_success():
         auth_user = AuthUser.objects.create_user(name, email, password)
@@ -33,7 +33,7 @@ def update_user(user, id, name, email, role):
     user = utils.get_model_instance(user, models.User)
     role = utils.get_model_instance(role, models.Role)
 
-    logic_privileges.UserPrivileges(user).check_update_user()
+    privileges_logic.UserPrivileges(user).check_update_user()
 
     with transaction.commit_on_success():
         schemanizer_user = models.User.objects.get(id=id)
@@ -56,7 +56,7 @@ def delete_user(user, to_be_del_user):
     user = utils.get_model_instance(user, models.User)
     to_be_del_user = utils.get_model_instance(to_be_del_user, models.User)
 
-    logic_privileges.UserPrivileges(user).check_delete_user()
+    privileges_logic.UserPrivileges(user).check_delete_user()
 
     with transaction.commit_on_success():
         to_be_del_user_id = to_be_del_user.id
