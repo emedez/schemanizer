@@ -265,12 +265,15 @@ class ChangesetReview(object):
                     self._changeset.before_version = self._schema_version
                     self._changeset.after_version = after_version
                     self._changeset.save()
-                    #
-                    # Create entry on changeset actions.
-                    #models.ChangesetAction.objects.create(
-                    #    changeset=self._changeset,
-                    #    type=models.ChangesetAction.TYPE_CHANGED,
-                    #    timestamp=timezone.now())
+
+                    if (
+                            self._changeset.review_status ==
+                            models.Changeset.REVIEW_STATUS_REJECTED):
+                        # Create entry on changeset actions.
+                        models.ChangesetAction.objects.create(
+                            changeset=self._changeset,
+                            type=models.ChangesetAction.TYPE_REJECTED,
+                            timestamp=timezone.now())
 
                     changeset_test_ids_string = u','.join(
                         [str(obj.id) for obj in self._changeset_tests])
