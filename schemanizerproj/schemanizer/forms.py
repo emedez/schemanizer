@@ -23,24 +23,6 @@ class ContinueForm(forms.Form):
         self.helper = helper
 
 
-class SelectDatabaseSchemaForm(forms.Form):
-    """Form for selecting database schema."""
-    database_schema = forms.ChoiceField()
-
-    def __init__(self, *args, **kwargs):
-        super(SelectDatabaseSchemaForm, self).__init__(*args, **kwargs)
-        choices = []
-        qs = models.DatabaseSchema.objects.all()
-        for qs_item in qs:
-            choices.append((qs_item.id, qs_item.name))
-        self.fields['database_schema'].choices = choices
-
-        helper = FormHelper()
-        helper.form_class = 'form-inline'
-        helper.add_input(Submit('select_database_schema_form_submit', 'Submit'))
-        self.helper = helper
-
-
 class SelectSchemaVersionForm(forms.Form):
     """Form for selecting schema version."""
     schema_version = forms.ChoiceField()
@@ -63,37 +45,6 @@ class SelectSchemaVersionForm(forms.Form):
         helper = FormHelper()
         helper.form_class = 'form-inline'
         helper.add_input(Submit('select_schema_version_form_submit', 'Submit'))
-        self.helper = helper
-
-
-class ApplyChangesetForm(forms.Form):
-    """Form for collecting data for applying changeset."""
-    schema_version = forms.ChoiceField()
-    changeset = forms.ChoiceField()
-
-    def __init__(self, *args, **kwargs):
-        database_schema = kwargs.pop('database_schema')
-        super(ApplyChangesetForm, self).__init__(*args, **kwargs)
-
-        schema_version_choices = []
-        for r in database_schema.schema_versions.all().order_by('created_at'):
-            schema_version_choices.append((
-                r.id,
-                u'ID: %s, Created at: %s, Updated at: %s' % (
-                    r.id, r.created_at, r.updated_at)))
-        self.fields['schema_version'].choices = schema_version_choices
-
-        changeset_choices = []
-        for r in database_schema.get_approved_changesets():
-            changeset_choices.append((
-                r.id,
-                u'ID: %s, Type: %s, Classification: %s, Version control URL: %s, Created at: %s, Updated at: %s' % (
-                    r.id, r.type, r.classification, r.version_control_url, r.created_at, r.updated_at)))
-        self.fields['changeset'].choices = changeset_choices
-
-        helper = FormHelper()
-        helper.form_class = 'form-inline'
-        helper.add_input(Submit('apply_changeset_form_submit', 'Submit'))
         self.helper = helper
 
 
@@ -192,25 +143,6 @@ class ChangesetDetailForm(forms.ModelForm):
 
         helper = FormHelper()
         helper.form_tag = False
-        self.helper = helper
-
-
-class ChangesetActionsForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        can_review = kwargs.pop('can_review', None)
-        can_approve = kwargs.pop('can_approve', None)
-        can_reject = kwargs.pop('can_reject', None)
-
-        super(ChangesetActionsForm, self).__init__(*args, **kwargs)
-
-        helper = FormHelper()
-        helper.form_class = 'form-inline'
-        if can_review:
-            helper.add_input(Submit(u'submit_review', u'Review'))
-        if can_approve:
-            helper.add_input(Submit(u'submit_approve', u'Approve'))
-        if can_reject:
-            helper.add_input(Submit(u'submit_reject', u'Reject'))
         self.helper = helper
 
 
