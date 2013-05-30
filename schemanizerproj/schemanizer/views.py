@@ -647,6 +647,37 @@ def changeset_review(
         template, locals(), context_instance=RequestContext(request))
 
 
+def ajax_get_schema_version(
+        request, template='schemanizer/ajax_get_schema_version.html'):
+    if not request.is_ajax():
+        return HttpResponseForbidden(MSG_NOT_AJAX)
+
+    data = {}
+    try:
+        if not request.user.is_authenticated():
+            raise Exception('Login is required.')
+
+        schema_version_id = request.GET['schema_version_id'].strip()
+        if schema_version_id:
+            schema_version_id = int(schema_version_id)
+            schema_version = models.SchemaVersion.objects.get(
+                pk=schema_version_id)
+            data['schema_version_html'] = render_to_string(
+                template, {'obj': schema_version},
+                context_instance=RequestContext(request))
+        else:
+            data['schema_version_html'] = ''
+
+        data_json = json.dumps(data)
+    except Exception, e:
+        msg = 'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        data = dict(error=msg)
+        data_json = json.dumps(data)
+
+    return HttpResponse(data_json, mimetype='application/json')
+
+
 def changeset_review_status(
         request, request_id,
         messages_template='schemanizer/changeset_review_status_messages.html'):
