@@ -6,11 +6,12 @@ import threading
 
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 import MySQLdb
 import sqlparse
 
 from schemanizer import exceptions, models, utils
-from schemanizer.logic import privileges_logic
+from schemanizer.logic import mail_logic, privileges_logic
 
 log = logging.getLogger(__name__)
 
@@ -178,6 +179,12 @@ class ChangesetApply(object):
         self._init_run_vars()
 
         try:
+            if models.ChangesetApply.objects.filter(
+                    changeset=self._changeset, server=self._server).exists():
+                raise exceptions.Error(
+                    "Changeset has been applied already at server '%s'." % (
+                        self._server.name,))
+
             ddl = utils.mysql_dump(**self._connection_options)
             checksum = utils.schema_hash(ddl)
             if not (self._changeset.before_version and
@@ -191,15 +198,29 @@ class ChangesetApply(object):
             with transaction.commit_on_success():
                 self._apply_changeset_details()
 
-            ddl = utils.mysql_dump(**self._connection_options)
-            log.debug('DDL:\n%s' % (ddl,))
-            checksum = utils.schema_hash(ddl)
-            if not (self._changeset.after_version and (
-                    self._changeset.after_version.checksum == checksum)):
-                log.debug('checksum = %s' % (checksum,))
-                log.debug('after_version = %s' % (self._changeset.after_version,))
-                raise exceptions.Error(
-                    'Final schema checksum does not match the expected value.')
+                ddl = utils.mysql_dump(**self._connection_options)
+                log.debug('DDL:\n%s' % (ddl,))
+                checksum = utils.schema_hash(ddl)
+                if not (self._changeset.after_version and (
+                        self._changeset.after_version.checksum == checksum)):
+                    log.debug('checksum = %s' % (checksum,))
+                    log.debug('after_version = %s' % (
+                        self._changeset.after_version,))
+                    raise exceptions.Error(
+                        'Final schema checksum does not match the expected '
+                        'value.')
+
+                applied_at = timezone.now()
+                changeset_apply = models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=applied_at, applied_by=self._user)
+                models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_APPLIED,
+                    timestamp=applied_at)
+
+            mail_logic.send_changeset_applied_mail(
+                self._changeset, changeset_apply)
 
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)

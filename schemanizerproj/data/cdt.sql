@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `changeset_actions`;
 CREATE TABLE `changeset_actions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('created','changed','deleted','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected') DEFAULT NULL,
+  `type` enum('created','changed','deleted','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected','applied') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -38,6 +38,32 @@ CREATE TABLE `changeset_actions` (
 LOCK TABLES `changeset_actions` WRITE;
 /*!40000 ALTER TABLE `changeset_actions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `changeset_actions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `changeset_applies`
+--
+
+DROP TABLE IF EXISTS `changeset_applies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `changeset_applies` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `changeset_id` int(11) DEFAULT NULL,
+  `server_id` int(11) DEFAULT NULL,
+  `applied_at` datetime DEFAULT NULL,
+  `applied_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `changeset_applies`
+--
+
+LOCK TABLES `changeset_applies` WRITE;
+/*!40000 ALTER TABLE `changeset_applies` DISABLE KEYS */;
+/*!40000 ALTER TABLE `changeset_applies` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -906,4 +932,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-05-25  0:56:01
+-- Dump completed on 2013-05-31  0:27:52

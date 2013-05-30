@@ -346,6 +346,10 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
         if user_has_access:
             id = int(id)
             changeset = models.Changeset.objects.select_related().get(id=id)
+
+            changeset_applies = models.ChangesetApply.objects.filter(
+                changeset=changeset)
+
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:

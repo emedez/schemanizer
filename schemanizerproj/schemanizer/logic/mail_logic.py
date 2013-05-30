@@ -193,3 +193,38 @@ def send_changeset_rejected_mail(changeset):
         log.info(u'Changeset rejected email sent to: %s' % (to,))
     else:
         log.warn('Changeset rejected email has no recipients.')
+
+
+def send_changeset_applied_mail(changeset, changeset_apply):
+    """Sends changeset applied email."""
+
+    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset_apply = utils.get_model_instance(
+        changeset_apply, models.ChangesetApply)
+
+    # urls
+    site = Site.objects.get_current()
+    changeset_url = 'http://%s%s' % (
+        site.domain,
+        reverse('schemanizer_changeset_view', args=[changeset.id]))
+
+    # recipients
+    to = list(
+        models.User.objects.values_list('email', flat=True)
+            .filter(role__name=models.Role.ROLE_DBA))
+    if changeset.submitted_by.email not in to:
+        to.append(changeset.submitted_by.email)
+
+    if to:
+        subject = 'Changeset applied'
+        body_lines = []
+        body_lines.append(
+            u"The following changeset has been applied at server '%s' "
+            u"by %s:" % (
+                changeset_apply.server.name, changeset_apply.applied_by))
+        body_lines.append(changeset_url)
+        body = u'\n'.join(body_lines)
+        send_mail(subject=subject, body=body, to=to)
+        log.debug(u'Applied changeset email sent to: %s' % (to,))
+    else:
+        log.warn('Changeset review email has no recipients.')
