@@ -227,4 +227,4 @@ def send_changeset_applied_mail(changeset, changeset_apply):
         send_mail(subject=subject, body=body, to=to)
         log.debug(u'Applied changeset email sent to: %s' % (to,))
     else:
-        log.warn('Changeset review email has no recipients.')
+        log.warn('Changeset applied email has no recipients.')
