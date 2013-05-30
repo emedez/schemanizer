@@ -68,3 +68,20 @@ CHANGE COLUMN `type` `type` ENUM(
     'validations failed','tests passed','tests failed','approved',
     'rejected') NULL DEFAULT NULL  ;
 
+
+2013-05-30 GMT+08
+=================
+
+CREATE  TABLE `changeset_applies` (
+    `id` INT NOT NULL AUTO_INCREMENT ,
+    `changeset_id` INT NULL ,
+    `server_id` INT NULL ,
+    `applied_at` DATETIME NULL ,
+    `applied_by` INT NULL ,
+    PRIMARY KEY (`id`) );
+
+ALTER TABLE `changeset_actions`
+CHANGE COLUMN `type` `type` ENUM(
+    'created','changed','deleted','reviewed','validations passed',
+    'validations failed','tests passed','tests failed','approved','rejected',
+    'applied') NULL DEFAULT NULL  ;

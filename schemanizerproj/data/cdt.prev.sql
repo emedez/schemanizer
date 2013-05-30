@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `changeset_actions`;
 CREATE TABLE `changeset_actions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('created','changed','deleted') DEFAULT NULL,
+  `type` enum('created','changed','deleted','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -906,4 +906,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-05-14 19:09:58
+-- Dump completed on 2013-05-25  0:56:01

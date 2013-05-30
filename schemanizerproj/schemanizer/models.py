@@ -237,6 +237,7 @@ class ChangesetAction(models.Model):
     TYPE_TESTS_FAILED = u'tests failed'
     TYPE_APPROVED = u'approved'
     TYPE_REJECTED = u'rejected'
+    TYPE_APPLIED = u'applied'
 
     TYPE_CHOICES = (
         (TYPE_CREATED, TYPE_CREATED),
@@ -248,7 +249,8 @@ class ChangesetAction(models.Model):
         (TYPE_TESTS_PASSED, TYPE_TESTS_PASSED),
         (TYPE_TESTS_FAILED, TYPE_TESTS_FAILED),
         (TYPE_APPROVED, TYPE_APPROVED),
-        (TYPE_REJECTED, TYPE_REJECTED)
+        (TYPE_REJECTED, TYPE_REJECTED),
+        (TYPE_APPLIED, TYPE_APPLIED),
     )
 
     changeset = models.ForeignKey(
@@ -481,3 +483,20 @@ class ChangesetTest(models.Model):
             return True
         else:
             return False
+
+
+class ChangesetApply(models.Model):
+    changeset = models.ForeignKey(
+        Changeset, db_column='changeset_id', null=True, blank=True,
+        default=None)
+    server = models.ForeignKey(
+        Server, db_column='server_id', null=True, blank=True, default=None)
+    applied_at = models.DateTimeField(null=True, blank=True)
+    applied_by = models.ForeignKey(
+        User, db_column='applied_by', null=True, blank=True, default=None)
+
+    class Meta:
+        db_table = 'changeset_applies'
+
+    def __unicode__(self):
+        return u'<ChangesetApply id=%s>' % (self.pk,)

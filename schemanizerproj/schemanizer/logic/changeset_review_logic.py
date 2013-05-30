@@ -295,7 +295,13 @@ class ChangesetReview(object):
 
                     log.info('Changeset was reviewed, id=%s.' % (
                         self._changeset.id,))
-                    mail_logic.send_changeset_reviewed_mail(self._changeset)
+                    try:
+                        mail_logic.send_changeset_reviewed_mail(
+                            self._changeset)
+                    except Exception, e:
+                        msg = 'ERROR %s: %s'  % (type(e), e)
+                        log.exception(msg)
+                        self._store_message(msg, 'error')
         finally:
             if ec2_instance_starter:
                 ec2_instance_starter.terminate_instances()

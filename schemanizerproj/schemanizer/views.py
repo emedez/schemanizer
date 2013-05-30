@@ -346,6 +346,10 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
         if user_has_access:
             id = int(id)
             changeset = models.Changeset.objects.select_related().get(id=id)
+
+            changeset_applies = models.ChangesetApply.objects.filter(
+                changeset=changeset)
+
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:
@@ -645,6 +649,37 @@ def changeset_review(
 
     return render_to_response(
         template, locals(), context_instance=RequestContext(request))
+
+
+def ajax_get_schema_version(
+        request, template='schemanizer/ajax_get_schema_version.html'):
+    if not request.is_ajax():
+        return HttpResponseForbidden(MSG_NOT_AJAX)
+
+    data = {}
+    try:
+        if not request.user.is_authenticated():
+            raise Exception('Login is required.')
+
+        schema_version_id = request.GET['schema_version_id'].strip()
+        if schema_version_id:
+            schema_version_id = int(schema_version_id)
+            schema_version = models.SchemaVersion.objects.get(
+                pk=schema_version_id)
+            data['schema_version_html'] = render_to_string(
+                template, {'obj': schema_version},
+                context_instance=RequestContext(request))
+        else:
+            data['schema_version_html'] = ''
+
+        data_json = json.dumps(data)
+    except Exception, e:
+        msg = 'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        data = dict(error=msg)
+        data_json = json.dumps(data)
+
+    return HttpResponse(data_json, mimetype='application/json')
 
 
 def changeset_review_status(
