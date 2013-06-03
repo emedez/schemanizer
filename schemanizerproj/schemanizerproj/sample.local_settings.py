@@ -141,3 +141,16 @@ TEST_DB_HOST = None
 TEST_DB_PORT = None
 TEST_DB_USER = 'sandbox'
 TEST_DB_PASSWORD = 'sandbox'
+
+
+#=============================================================================
+# django-celery settings
+#=============================================================================
+
+# Broker URL in the form:
+#   transport://userid:password@hostname:port/virtual_host
+# Only the scheme part (transport://) is required, the rest is optional, and
+# defaults to the specific transports default values
+#
+# The following is the broker URL for RabbitMQ
+BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'

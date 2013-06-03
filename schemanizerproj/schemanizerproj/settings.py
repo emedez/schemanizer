@@ -137,7 +137,7 @@ INSTALLED_APPS = (
     'crispy_forms',
     'tastypie',
     'debug_toolbar',
-    #'django_nose',
+    'djcelery',
 
     #=============
     # project apps
@@ -185,7 +185,7 @@ LOGGING = {
             'formatter': 'simple',
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
-            'mode': 'w',
+            'mode': 'a+',
             'encoding': 'utf-8',
             'delay': True,
         },
@@ -314,7 +314,21 @@ TEST_DB_USER = None
 TEST_DB_PASSWORD = None
 
 
+#=============================================================================
+# django-celery settings
+#=============================================================================
+
+# Broker URL in the form:
+#   transport://userid:password@hostname:port/virtual_host
+# Only the scheme part (transport://) is required, the rest is optional, and
+# defaults to the specific transports default values
+BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'
+
 try:
     from local_settings import *
 except ImportError:
     pass
+
+
+import djcelery
+djcelery.setup_loader()

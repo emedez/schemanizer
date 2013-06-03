@@ -209,12 +209,18 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                     request.POST, instance=changeset)
                 changeset_detail_formset = ChangesetDetailFormSet(
                     request.POST, instance=changeset)
-                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
-                    with transaction.commit_on_success():
-                        changeset = changeset_logic.changeset_submit_from_form(
+                if (changeset_form.is_valid() and
+                        changeset_detail_formset.is_valid()):
+                    #with transaction.commit_on_success():
+                    #    changeset = changeset_logic.changeset_submit_from_form(
+                    #        changeset_form=changeset_form,
+                    #        changeset_detail_formset=changeset_detail_formset,
+                    #        user=user)
+                    changeset = (
+                        changeset_logic.save_submitted_changeset_and_review(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
-                            user=user)
+                            user=user))
                     messages.success(
                         request, u'Changeset [id=%s] was submitted.' % (
                             changeset.id,))

@@ -4,7 +4,7 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from schemanizer import exceptions, models, utils
+from schemanizer import exceptions, models, tasks, utils
 from schemanizer.logic import mail_logic
 from schemanizer.logic import privileges_logic
 
@@ -45,7 +45,7 @@ def delete_changeset(changeset):
     log.info('Changeset [id=%s] was deleted.' % (changeset_id,))
 
 
-def changeset_submit_from_form(**kwargs):
+def changeset_submit_from_form(send_mail=True, **kwargs):
     """Submits changeset.
 
     expected keyword arguments:
@@ -54,12 +54,11 @@ def changeset_submit_from_form(**kwargs):
         user
             - this is used as value for submitted_by
     """
-    now = timezone.now()
 
     changeset_form = kwargs.get('changeset_form')
     changeset_detail_formset = kwargs.get('changeset_detail_formset')
     submitted_by = kwargs.get('user')
-    submitted_at = now
+    submitted_at = timezone.now()
 
     changeset = changeset_form.save(commit=False)
     changeset.submitted_by = submitted_by
@@ -71,12 +70,38 @@ def changeset_submit_from_form(**kwargs):
     models.ChangesetAction.objects.create(
         changeset=changeset,
         type=models.ChangesetAction.TYPE_CREATED,
-        timestamp=now)
+        timestamp=timezone.now())
 
     log.info('Changeset [id=%s] was submitted.' % (changeset.id,))
-    mail_logic.send_changeset_submitted_mail(changeset)
+    if send_mail:
+        mail_logic.send_changeset_submitted_mail(changeset)
 
     return changeset
+
+
+def save_submitted_changeset_and_review(**kwargs):
+    """Saves submitted changeset and queue review changeset action.
+
+    Arguments:
+
+        changeset_form: an instance of schemanizer.forms.ChangesetForm
+
+        changeset_detail_formset: formset of
+            schemanizer.forms.ChangesetDetailForm
+
+        user: value for Changeset's submitted_by field
+
+    Returns:
+
+        Saved changeset
+    """
+
+    kwargs.update({'send_mail': False})
+    with transaction.commit_on_success():
+        changeset = changeset_submit_from_form(**kwargs)
+    tasks.review_changeset.delay(changeset)
+    return changeset
+
 
 
 def changeset_submit(changeset, changeset_details, user):
