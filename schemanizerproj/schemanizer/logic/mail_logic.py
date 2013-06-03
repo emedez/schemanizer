@@ -62,7 +62,7 @@ def send_changeset_submitted_mail(changeset):
         log.warn('Changeset submitted email has no recipients.')
 
 
-def send_changeset_reviewed_mail(changeset):
+def send_mail_changeset_reviewed(changeset):
     """Sends reviewed changeset email."""
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
@@ -87,20 +87,23 @@ def send_changeset_reviewed_mail(changeset):
     if to:
         subject = 'Changeset reviewed'
         body_lines = []
-        body_lines.append(
-            u'The following is the URL for the changeset that was reviewed '
-            u'by %s:' % (changeset.reviewed_by.name,))
-        body_lines.append(changeset_url)
-        body_lines.append('')
+
         if changeset.review_status == models.Changeset.REVIEW_STATUS_IN_PROGRESS:
             body_lines.append(
-                u'Changeset was successfully reviewed with no errors.')
-        elif changeset.review_status == models.Changeset.REVIEW_STATUS_REJECTED:
-            body_lines.append(u'The changeset was rejected.')
-        body_lines.append(u'The results can be found on:')
+                u"The following changeset has been reviewed without errors "
+                u"and is ready for approval:")
+        else:
+            body_lines.append(
+                u"The following changeset has errors and was rejected:")
+        body_lines.append(changeset_url)
+        body_lines.append(u'')
+        body_lines.append(
+            u'The results of changeset review process can be viewed at:')
         body_lines.append(review_results_url)
+
         body = u'\n'.join(body_lines)
         send_mail(subject=subject, body=body, to=to)
+
         log.debug(u'Reviewed changeset email sent to: %s' % (to,))
     else:
         log.warn('Changeset review email has no recipients.')

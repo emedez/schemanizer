@@ -4,7 +4,7 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from schemanizer import exceptions, models, tasks, utils
+from schemanizer import exceptions, models, utils
 from schemanizer.logic import mail_logic
 from schemanizer.logic import privileges_logic
 
@@ -105,7 +105,7 @@ def process_changeset_form_submission(**kwargs):
 
 def on_changeset_submit(changeset):
     """Queues tasks for changeset submit event."""
-
+    from schemanizer import tasks
     tasks.review_changeset.delay(changeset)
 
 

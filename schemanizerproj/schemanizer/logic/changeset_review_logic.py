@@ -10,24 +10,28 @@ from django.db import transaction
 from django.utils import timezone
 
 from schemanizer import models, exceptions, utils
-from schemanizer.logic import changeset_test_logic
-from schemanizer.logic import changeset_validation_logic
-from schemanizer.logic import ec2_logic
-from schemanizer.logic import mail_logic
-from schemanizer.logic import mysql_logic
-from schemanizer.logic import privileges_logic
+from schemanizer.logic import (
+    changeset_test_logic,
+    changeset_validation_logic,
+    ec2_logic,
+    mail_logic,
+    mysql_logic,
+    privileges_logic)
 
 log = logging.getLogger(__name__)
 
 MSG_CHANGESET_REVIEW_NOT_ALLOWED = (
     u'User {user} is not allowed to review changeset [ID:{changeset_id}].')
+MSG_NO_VERSION_FOUND_FOR_SCHEMA = (
+    u"No schema version found for database schema '%s'.")
 
 
 class ChangesetReview(object):
     """Logic for changeset review."""
 
     def __init__(
-            self, changeset, schema_version, user, message_callback=None):
+            self, changeset, schema_version, user, message_callback=None,
+            send_mail=True):
         """Initializes object.
 
         Args:
@@ -49,6 +53,7 @@ class ChangesetReview(object):
         self._user = utils.get_model_instance(user, models.User)
         self._no_ec2_instance_launch = settings.DEV_NO_EC2_APPLY_CHANGESET
         self._message_callback = message_callback
+        self._send_mail = send_mail
 
         self._init_run_vars()
 
@@ -191,55 +196,55 @@ class ChangesetReview(object):
                     changeset=self._changeset,
                     type=models.ChangesetAction.TYPE_REVIEWED,
                     timestamp=now)
-                with transaction.commit_on_success():
 
-                    # clear existing changeset tests
-                    models.ChangesetTest.objects.filter(
-                        changeset_detail__changeset=self._changeset).delete()
+                # clear existing changeset tests
+                models.ChangesetTest.objects.filter(
+                    changeset_detail__changeset=self._changeset).delete()
 
-                    syntax_test = changeset_test_logic.ChangesetSyntaxTest(
+                syntax_test = changeset_test_logic.ChangesetSyntaxTest(
+                    changeset=self._changeset,
+                    schema_version=self._schema_version,
+                    connection_options=connection_options,
+                    message_callback=self._message_callback
+                )
+                syntax_test.run()
+                structure_after = syntax_test.structure_after
+                hash_after = syntax_test.hash_after
+                self._changeset_tests = syntax_test.changeset_tests
+                for changeset_test in self._changeset_tests:
+                    self._changeset_test_ids.append(changeset_test.id)
+                if syntax_test.has_errors:
+                    self._has_errors = True
+                    models.ChangesetAction.objects.create(
                         changeset=self._changeset,
-                        schema_version=self._schema_version,
-                        connection_options=connection_options,
-                        message_callback=self._message_callback
-                    )
-                    syntax_test.run()
-                    structure_after = syntax_test.structure_after
-                    hash_after = syntax_test.hash_after
-                    self._changeset_tests = syntax_test.changeset_tests
-                    for changeset_test in self._changeset_tests:
-                        self._changeset_test_ids.append(changeset_test.id)
-                    if syntax_test.has_errors:
-                        self._has_errors = True
-                        models.ChangesetAction.objects.create(
-                            changeset=self._changeset,
-                            type=models.ChangesetAction.TYPE_TESTS_FAILED,
-                            timestamp=timezone.now())
-                    else:
-                        models.ChangesetAction.objects.create(
-                            changeset=self._changeset,
-                            type=models.ChangesetAction.TYPE_TESTS_PASSED,
-                            timestamp=timezone.now())
+                        type=models.ChangesetAction.TYPE_TESTS_FAILED,
+                        timestamp=timezone.now())
+                else:
+                    models.ChangesetAction.objects.create(
+                        changeset=self._changeset,
+                        type=models.ChangesetAction.TYPE_TESTS_PASSED,
+                        timestamp=timezone.now())
 
-                    # clear existing changeset validations
-                    models.ChangesetValidation.objects.filter(
-                        changeset=self._changeset).delete()
+                # clear existing changeset validations
+                models.ChangesetValidation.objects.filter(
+                    changeset=self._changeset).delete()
 
-                    #validation_results = (
-                    #    changeset_validation_logic
-                    #        .changeset_validate_no_update_with_where_clause(
-                    #            self._changeset, self._user))
-                    #if validation_results['changeset_validation']:
-                    #    self._changeset_validations.append(
-                    #            validation_results['changeset_validation'])
-                    #    self._changeset_validation_ids.append(
-                    #        validation_results['changeset_validation'].id)
-                    #if validation_results['has_errors']:
-                    #    self._has_errors = True
+                #validation_results = (
+                #    changeset_validation_logic
+                #        .changeset_validate_no_update_with_where_clause(
+                #            self._changeset, self._user))
+                #if validation_results['changeset_validation']:
+                #    self._changeset_validations.append(
+                #            validation_results['changeset_validation'])
+                #    self._changeset_validation_ids.append(
+                #        validation_results['changeset_validation'].id)
+                #if validation_results['has_errors']:
+                #    self._has_errors = True
 
-                    #
-                    # Update changeset.
-                    #
+                #
+                # Update changeset.
+                #
+                if not self._has_errors:
                     try:
                         after_version = models.SchemaVersion.objects.get(
                             database_schema=self._schema_version.database_schema,
@@ -254,54 +259,58 @@ class ChangesetReview(object):
                         )
                         log.debug('Created new schema version, checksum=%s.' % (
                             hash_after,))
-                    if self._has_errors:
-                        self._changeset.review_status = (
-                            models.Changeset.REVIEW_STATUS_REJECTED)
-                    else:
-                        self._changeset.review_status = (
-                            models.Changeset.REVIEW_STATUS_IN_PROGRESS)
-                    self._changeset.reviewed_by = self._user
-                    self._changeset.reviewed_at = now
-                    self._changeset.before_version = self._schema_version
-                    self._changeset.after_version = after_version
-                    self._changeset.save()
+                else:
+                    after_version = None
 
-                    if (
-                            self._changeset.review_status ==
-                            models.Changeset.REVIEW_STATUS_REJECTED):
-                        # Create entry on changeset actions.
-                        models.ChangesetAction.objects.create(
-                            changeset=self._changeset,
-                            type=models.ChangesetAction.TYPE_REJECTED,
-                            timestamp=timezone.now())
+                if self._has_errors:
+                    self._changeset.review_status = (
+                        models.Changeset.REVIEW_STATUS_REJECTED)
+                else:
+                    self._changeset.review_status = (
+                        models.Changeset.REVIEW_STATUS_IN_PROGRESS)
+                self._changeset.reviewed_by = self._user
+                self._changeset.reviewed_at = now
+                self._changeset.before_version = self._schema_version
+                self._changeset.after_version = after_version
+                self._changeset.save()
 
-                    changeset_test_ids_string = u','.join(
-                        [str(obj.id) for obj in self._changeset_tests])
-                    changeset_validation_ids_string = u','.join(
-                        [str(obj.id) for obj in self._changeset_validations])
-                    site = Site.objects.get_current()
-                    url = reverse(
-                        'schemanizer_changeset_view_review_results',
-                        args=[self._changeset.id])
-                    #query_string = urllib.urlencode(dict(
-                    #    changeset_validation_ids=changeset_validation_ids_string,
-                    #    changeset_test_ids=changeset_test_ids_string))
-                    #self._review_results_url = 'http://%s%s?%s' % (
-                    #    site.domain,
-                    #    url,
-                    #    query_string)
-                    self._review_results_url = 'http://%s%s' % (
-                        site.domain, url)
+                if (
+                        self._changeset.review_status ==
+                        models.Changeset.REVIEW_STATUS_REJECTED):
+                    # Create entry on changeset actions.
+                    models.ChangesetAction.objects.create(
+                        changeset=self._changeset,
+                        type=models.ChangesetAction.TYPE_REJECTED,
+                        timestamp=timezone.now())
 
-                    log.info('Changeset was reviewed, id=%s.' % (
-                        self._changeset.id,))
-                    try:
-                        mail_logic.send_changeset_reviewed_mail(
+                changeset_test_ids_string = u','.join(
+                    [str(obj.id) for obj in self._changeset_tests])
+                changeset_validation_ids_string = u','.join(
+                    [str(obj.id) for obj in self._changeset_validations])
+                site = Site.objects.get_current()
+                url = reverse(
+                    'schemanizer_changeset_view_review_results',
+                    args=[self._changeset.id])
+                #query_string = urllib.urlencode(dict(
+                #    changeset_validation_ids=changeset_validation_ids_string,
+                #    changeset_test_ids=changeset_test_ids_string))
+                #self._review_results_url = 'http://%s%s?%s' % (
+                #    site.domain,
+                #    url,
+                #    query_string)
+                self._review_results_url = 'http://%s%s' % (
+                    site.domain, url)
+
+                log.info('Changeset was reviewed, id=%s.' % (
+                    self._changeset.id,))
+                try:
+                    if self._send_mail:
+                        mail_logic.send_mail_changeset_reviewed(
                             self._changeset)
-                    except Exception, e:
-                        msg = 'ERROR %s: %s'  % (type(e), e)
-                        log.exception(msg)
-                        self._store_message(msg, 'error')
+                except Exception, e:
+                    msg = 'ERROR %s: %s'  % (type(e), e)
+                    log.exception(msg)
+                    self._store_message(msg, 'error')
         finally:
             if ec2_instance_starter:
                 ec2_instance_starter.terminate_instances()
@@ -446,3 +455,30 @@ def start_changeset_review_thread(changeset, schema_version, user):
     else:
         raise exceptions.PrivilegeError(
             u'User is not allowed to set review status to \'in_progress\'.')
+
+
+def review_changeset(changeset):
+    """Reviews changeset using the latest schema version."""
+
+    from schemanizer import tasks
+
+    changeset = utils.get_model_instance(changeset, models.Changeset)
+    database_schema = changeset.database_schema
+    schema_version_qs = (
+        models.SchemaVersion.objects.filter(database_schema=database_schema)
+        .order_by('-created_at', '-id'))
+    if not schema_version_qs.exists():
+        raise exceptions.Error(
+            MSG_NO_VERSION_FOUND_FOR_SCHEMA % (database_schema.name,))
+    schema_version =schema_version_qs[0]
+    user = models.User.objects.get(
+        name=settings.DEFAULT_CHANGESET_ACTION_USERNAME)
+
+    changeset_review = ChangesetReview(
+        changeset, schema_version, user, send_mail=False)
+    changeset_review.run()
+
+    tasks.send_mail_changeset_reviewed.delay(changeset)
+
+    return changeset_review
+

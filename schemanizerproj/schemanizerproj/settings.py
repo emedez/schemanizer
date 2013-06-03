@@ -324,6 +324,15 @@ TEST_DB_PASSWORD = None
 # defaults to the specific transports default values
 BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'
 
+
+#=============================================================================
+# Changeset related settings
+#=============================================================================
+#
+# default user to use for changeset actions as changeset review (reviewed_by)
+DEFAULT_CHANGESET_ACTION_USERNAME = u'admin'
+
+
 try:
     from local_settings import *
 except ImportError:
