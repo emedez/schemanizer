@@ -209,12 +209,18 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                     request.POST, instance=changeset)
                 changeset_detail_formset = ChangesetDetailFormSet(
                     request.POST, instance=changeset)
-                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
-                    with transaction.commit_on_success():
-                        changeset = changeset_logic.changeset_submit_from_form(
+                if (changeset_form.is_valid() and
+                        changeset_detail_formset.is_valid()):
+                    #with transaction.commit_on_success():
+                    #    changeset = changeset_logic.changeset_submit_from_form(
+                    #        changeset_form=changeset_form,
+                    #        changeset_detail_formset=changeset_detail_formset,
+                    #        user=user)
+                    changeset = (
+                        changeset_logic.process_changeset_form_submission(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
-                            user=user)
+                            user=user))
                     messages.success(
                         request, u'Changeset [id=%s] was submitted.' % (
                             changeset.id,))
@@ -627,7 +633,7 @@ def changeset_review(
                     # User has selected a schema version already,
                     # proceed with changeset review.
                     #
-                    thread = changeset_review_logic.changeset_review(
+                    thread = changeset_review_logic.start_changeset_review_thread(
                         changeset, schema_version, user)
                     review_threads[request_id] = thread
                     thread_started = True
