@@ -217,7 +217,7 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                     #        changeset_detail_formset=changeset_detail_formset,
                     #        user=user)
                     changeset = (
-                        changeset_logic.save_submitted_changeset_and_review(
+                        changeset_logic.process_changeset_form_submission(
                             changeset_form=changeset_form,
                             changeset_detail_formset=changeset_detail_formset,
                             user=user))
@@ -633,7 +633,7 @@ def changeset_review(
                     # User has selected a schema version already,
                     # proceed with changeset review.
                     #
-                    thread = changeset_review_logic.changeset_review(
+                    thread = changeset_review_logic.start_changeset_review_thread(
                         changeset, schema_version, user)
                     review_threads[request_id] = thread
                     thread_started = True

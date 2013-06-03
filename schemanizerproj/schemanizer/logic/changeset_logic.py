@@ -79,8 +79,8 @@ def changeset_submit_from_form(send_mail=True, **kwargs):
     return changeset
 
 
-def save_submitted_changeset_and_review(**kwargs):
-    """Saves submitted changeset and queue review changeset action.
+def process_changeset_form_submission(**kwargs):
+    """Saves submitted changeset.
 
     Arguments:
 
@@ -99,9 +99,14 @@ def save_submitted_changeset_and_review(**kwargs):
     kwargs.update({'send_mail': False})
     with transaction.commit_on_success():
         changeset = changeset_submit_from_form(**kwargs)
-    tasks.review_changeset.delay(changeset)
+    on_changeset_submit(changeset)
     return changeset
 
+
+def on_changeset_submit(changeset):
+    """Queues tasks for changeset submit event."""
+
+    tasks.review_changeset.delay(changeset)
 
 
 def changeset_submit(changeset, changeset_details, user):

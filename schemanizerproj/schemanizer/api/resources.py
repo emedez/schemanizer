@@ -490,7 +490,7 @@ class ChangesetResource(ModelResource):
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
 
-            thread = changeset_review_logic.changeset_review(
+            thread = changeset_review_logic.start_changeset_review_thread(
                 changeset_id, schema_version_id,
                 request.user.schemanizer_user
             )

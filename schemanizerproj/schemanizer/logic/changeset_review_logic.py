@@ -427,7 +427,7 @@ class ChangesetReviewThread(threading.Thread):
             self._store_message(msg)
 
 
-def changeset_review(changeset, schema_version, user):
+def start_changeset_review_thread(changeset, schema_version, user):
     """Reviews changeset."""
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
