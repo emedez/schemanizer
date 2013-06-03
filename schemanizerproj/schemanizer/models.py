@@ -230,6 +230,7 @@ class ChangesetAction(models.Model):
     TYPE_CREATED = u'created'
     TYPE_CHANGED = u'changed'
     TYPE_DELETED = u'deleted'
+    TYPE_REVIEW_STARTED = u'review started'
     TYPE_REVIEWED = u'reviewed'
     TYPE_VALIDATIONS_PASSED = u'validations passed'
     TYPE_VALIDATIONS_FAILED = u'validations failed'
@@ -243,6 +244,7 @@ class ChangesetAction(models.Model):
         (TYPE_CREATED, TYPE_CREATED),
         (TYPE_CHANGED, TYPE_CHANGED),
         (TYPE_DELETED, TYPE_DELETED),
+        (TYPE_REVIEW_STARTED, TYPE_REVIEW_STARTED),
         (TYPE_REVIEWED, TYPE_REVIEWED),
         (TYPE_VALIDATIONS_PASSED, TYPE_VALIDATIONS_PASSED),
         (TYPE_VALIDATIONS_FAILED, TYPE_VALIDATIONS_FAILED),

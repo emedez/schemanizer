@@ -85,3 +85,13 @@ CHANGE COLUMN `type` `type` ENUM(
     'created','changed','deleted','reviewed','validations passed',
     'validations failed','tests passed','tests failed','approved','rejected',
     'applied') NULL DEFAULT NULL  ;
+
+
+2013-06-04 GMT+08
+=================
+
+ALTER TABLE `changeset_actions`
+CHANGE COLUMN `type` `type` ENUM(
+    'created','changed','deleted','review started','reviewed',
+    'validations passed','validations failed','tests passed','tests failed',
+    'approved','rejected','applied') NULL DEFAULT NULL  ;

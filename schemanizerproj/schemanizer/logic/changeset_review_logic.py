@@ -141,6 +141,12 @@ class ChangesetReview(object):
                     user=self._user.auth_user.username,
                     changeset_id=self._changeset.id))
 
+        # Create changeset action entry.
+        models.ChangesetAction.objects.create(
+            changeset=self._changeset,
+            type=models.ChangesetAction.TYPE_REVIEW_STARTED,
+            timestamp=timezone.now())
+
         ec2_instance_starter = None
         try:
             if not self._no_ec2_instance_launch:
@@ -192,10 +198,10 @@ class ChangesetReview(object):
 
                 now = timezone.now()
                 # Create changeset action entry.
-                models.ChangesetAction.objects.create(
-                    changeset=self._changeset,
-                    type=models.ChangesetAction.TYPE_REVIEWED,
-                    timestamp=now)
+                # models.ChangesetAction.objects.create(
+                #     changeset=self._changeset,
+                #     type=models.ChangesetAction.TYPE_REVIEWED,
+                #     timestamp=now)
 
                 # clear existing changeset tests
                 models.ChangesetTest.objects.filter(
@@ -314,6 +320,12 @@ class ChangesetReview(object):
         finally:
             if ec2_instance_starter:
                 ec2_instance_starter.terminate_instances()
+
+            # Create changeset action entry.
+            models.ChangesetAction.objects.create(
+                changeset=self._changeset,
+                type=models.ChangesetAction.TYPE_REVIEWED,
+                timestamp=timezone.now())
 
 
 class ChangesetReviewThread(threading.Thread):
