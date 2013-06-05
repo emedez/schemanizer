@@ -222,9 +222,14 @@ def changeset_submit(request, template='schemanizer/changeset_update.html'):
                             changeset_detail_formset=changeset_detail_formset,
                             user=user))
                     messages.success(
-                        request, u'Changeset [id=%s] was submitted.' % (
+                        request,
+                        u'Changeset [id=%s] was submitted, '
+                        u'review procedure has been started, '
+                        u'when completed, an email will be sent to '
+                        u'interested parties.' % (
                             changeset.id,))
-                    return redirect('schemanizer_changeset_view', changeset.id)
+                    return redirect(
+                        'schemanizer_changeset_view', changeset.id)
             else:
                 changeset_form = forms.ChangesetForm(instance=changeset)
                 changeset_detail_formset = ChangesetDetailFormSet(instance=changeset)
