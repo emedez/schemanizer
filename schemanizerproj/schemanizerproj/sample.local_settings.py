@@ -153,4 +153,4 @@ TEST_DB_PASSWORD = 'sandbox'
 # defaults to the specific transports default values
 #
 # The following is the broker URL for RabbitMQ
-BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'
+BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/myhostname'

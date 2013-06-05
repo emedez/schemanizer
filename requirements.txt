@@ -22,4 +22,3 @@ python-nmap>=0.2.7
 django-tastypie>=0.9.15
 django-celery>=3.0.17
 
-

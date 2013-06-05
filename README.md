@@ -11,6 +11,58 @@ the web application depends on the following to be installed on the system:
 Python 2.6 or later
 nmap 5.21 or later
 
+### Installing RabbitMQ
+
+Schemanizer web application uses Celery with RabbitMQ as mesage transport to create job queues.
+To install RabbitMQ in Ubuntu (see http://www.rabbitmq.com/download.html for other OS):
+
+* Add the following line to your etc/apt/sources.list:
+
+```
+deb http://www.rabbitmq.com/debian/ testing main
+```
+
+* Add rabbitmq public key to trusted key list using apt-key:
+
+```
+$ wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+$ sudo apt-key add rabbitmq-signing-key-public.asc
+```
+
+* Run sudo apt-get update
+
+* Install packages as usual; for instance,
+
+```
+$ sudo apt-get install rabbitmq-server
+```
+
+### Starting/Stopping the RabbitMQ server
+
+To start the server:
+
+```
+$ sudo invoke-rc.d rabbitmq-server start
+```
+
+To stop the server:
+
+```
+$ sudo rabbitmqctl stop
+```
+When the server is running, you can continue reading Setting up RabbitMQ.
+
+### Setting up RabbitMQ
+
+To use celery we need to create a RabbitMQ user, a virtual host and allow that user access to that virtual host.
+In the following example, user 'sandbox', password 'sandbox', hostname 'myhostname' are used:
+```
+$ rabbitmqctl add_user sandbox sandbox
+$ rabbitmqctl add_vhost myhostname
+$ rabbitmqctl set_permissions -p myhostname sandbox ".*" ".*" ".*"
+```
+
+### virtualenv
 
 It is recommended to install the the web application and its requirements in an isolated Python environments.
 virtualenv is a tool that can create such environments.
@@ -80,6 +132,13 @@ To start the web application's built-in HTTP server:
 $ cd (schemanizer_root)/schemanizerproj/
 $ ./manage.py runserver [optional port number, or ipaddr:port]
 ```
+
+To start celery worker for processing job queues:
+```
+$ ./manage.py celery worker --loglevel=debug
+```
+
+N.B. loglevel option is optional.
 
 
 Usage
