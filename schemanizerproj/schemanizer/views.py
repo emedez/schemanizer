@@ -582,6 +582,7 @@ def changeset_apply_status(
 def changeset_review(
         request, changeset_id,
         template='schemanizer/changeset_review.html'):
+    from schemanizer import tasks
 
     user_has_access = False
     try:
@@ -602,20 +603,32 @@ def changeset_review(
                     #
                     # process select schema version form submission
                     #
-                    select_schema_version_form = forms.SelectSchemaVersionForm(
-                        request.POST, database_schema=changeset.database_schema)
+                    select_schema_version_form = (
+                        forms.SelectSchemaVersionForm(
+                            request.POST,
+                            database_schema=changeset.database_schema))
                     if select_schema_version_form.is_valid():
                         schema_version = int(
                             select_schema_version_form.cleaned_data[
                                 'schema_version'])
-                        url = reverse(
-                            'schemanizer_changeset_review',
-                            args=[changeset.id])
-                        query_string = urllib.urlencode(
-                            dict(schema_version=schema_version))
-                        #
-                        # redirect to actual changeset syntax validation procedure
-                        return redirect('%s?%s' % (url, query_string))
+                        # url = reverse(
+                        #     'schemanizer_changeset_review',
+                        #     args=[changeset.id])
+                        # query_string = urllib.urlencode(
+                        #     dict(schema_version=schema_version))
+                        # #
+                        # # redirect to actual changeset syntax validation procedure
+                        # return redirect('%s?%s' % (url, query_string))
+
+                        tasks.review_changeset.delay(
+                            changeset, schema_version, user)
+                        messages.info(
+                            request,
+                            u'Changeset review has been started, email will '
+                            u'be sent to interested parties when review '
+                            u'procedure is completed.')
+                        return redirect(
+                            'schemanizer_changeset_view', changeset.id)
 
                 else:
                     #

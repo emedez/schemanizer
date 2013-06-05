@@ -21,7 +21,9 @@ urlpatterns = patterns('schemanizer.views',
     url(
         r'^changeset/list/$', 'changeset_list',
         name='schemanizer_changeset_list'),
-    url(r'^changeset/(?P<id>\d+)/$', 'changeset_view', name='schemanizer_changeset_view'),
+    url(
+        r'^changeset/(?P<id>\d+)/$', 'changeset_view',
+        name='schemanizer_changeset_view'),
     url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
 #    url(
 #        r'^changeset/review/(?P<id>\d+)/$',

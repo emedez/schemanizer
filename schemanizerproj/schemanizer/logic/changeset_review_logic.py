@@ -469,22 +469,34 @@ def start_changeset_review_thread(changeset, schema_version, user):
             u'User is not allowed to set review status to \'in_progress\'.')
 
 
-def review_changeset(changeset):
-    """Reviews changeset using the latest schema version."""
+def review_changeset(changeset, schema_version=None, user=None):
+    """Reviews changeset."""
 
     from schemanizer import tasks
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
     database_schema = changeset.database_schema
-    schema_version_qs = (
-        models.SchemaVersion.objects.filter(database_schema=database_schema)
-        .order_by('-created_at', '-id'))
-    if not schema_version_qs.exists():
-        raise exceptions.Error(
-            MSG_NO_VERSION_FOUND_FOR_SCHEMA % (database_schema.name,))
-    schema_version =schema_version_qs[0]
-    user = models.User.objects.get(
-        name=settings.DEFAULT_CHANGESET_ACTION_USERNAME)
+
+    if schema_version is None:
+        # use the latest schema version if not specified
+        schema_version_qs = (
+            models.SchemaVersion.objects.filter(
+                database_schema=database_schema)
+            .order_by('-created_at', '-id'))
+        if not schema_version_qs.exists():
+            raise exceptions.Error(
+                MSG_NO_VERSION_FOUND_FOR_SCHEMA % (database_schema.name,))
+        schema_version = schema_version_qs[0]
+    else:
+        schema_version = utils.get_model_instance(
+            schema_version, models.SchemaVersion)
+
+    if user is None:
+        # use default user if not specified
+        user = models.User.objects.get(
+            name=settings.DEFAULT_CHANGESET_ACTION_USERNAME)
+    else:
+        user = utils.get_model_instance(user, models.User)
 
     changeset_review = ChangesetReview(
         changeset, schema_version, user, send_mail=False)

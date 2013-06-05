@@ -13,12 +13,12 @@ log = logging.getLogger(__name__)
 
 
 @task()
-def review_changeset(changeset):
+def review_changeset(changeset, schema_version=None, user=None):
     """Reviews changeset."""
 
     log.debug('task: review_changeset')
     changeset = utils.get_model_instance(changeset, models.Changeset)
-    changeset_review_logic.review_changeset(changeset)
+    changeset_review_logic.review_changeset(changeset, schema_version, user)
 
 
 @task()
