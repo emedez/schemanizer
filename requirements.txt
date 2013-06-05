@@ -21,4 +21,6 @@ requests>=1.2.0
 python-nmap>=0.2.7
 django-tastypie>=0.9.15
 django-celery>=3.0.17
+texttable>=0.8.1
+-e hg+https://bitbucket.org/catherinedevlin/cmd2#egg=cmd2
 
