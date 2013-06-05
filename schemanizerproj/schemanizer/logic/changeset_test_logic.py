@@ -292,7 +292,14 @@ class ChangesetSyntaxTest(object):
 
         finally:
             if cursor:
-                cursor.execute('FLUSH TABLES')
+                try:
+                    cursor.execute('FLUSH TABLES')
+                except Exception, e:
+                    msg = 'ERROR %s: %s' % (type(e), e)
+                    log.exception(msg)
+                    self._store_message(msg, 'error')
+                    self._has_errors = True
+
                 while cursor.nextset() is not None:
                     pass
             conn.close()
