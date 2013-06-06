@@ -235,6 +235,7 @@ CREATE TABLE `changesets` (
   `database_schema_id` int(11) DEFAULT NULL,
   `before_version` int(11) DEFAULT NULL,
   `after_version` int(11) DEFAULT NULL,
+  `repo_filename` text,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -932,4 +933,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-04  1:44:29
+-- Dump completed on 2013-06-07  0:21:53

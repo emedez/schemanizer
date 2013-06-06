@@ -39,6 +39,7 @@ def requests_get(url, params=None):
 def process_file(f):
     try:
         filename = f['filename']
+        print u'status: %s' % (f['status'],)
 
         if f['status'] == 'added':
             msg = u'New file: %s' % (filename,)

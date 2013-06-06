@@ -27,7 +27,8 @@ class ChangesetAdmin(admin.ModelAdmin):
         'review_status', 'reviewed_by', 'reviewed_at',
         'approved_by', 'approved_at',
         'submitted_by', 'submitted_at',
-        'created_at', 'updated_at'
+        'repo_filename',
+        'created_at', 'updated_at',
     )
 
     inlines = (ChangesetDetailInline, ChangesetActionInline)

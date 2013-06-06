@@ -143,7 +143,58 @@ def save_changeset_yaml(yaml_obj, repo_filename):
             changeset_detail_obj['changeset'] = changeset
             log.debug(pprint.pformat(changeset_detail_obj))
             models.ChangesetDetail.objects.create(**changeset_detail_obj)
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_CREATED,
+            timestamp=timezone.now())
     on_changeset_submit(changeset)
+
+
+def update_changeset_yaml(yaml_obj, repo_filename):
+    """Updates changeset from YAML document."""
+
+    changeset_qs = models.Changeset.objects.filter(
+        repo_filename=repo_filename)
+    if not changeset_qs.exists():
+        msg = (u'Changeset with repo_filename=%s does not exists.' % (
+            repo_filename,))
+        raise exceptions.Error(msg)
+    changeset = changeset_qs[0]
+
+    with transaction.commit_on_success():
+        changeset_obj = yaml_obj['changeset']
+        new_changeset_obj = {}
+        for k, v in changeset_obj.iteritems():
+            if (
+                    k in [
+                        'database_schema', 'type', 'classification',
+                        'version_control_url']):
+                new_changeset_obj[k] = v
+            else:
+                log.warn(u'%s is invalid changeset submit field.' % (k,))
+        changeset_obj = new_changeset_obj
+        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
+            name=changeset_obj['database_schema'])
+        changeset_obj['repo_filename'] = repo_filename
+        log.debug(pprint.pformat(changeset_obj))
+        for k, v in changeset_obj.iteritems():
+            setattr(changeset, k, v)
+        changeset.save()
+
+        models.ChangesetDetail.objects.filter(changeset=changeset).delete()
+
+        for changeset_detail_obj in yaml_obj['changeset_details']:
+            changeset_detail_obj['changeset'] = changeset
+            log.debug(pprint.pformat(changeset_detail_obj))
+            models.ChangesetDetail.objects.create(**changeset_detail_obj)
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_CHANGED,
+            timestamp=timezone.now())
+
+    mail_logic.send_changeset_updated_mail(changeset)
 
 
 def changeset_submit(changeset, changeset_details, user):
