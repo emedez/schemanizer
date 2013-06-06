@@ -55,7 +55,10 @@ def process_file(f):
                 msg = pprint.pformat(yaml_obj)
                 print msg
                 log.debug(msg)
-                changeset_logic.save_changeset_yaml(yaml_obj, filename)
+                changeset = changeset_logic.save_changeset_yaml(
+                    yaml_obj, filename)
+                print u'Changeset [id=%s] was submitted.' % (changeset.id,)
+                print 
             else:
                 msg = u'status_code = %s' % (r.status_code,)
                 print msg

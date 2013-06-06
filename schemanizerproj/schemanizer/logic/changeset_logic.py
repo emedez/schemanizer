@@ -150,6 +150,8 @@ def save_changeset_yaml(yaml_obj, repo_filename):
             timestamp=timezone.now())
     on_changeset_submit(changeset)
 
+    return changeset
+
 
 def update_changeset_yaml(yaml_obj, repo_filename):
     """Updates changeset from YAML document."""
