@@ -1,5 +1,6 @@
 """General changeset logic."""
 import logging
+import pprint
 
 from django.db import transaction
 from django.utils import timezone
@@ -107,6 +108,42 @@ def on_changeset_submit(changeset):
     """Queues tasks for changeset submit event."""
     from schemanizer import tasks
     tasks.review_changeset.delay(changeset)
+
+
+def save_changeset_yaml(yaml_obj, repo_filename):
+    """Saves changeset from YAML document."""
+
+    if models.Changeset.objects.filter(repo_filename=repo_filename).exists():
+        msg = (u'Changeset with repo_filename=%s already exists.' % (
+            repo_filename,))
+        raise exceptions.Error(msg)
+
+    with transaction.commit_on_success():
+        changeset_obj = yaml_obj['changeset']
+        new_changeset_obj = {}
+        for k, v in changeset_obj.iteritems():
+            if (
+                    k in [
+                        'database_schema', 'type', 'classification',
+                        'version_control_url', 'submitted_by']):
+                new_changeset_obj[k] = v
+            else:
+                log.warn(u'%s is invalid changeset submit field.' % (k,))
+        changeset_obj = new_changeset_obj
+        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
+            name=changeset_obj['database_schema'])
+        changeset_obj['submitted_by'] = models.User.objects.get(
+            name=changeset_obj['submitted_by'])
+        changeset_obj['submitted_at'] = timezone.now()
+        changeset_obj['repo_filename'] = repo_filename
+        log.debug(pprint.pformat(changeset_obj))
+        changeset = models.Changeset.objects.create(**changeset_obj)
+
+        for changeset_detail_obj in yaml_obj['changeset_details']:
+            changeset_detail_obj['changeset'] = changeset
+            log.debug(pprint.pformat(changeset_detail_obj))
+            models.ChangesetDetail.objects.create(**changeset_detail_obj)
+    on_changeset_submit(changeset)
 
 
 def changeset_submit(changeset, changeset_details, user):

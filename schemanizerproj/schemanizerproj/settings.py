@@ -285,6 +285,8 @@ DEV_NO_EC2_APPLY_CHANGESET = False
 CHANGESET_REPO_URL = None
 CHANGESET_REPO_USER = None
 CHANGESET_REPO_PASSWORD = None
+# directory to look for changesets, for example: /changesets
+CHANGESET_PATH = None
 
 
 #==============================================================================

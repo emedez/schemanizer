@@ -151,6 +151,9 @@ class Changeset(models.Model):
         blank=True, related_name='+', default=None
     )
 
+    repo_filename = models.TextField(
+        db_column='repo_filename', null=True, blank=True, default=None)
+
     objects = ChangesetManager()
 
     class Meta:
