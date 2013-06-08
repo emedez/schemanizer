@@ -241,13 +241,13 @@ Dumping and Restoring Data
 Use the following command to dump data:
 
 ```
-$ ./manage.py dumpdata -n --format=yaml -e auth.Permission auth sites schemanizer > data.yaml
+$ ./manage.py dumpdata --indent=4 -n -e auth.Permission auth sites schemanizer > data.json
 ```
 
 To restore:
 
 ```
-$ ./manage.py loaddata data.yaml
+$ ./manage.py loaddata data.json
 ```
 
 Schema

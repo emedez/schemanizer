@@ -1,0 +1,117 @@
+[
+{
+    "pk": 1, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "admin", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": true, 
+        "is_staff": true, 
+        "last_login": "2013-04-28T09:38:18Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=", 
+        "email": "admin@example.com", 
+        "date_joined": "2013-04-03T00:57:35Z"
+    }
+},
+{
+    "pk": 1, 
+    "model": "sites.site", 
+    "fields": {
+        "domain": "localhost:8000", 
+        "name": "Schemanizer"
+    }
+},
+{
+    "pk": 1, 
+    "model": "schemanizer.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:25Z", 
+        "name": "admin", 
+        "updated_at": "2013-03-31T12:02:25Z"
+    }
+},
+{
+    "pk": 2, 
+    "model": "schemanizer.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:31Z", 
+        "name": "dba", 
+        "updated_at": "2013-03-31T12:02:31Z"
+    }
+},
+{
+    "pk": 3, 
+    "model": "schemanizer.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:36Z", 
+        "name": "developer", 
+        "updated_at": "2013-03-31T12:02:36Z"
+    }
+},
+{
+    "pk": 1, 
+    "model": "schemanizer.user", 
+    "fields": {
+        "name": "admin", 
+        "created_at": "2013-04-03T01:02:34Z", 
+        "updated_at": "2013-04-28T09:18:19Z", 
+        "role": 1, 
+        "auth_user": [
+            "admin"
+        ], 
+        "email": "admin@example.com"
+    }
+},
+{
+    "pk": 1, 
+    "model": "schemanizer.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:40Z", 
+        "name": "dev", 
+        "updated_at": "2013-04-26T08:24:40Z"
+    }
+},
+{
+    "pk": 2, 
+    "model": "schemanizer.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:48Z", 
+        "name": "test", 
+        "updated_at": "2013-04-26T08:24:48Z"
+    }
+},
+{
+    "pk": 3, 
+    "model": "schemanizer.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:53Z", 
+        "name": "prod", 
+        "updated_at": "2013-04-26T08:24:53Z"
+    }
+},
+{
+    "pk": 1, 
+    "model": "schemanizer.validationtype", 
+    "fields": {
+        "updated_at": "2013-04-15T17:24:34Z", 
+        "created_at": "2013-04-15T17:24:34Z", 
+        "validation_commands": "", 
+        "name": "no update with where clause", 
+        "description": "verify that update statements do not have a where clause"
+    }
+},
+{
+    "pk": 1, 
+    "model": "schemanizer.testtype", 
+    "fields": {
+        "updated_at": "2013-04-26T07:22:58Z", 
+        "created_at": "2013-04-26T07:21:12Z", 
+        "name": "syntax", 
+        "description": "spin up an instance, verify changes are valid sql and won't cause errors"
+    }
+}
+]
