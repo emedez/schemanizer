@@ -107,7 +107,7 @@ def process_changeset_form_submission(**kwargs):
 def on_changeset_submit(changeset):
     """Queues tasks for changeset submit event."""
     from schemanizer import tasks
-    tasks.review_changeset.delay(changeset)
+    tasks.review_changeset.delay(changeset=changeset.pk)
 
 
 def save_changeset_yaml(yaml_obj, repo_filename):

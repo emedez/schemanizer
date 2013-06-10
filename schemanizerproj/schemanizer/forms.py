@@ -136,7 +136,6 @@ class ChangesetDetailForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ChangesetDetailForm, self).__init__(*args, **kwargs)
 
-        self.fields['type'].required = True
         for fld_name, fld in self.fields.iteritems():
             if isinstance(fld.widget, forms.Textarea):
                 fld.widget.attrs.update({'rows': '4', 'cols': '80', 'class': 'form-textarea'})
@@ -166,7 +165,7 @@ class ServerForm(forms.ModelForm):
 class SelectRemoteSchemaForm(forms.Form):
     """Form for selecting remote schema."""
 
-    schema = forms.ChoiceField()
+    schema = forms.ChoiceField(help_text='System Databases Not Displayed')
 
     def __init__(self, *args, **kwargs):
         super(SelectRemoteSchemaForm, self).__init__(*args, **kwargs)

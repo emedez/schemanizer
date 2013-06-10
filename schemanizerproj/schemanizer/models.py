@@ -170,34 +170,17 @@ class Changeset(models.Model):
 
 
 class ChangesetDetail(models.Model):
-    TYPE_ADD = u'add'
-    TYPE_DROP = u'drop'
-    TYPE_CHANGE = u'change'
-    TYPE_UPD = u'upd'
-    TYPE_INS = u'ins'
-    TYPE_DEL = u'del'
-
-    TYPE_CHOICES = (
-        (TYPE_ADD, TYPE_ADD),
-        (TYPE_DROP, TYPE_DROP),
-        (TYPE_CHANGE, TYPE_CHANGE),
-        (TYPE_UPD, TYPE_UPD),
-        (TYPE_INS, TYPE_INS),
-        (TYPE_DEL, TYPE_DEL)
-    )
-
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True,
         related_name='changeset_details')
-    type = models.CharField(
-        max_length=6, blank=True, choices=TYPE_CHOICES,
-        default=TYPE_CHOICES[0][0])
     description = models.TextField(blank=True)
     apply_sql = models.TextField(blank=True)
     revert_sql = models.TextField(blank=True)
     before_checksum = models.CharField(max_length=255, blank=True)
     after_checksum = models.CharField(max_length=255, blank=True)
-    count_sql = models.TextField(blank=True)
+    apply_verification_sql = models.TextField(blank=True)
+    revert_verification_sql = models.TextField(
+        null=True, blank=True, default=None)
     volumetric_values = models.TextField(blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
@@ -339,7 +322,6 @@ class Environment(models.Model):
 class Server(models.Model):
     name = models.CharField(max_length=255, unique=True, blank=True)
     hostname = models.CharField(max_length=255, default='')
-    cached_size = models.IntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(

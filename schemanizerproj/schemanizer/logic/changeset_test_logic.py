@@ -68,7 +68,7 @@ class ChangesetSyntaxTest(object):
             message=message,
             message_type=message_type))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def _execute_query(self, cursor, query):
         """Executes query."""
@@ -185,7 +185,7 @@ class ChangesetSyntaxTest(object):
                 results_log_items = []
                 try:
                     counts_before = utils.execute_count_statements(
-                        cursor, changeset_detail.count_sql)
+                        cursor, changeset_detail.apply_verification_sql)
                     log.debug('Row count(s) before apply_sql: %s' % (
                         counts_before,))
 
@@ -201,7 +201,7 @@ class ChangesetSyntaxTest(object):
                         structure_after, hash_after))
 
                     counts_after = utils.execute_count_statements(
-                        cursor, changeset_detail.count_sql)
+                        cursor, changeset_detail.apply_verification_sql)
                     log.debug('Row count(s) after apply_sql: %s' % (
                         counts_after,))
 
@@ -221,7 +221,7 @@ class ChangesetSyntaxTest(object):
                             'applied.')
 
                     test_counts = utils.execute_count_statements(
-                        cursor, changeset_detail.count_sql)
+                        cursor, changeset_detail.apply_verification_sql)
                     log.debug('Row count(s) after revert_sql: %s' % (
                         test_counts,))
                     if test_counts != counts_before:
@@ -235,7 +235,7 @@ class ChangesetSyntaxTest(object):
                     self._execute_query(cursor, changeset_detail.apply_sql)
 
                     test_counts = utils.execute_count_statements(
-                        cursor, changeset_detail.count_sql)
+                        cursor, changeset_detail.apply_verification_sql)
                     log.debug('Row count(s) after reapplying apply_sql: %s' % (
                         test_counts,))
                     if test_counts != counts_after:

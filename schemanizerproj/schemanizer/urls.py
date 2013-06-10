@@ -64,6 +64,11 @@ urlpatterns = patterns('schemanizer.views',
         r'^ajax/get-schema-version/$',
         'ajax_get_schema_version',
         name='schemanizer_ajax_get_schema_version'),
+    url(
+        r'^schema-version/download-ddl/(?P<schema_version_id>\d+)/$',
+        'schema_version_download_ddl',
+        name='schemanizer_schema_version_download_ddl'),
+
     #
     # database schema
     #
@@ -78,4 +83,11 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
     url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
     url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),
+
+    #
+    # celery tasks
+    #
+    url(
+        r'^on-going-changeset-reviews/$', 'on_going_changeset_reviews',
+        name='schemanizer_ongoing_changeset_reviews'),
 )

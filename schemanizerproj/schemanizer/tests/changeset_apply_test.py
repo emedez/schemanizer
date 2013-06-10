@@ -35,7 +35,6 @@ class ChangesetApplyTest(TestCase):
 
         models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_ADD,
             description='Add people table.',
             apply_sql="""
                 CREATE TABLE people (
@@ -64,7 +63,7 @@ class ChangesetApplyTest(TestCase):
                 DELETE FROM people
                 WHERE id in (1, 2, 3, 4, 5)
                 """,
-            count_sql="""
+            apply_verification_sql="""
                 SELECT COUNT(*) FROM people
                 WHERE dept='tools' AND id IN (1, 2);
                 SELECT COUNT(*) FROM people
@@ -132,7 +131,6 @@ class ChangesetApplyTest(TestCase):
 
         changeset_detail0 = models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_ADD,
             description='Add people table.',
             apply_sql="""
                 CREATE TABLE people (
@@ -146,7 +144,6 @@ class ChangesetApplyTest(TestCase):
 
         changeset_detail1 = models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_INS,
             description='Insert people rows.',
             apply_sql="""
                 INSERT INTO people
@@ -161,7 +158,7 @@ class ChangesetApplyTest(TestCase):
                 DELETE FROM people
                 WHERE id in (1, 2, 3, 4, 5)
                 """,
-            count_sql="""
+            apply_verification_sql="""
                 SELECT COUNT(*) FROM people
                 WHERE dept='tools' AND id IN (1, 2);
                 SELECT COUNT(*) FROM people

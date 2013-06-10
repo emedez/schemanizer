@@ -6,24 +6,30 @@
     {% if user_has_access %}
         <h2>Schema Versions</h2>
         <p>
-            <a href="{% url 'schemanizer_server_list' %}">Click here to add new entry, you will be taken to server list page, select a server and choose the 'Create schema version' link.</a>
+            <a href="{% url 'schemanizer_server_list' %}">
+                Add new entry (you will be taken to server list page, select
+                a server and choose the 'Create schema version' link)</a>
         </p>
-        <table class="table table-striped table-condensed table-bordered table-hover">
+        <table class="table table-striped table-condensed table-bordered
+                table-hover">
             <thead>
             <tr>
                 <th>ID</th>
                 <th>Database schema</th>
                 <th>DDL</th>
-                <th>Checksum</th>
+                <th>Action</th>
             </tr>
             </thead>
             <tbody>
             {% for r in schema_versions %}
                 <tr>
-                    <td><a href="{% url 'schemanizer_schema_version_view' r.id %}">{{ r.id }}</a></td>
+                    <td>{{ r.id }}</td>
                     <td>{{ r.database_schema }}</td>
-                    <td><code>{{ r.ddl|truncatewords:8 }}</code></td>
-                    <td>{{ r.checksum }}</td>
+                    <td><code>{{ r.ddl|truncatewords:6 }}</code></td>
+                    <td>
+                        <a href="{% url 'schemanizer_schema_version_view' r.id %}">View</a> |
+                        <a href="{% url 'schemanizer_schema_version_download_ddl' r.id %}">Download DDL</a>
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

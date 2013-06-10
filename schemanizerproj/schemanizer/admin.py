@@ -41,8 +41,7 @@ class EnvironmentAdmin(admin.ModelAdmin):
 
 class ServerAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'cached_size', 'created_at', 'updated_at',
-        'environment')
+        'id', 'name', 'created_at', 'updated_at', 'environment')
 
 
 class ChangesetDetailApplyAdmin(admin.ModelAdmin):

@@ -449,7 +449,6 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     },
     "objects": [
         {
-            "cached_size": null,
             "created_at": "2013-04-29T21:15:54",
             "environment": "/api/v1/environment/1/",
             "hostname": "localhost",
@@ -476,7 +475,6 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/server/1/
 
 {
-    "cached_size": null,
     "created_at": "2013-04-29T21:15:54",
     "environment": "/api/v1/environment/1/",
     "hostname": "localhost",
@@ -1256,7 +1254,7 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
             "apply_sql": "ccreate table t1...",
             "before_checksum": "",
             "changeset": "/api/v1/changeset/9/",
-            "count_sql": "",
+            "apply_verification_sql": "",
             "created_at": "2013-05-10T00:21:41",
             "description": "ccreate a table",
             "id": 10,
@@ -1271,7 +1269,7 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
             "apply_sql": "drop table t2",
             "before_checksum": "",
             "changeset": "/api/v1/changeset/9/",
-            "count_sql": "",
+            "apply_verification_sql": "",
             "created_at": "2013-05-10T01:24:15",
             "description": "drop a table",
             "id": 13,
@@ -1302,7 +1300,7 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
     "apply_sql": "ccreate table t1...",
     "before_checksum": "",
     "changeset": "/api/v1/changeset/9/",
-    "count_sql": "",
+    "apply_verification_sql": "",
     "created_at": "2013-05-10T00:21:41",
     "description": "ccreate a table",
     "id": 10,

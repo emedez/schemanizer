@@ -128,13 +128,12 @@ DROP TABLE IF EXISTS `changeset_details`;
 CREATE TABLE `changeset_details` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('add','drop','change','upd','ins','del') DEFAULT NULL,
   `description` text,
   `apply_sql` text,
   `revert_sql` text,
   `before_checksum` varchar(255) DEFAULT NULL,
   `after_checksum` varchar(255) DEFAULT NULL,
-  `count_sql` text,
+  `apply_verification_sql` text,
   `volumetric_values` text,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -235,6 +234,7 @@ CREATE TABLE `changesets` (
   `database_schema_id` int(11) DEFAULT NULL,
   `before_version` int(11) DEFAULT NULL,
   `after_version` int(11) DEFAULT NULL,
+  `repo_filename` text,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -591,7 +591,6 @@ CREATE TABLE `servers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `hostname` varchar(255) DEFAULT NULL,
-  `cached_size` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `environment_id` int(11) DEFAULT NULL,
@@ -932,4 +931,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-04  1:44:29
+-- Dump completed on 2013-06-10 21:04:29

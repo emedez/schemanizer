@@ -56,6 +56,7 @@
                     <th>Approved at:</th>
                     <td>{{ changeset.approved_at|default_if_none:'' }}</td>
                 </tr>
+                {% comment %}
                 <tr>
                     <th>Before version:</th>
                     <td>{{ changeset.before_version.checksum }}</td>
@@ -64,6 +65,7 @@
                     <th>After version:</th>
                     <td>{{ changeset.after_version.checksum }}</td>
                 </tr>
+                {% endcomment %}
                 <tr>
                     <th>Repo filename:</th>
                     <td>{{ changeset.repo_filename }}</td>
@@ -76,45 +78,22 @@
             <table class="table table-striped table-condensed table-bordered table-hover">
                 <thead>
                     <tr>
-                        {% comment %}
-                        {% if show_changeset_detail_test_status %}
-                            <th></th>
-                        {% endif %}
-                        {% endcomment %}
                         <th>ID</th>
-                        <th>Type</th>
                         <th>Description</th>
                         <th>Apply SQL</th>
                         <th>Revert SQL</th>
-                        <th>Before checksum</th>
-                        <th>After checksum</th>
-                        <th>Count SQL</th>
+                        <th>Apply Verification SQL</th>
                         <th>Volumetric values</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for detail in changeset.changeset_details.all %}
                         <tr>
-                            {% comment %}
-                            {% if show_changeset_detail_test_status %}
-                                <td>
-                                    {% if detail.changeset_test_status == 1 %}
-                                        <i class="icon-ok"></i>
-                                    {% endif %}
-                                    {% if detail.changeset_test_status == 2 %}
-                                        <i class="icon-remove"></i>
-                                    {% endif %}
-                                </td>
-                            {% endif %}
-                            {% endcomment %}
                             <td>{{ detail.id }}</td>
-                            <td>{{ detail.type }}</td>
                             <td>{{ detail.description }}</td>
                             <td>{{ detail.apply_sql }}</td>
                             <td>{{ detail.revert_sql }}</td>
-                            <td>{{ detail.before_checksum }}</td>
-                            <td>{{ detail.after_checksum }}</td>
-                            <td>{{ detail.count_sql }}</td>
+                            <td>{{ detail.apply_verification_sql }}</td>
                             <td>{{ detail.volumetric_values }}</td>
                         </tr>
                     {% endfor %}

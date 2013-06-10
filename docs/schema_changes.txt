@@ -102,3 +102,19 @@ CHANGE COLUMN `type` `type` ENUM(
 
 ALTER TABLE `changesets`
 ADD COLUMN `repo_filename` TEXT NULL  AFTER `after_version` ;
+
+
+2013-06-10 GMT+08
+=================
+
+ALTER TABLE `changeset_details`
+DROP COLUMN `type` ;
+
+ALTER TABLE `servers`
+DROP COLUMN `cached_size` ;
+
+ALTER TABLE `changeset_details`
+CHANGE COLUMN `count_sql` `apply_verification_sql` TEXT NULL DEFAULT NULL  ;
+
+ALTER TABLE `changeset_details`
+ADD COLUMN `revert_verification_sql` TEXT NULL  AFTER `apply_verification_sql` ;

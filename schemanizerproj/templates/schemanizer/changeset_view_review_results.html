@@ -87,6 +87,9 @@
             </tbody>
         </table>
 
-        <p><a href="{% url 'schemanizer_changeset_view' changeset.id %}">Click here to view changeset.</a></p>
+        <p>
+            <a href="{% url 'schemanizer_changeset_view' changeset.id %}">
+                View changeset</a>
+        </p>
     {% endif %}
 {% endblock %}

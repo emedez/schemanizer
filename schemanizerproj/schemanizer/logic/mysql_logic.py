@@ -44,7 +44,7 @@ class MySQLServerConnectionTester(object):
             message=message,
             message_type=message_type))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def run(self):
         """Creates connection to a MySQL server."""

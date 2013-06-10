@@ -16,7 +16,10 @@
                     <td>{{ r.database_schema }}</td>
                 </tr>
                 <tr>
-                    <th>DDL:</th>
+                    <th>
+                        DDL:<br />
+                        <a href="{% url 'schemanizer_schema_version_download_ddl' r.pk %}">Download DDL</a>
+                    </th>
                     <td><pre>{{ r.ddl}}</pre></td>
                 </tr>
                 <tr>
