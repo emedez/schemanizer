@@ -109,3 +109,6 @@ ADD COLUMN `repo_filename` TEXT NULL  AFTER `after_version` ;
 
 ALTER TABLE `changeset_details`
 DROP COLUMN `type` ;
+
+ALTER TABLE `servers`
+DROP COLUMN `cached_size` ;

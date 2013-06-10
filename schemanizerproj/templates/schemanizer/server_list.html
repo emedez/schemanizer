@@ -18,7 +18,6 @@
                         <th>Name</th>
                         <th>Hostname</th>
                         <th>Port</th>
-                        <th>Cached size</th>
                         <th>Environment</th>
                         <th>Action</th>
                     </tr>
@@ -30,7 +29,6 @@
                             <td>{{ server.name }}</td>
                             <td>{{ server.hostname }}</td>
                             <td>{{ server.port|default_if_none:'' }}</td>
-                            <td>{{ server.cached_size|default_if_none:'' }}</td>
                             <td>{{ server.environment|default_if_none:'' }}</td>
                             <td>
                                 <a href="{% url 'schemanizer_server_update' server.id %}">Update</a>

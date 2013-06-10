@@ -591,7 +591,6 @@ CREATE TABLE `servers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `hostname` varchar(255) DEFAULT NULL,
-  `cached_size` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `environment_id` int(11) DEFAULT NULL,
@@ -932,4 +931,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-10 20:00:15
+-- Dump completed on 2013-06-10 20:40:06

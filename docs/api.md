@@ -449,7 +449,6 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     },
     "objects": [
         {
-            "cached_size": null,
             "created_at": "2013-04-29T21:15:54",
             "environment": "/api/v1/environment/1/",
             "hostname": "localhost",
@@ -476,7 +475,6 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/api/v1/server/1/
 
 {
-    "cached_size": null,
     "created_at": "2013-04-29T21:15:54",
     "environment": "/api/v1/environment/1/",
     "hostname": "localhost",
