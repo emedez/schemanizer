@@ -133,7 +133,7 @@ CREATE TABLE `changeset_details` (
   `revert_sql` text,
   `before_checksum` varchar(255) DEFAULT NULL,
   `after_checksum` varchar(255) DEFAULT NULL,
-  `count_sql` text,
+  `apply_verification_sql` text,
   `volumetric_values` text,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -931,4 +931,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-10 20:40:06
+-- Dump completed on 2013-06-10 21:04:29

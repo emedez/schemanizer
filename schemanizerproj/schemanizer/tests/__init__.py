@@ -703,7 +703,7 @@ class ChangesetViewsTestCase(TestCase):
                         'changeset_details-0-revert_sql': changeset_detail.revert_sql,
                         'changeset_details-0-before_checksum': changeset_detail.before_checksum,
                         'changeset_details-0-after_checksum': changeset_detail.after_checksum,
-                        'changeset_details-0-count_sql': changeset_detail.count_sql,
+                        'changeset_details-0-apply_verification_sql': changeset_detail.apply_verification_sql,
                         'changeset_details-0-volumetric_values': changeset_detail.volumetric_values,
                         'changeset_details-0-id': changeset_detail.id,
                         'changeset_details-1-changeset': changeset_id,

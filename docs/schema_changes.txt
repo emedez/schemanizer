@@ -112,3 +112,7 @@ DROP COLUMN `type` ;
 
 ALTER TABLE `servers`
 DROP COLUMN `cached_size` ;
+
+ALTER TABLE `changeset_details`
+CHANGE COLUMN `count_sql` `apply_verification_sql` TEXT NULL DEFAULT NULL  ;
+

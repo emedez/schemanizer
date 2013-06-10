@@ -63,7 +63,7 @@ class ChangesetApplyTest(TestCase):
                 DELETE FROM people
                 WHERE id in (1, 2, 3, 4, 5)
                 """,
-            count_sql="""
+            apply_verification_sql="""
                 SELECT COUNT(*) FROM people
                 WHERE dept='tools' AND id IN (1, 2);
                 SELECT COUNT(*) FROM people
@@ -158,7 +158,7 @@ class ChangesetApplyTest(TestCase):
                 DELETE FROM people
                 WHERE id in (1, 2, 3, 4, 5)
                 """,
-            count_sql="""
+            apply_verification_sql="""
                 SELECT COUNT(*) FROM people
                 WHERE dept='tools' AND id IN (1, 2);
                 SELECT COUNT(*) FROM people

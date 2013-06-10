@@ -84,10 +84,10 @@ class ChangesetApply(object):
         try:
             counts_before = None
             if (
-                    changeset_detail.count_sql and
-                    changeset_detail.count_sql.strip()):
+                    changeset_detail.apply_verification_sql and
+                    changeset_detail.apply_verification_sql.strip()):
                 counts_before = utils.execute_count_statements(
-                    cursor, changeset_detail.count_sql)
+                    cursor, changeset_detail.apply_verification_sql)
                 log.debug('Row count(s) before apply_sql: %s' % (
                     counts_before,))
 
@@ -116,10 +116,10 @@ class ChangesetApply(object):
 
             counts_after = None
             if (
-                    changeset_detail.count_sql and
-                    changeset_detail.count_sql.strip()):
+                    changeset_detail.apply_verification_sql and
+                    changeset_detail.apply_verification_sql.strip()):
                 counts_after = utils.execute_count_statements(
-                    cursor, changeset_detail.count_sql)
+                    cursor, changeset_detail.apply_verification_sql)
                 log.debug('Row count(s) after apply_sql: %s' % (
                     counts_after,))
 
