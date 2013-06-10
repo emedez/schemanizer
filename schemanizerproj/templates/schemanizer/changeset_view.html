@@ -79,14 +79,9 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Type</th>
                         <th>Description</th>
                         <th>Apply SQL</th>
                         <th>Revert SQL</th>
-                        {% comment %}
-                        <th>Before checksum</th>
-                        <th>After checksum</th>
-                        {% endcomment %}
                         <th>Count SQL</th>
                         <th>Volumetric values</th>
                     </tr>
@@ -95,14 +90,9 @@
                     {% for detail in changeset.changeset_details.all %}
                         <tr>
                             <td>{{ detail.id }}</td>
-                            <td>{{ detail.type }}</td>
                             <td>{{ detail.description }}</td>
                             <td>{{ detail.apply_sql }}</td>
                             <td>{{ detail.revert_sql }}</td>
-                            {% comment %}
-                            <td>{{ detail.before_checksum }}</td>
-                            <td>{{ detail.after_checksum }}</td>
-                            {% endcomment %}
                             <td>{{ detail.count_sql }}</td>
                             <td>{{ detail.volumetric_values }}</td>
                         </tr>
