@@ -35,7 +35,6 @@ class ChangesetApplyTest(TestCase):
 
         models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_ADD,
             description='Add people table.',
             apply_sql="""
                 CREATE TABLE people (
@@ -132,7 +131,6 @@ class ChangesetApplyTest(TestCase):
 
         changeset_detail0 = models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_ADD,
             description='Add people table.',
             apply_sql="""
                 CREATE TABLE people (
@@ -146,7 +144,6 @@ class ChangesetApplyTest(TestCase):
 
         changeset_detail1 = models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_INS,
             description='Insert people rows.',
             apply_sql="""
                 INSERT INTO people

@@ -50,7 +50,6 @@ class ChangesetReviewLogicTest(TransactionTestCase):
             submitted_at=timezone.now())
         models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_ADD,
             description='create table t2',
             apply_sql="""
                 create table `t2` (
@@ -63,7 +62,6 @@ class ChangesetReviewLogicTest(TransactionTestCase):
                 """)
         models.ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_UPD,
             description='test update data',
             apply_sql="""
                 update t1 set id = 9999 where id = 9999;
@@ -462,7 +460,6 @@ class ChangesetViewsTestCase(TestCase):
                 submitted_at=timezone.now())
             models.ChangesetDetail.objects.create(
                 changeset=changeset,
-                type=models.ChangesetDetail.TYPE_ADD,
                 description='create table_1',
                 apply_sql="""
                     create table `table_1` (
@@ -532,7 +529,6 @@ class ChangesetViewsTestCase(TestCase):
                 'changeset_details-MAX_NUM_FORMS': '1000'})
             # changeset details data
             changeset_details_data = {
-                'changeset_details-0-type': models.ChangesetDetail.TYPE_ADD,
                 'changeset_details-0-description': 'Add table `table2`',
                 'changeset_details-0-apply_sql': """
                     create table `table2` (
@@ -543,7 +539,6 @@ class ChangesetViewsTestCase(TestCase):
                 'changeset_details-0-revert_sql': """
                     drop table `table2`;
                     """,
-                'changeset_details-1-type': models.ChangesetDetail.TYPE_ADD,
                 'changeset_details-1-description': 'Add table `table2`',
                 'changeset_details-1-apply_sql': """
                     create table `table2` (
@@ -703,7 +698,6 @@ class ChangesetViewsTestCase(TestCase):
                     # changeset details data
                     data.update({
                         'changeset_details-0-changeset': changeset_id,
-                        'changeset_details-0-type': changeset_detail.type,
                         'changeset_details-0-description': changeset_detail.description,
                         'changeset_details-0-apply_sql': changeset_detail.apply_sql,
                         'changeset_details-0-revert_sql': changeset_detail.revert_sql,
@@ -713,7 +707,6 @@ class ChangesetViewsTestCase(TestCase):
                         'changeset_details-0-volumetric_values': changeset_detail.volumetric_values,
                         'changeset_details-0-id': changeset_detail.id,
                         'changeset_details-1-changeset': changeset_id,
-                        'changeset_details-1-type': models.ChangesetDetail.TYPE_ADD,
                         })
                     r = c.post(url, data=data)
                     tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
@@ -1290,7 +1283,6 @@ class RestApiTest(ResourceTestCase):
             ),
             changeset_details=[
                 dict(
-                    type='add',
                     description='create_a_table',
                     apply_sql='create table t1 (id int primary key auto_increment)',
                     revert_sql='drop table t1'
