@@ -1,3 +1,4 @@
+import cStringIO as StringIO
 import json
 import logging
 from pprint import pformat
@@ -12,10 +13,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.forms.models import inlineformset_factory
-from django.http import HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponse, Http404
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -1157,4 +1159,28 @@ def server_discover(request, template='schemanizer/server_discover.html'):
         messages.error(request, u'%s' % (e,))
     return render_to_response(
         template, locals(), context_instance=RequestContext(request))
+
+
+@login_required
+def schema_version_download_ddl(request, schema_version_id):
+    try:
+        schema_version_id = int(schema_version_id)
+        schema_version = models.SchemaVersion.objects.get(
+            pk=schema_version_id)
+
+        ddl_file = StringIO.StringIO()
+        ddl_file.write(schema_version.ddl)
+
+        response = HttpResponse(
+            FileWrapper(ddl_file), content_type='text/plain')
+        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.txt' % (
+            schema_version.pk,)
+        response['Content-Length'] = ddl_file.tell()
+        ddl_file.seek(0)
+        return response
+    except Exception, e:
+        msg = u'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        messages.error(request, msg)
+    raise Http404
 

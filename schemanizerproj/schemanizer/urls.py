@@ -64,6 +64,11 @@ urlpatterns = patterns('schemanizer.views',
         r'^ajax/get-schema-version/$',
         'ajax_get_schema_version',
         name='schemanizer_ajax_get_schema_version'),
+    url(
+        r'^schema-version/download-ddl/(?P<schema_version_id>\d+)/$',
+        'schema_version_download_ddl',
+        name='schemanizer_schema_version_download_ddl'),
+
     #
     # database schema
     #
