@@ -22,8 +22,7 @@
             <tbody>
             {% for r in schema_versions %}
                 <tr>
-                    <td><a href="{% url 'schemanizer_schema_version_view'
-                        r.id %}">{{ r.id }}</a></td>
+                    <td><a href="{% url 'schemanizer_schema_version_view' r.id %}">{{ r.id }}</a></td>
                     <td>{{ r.database_schema }}</td>
                     <td><code>{{ r.ddl|truncatewords:6 }}</code></td>
                 </tr>

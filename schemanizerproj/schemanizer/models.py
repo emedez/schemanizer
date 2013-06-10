@@ -179,6 +179,8 @@ class ChangesetDetail(models.Model):
     before_checksum = models.CharField(max_length=255, blank=True)
     after_checksum = models.CharField(max_length=255, blank=True)
     apply_verification_sql = models.TextField(blank=True)
+    revert_verification_sql = models.TextField(
+        null=True, blank=True, default=None)
     volumetric_values = models.TextField(blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)

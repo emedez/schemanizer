@@ -224,6 +224,38 @@ def schema_hash(dump):
     return hash_string(normalize_mysql_dump(dump))
 
 
+def execute_statemets(cursor, statements):
+    """Executes statements."""
+
+    log.debug(u'statements:\n%s' % (statements,))
+
+    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
+    statement_list = None
+    if statements:
+        statement_list = sqlparse.split(statements)
+
+    if not statements:
+        return
+
+    try:
+        for statement in statement_list:
+            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
+
+            if not statement:
+                continue
+
+            log.debug(u'statement: %s' % (statement,))
+            cursor.execute(statement)
+
+            while cursor.nextset() is not None:
+                pass
+
+    finally:
+        while cursor.nextset() is not None:
+            pass
+
+
+
 def execute_count_statements(cursor, statements):
     """Executes count statement(s)."""
 
