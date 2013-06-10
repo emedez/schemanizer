@@ -23,6 +23,10 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from celery import states
+from djcelery import humanize as djcelery_humanize
+from djcelery import models as djcelery_models
+
 from schemanizer import exceptions, forms, models, utils
 from schemanizer.logic import changeset_logic
 from schemanizer.logic import changeset_apply_logic
@@ -628,7 +632,9 @@ def changeset_review(
                         # return redirect('%s?%s' % (url, query_string))
 
                         tasks.review_changeset.delay(
-                            changeset, schema_version, user)
+                            changeset=changeset.pk,
+                            schema_version=schema_version.pk,
+                            user=user.pk)
                         messages.info(
                             request,
                             u'Changeset review has been started, email will '
@@ -1184,3 +1190,22 @@ def schema_version_download_ddl(request, schema_version_id):
         messages.error(request, msg)
     raise Http404
 
+
+@login_required
+def on_going_changeset_reviews(
+        request, template='schemanizer/on_going_changeset_reviews.html'):
+
+    task_states = djcelery_models.TaskState.objects.filter(
+        name='schemanizer.tasks.review_changeset')
+        # state__in=states.UNREADY_STATES)
+    task_state_list = []
+    for task_state in task_states:
+        task_state_list.append(dict(
+            tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
+            state=task_state.state,
+            params=task_state.kwargs,
+            result=task_state.result,
+        ))
+
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))

@@ -119,7 +119,7 @@ class ChangesetReview(object):
                 message_type=message_type
             ))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def run(self):
         """Wraps run_impl() in a try except block."""
@@ -133,6 +133,7 @@ class ChangesetReview(object):
         """Starts changeset review."""
 
         self._init_run_vars()
+        self._store_message('review started.')
 
         if not privileges_logic.can_user_review_changeset(
                 self._user, self._changeset):
@@ -469,7 +470,8 @@ def start_changeset_review_thread(changeset, schema_version, user):
             u'User is not allowed to set review status to \'in_progress\'.')
 
 
-def review_changeset(changeset, schema_version=None, user=None):
+def review_changeset(
+        changeset, schema_version=None, user=None, message_callback=None):
     """Reviews changeset."""
 
     from schemanizer import tasks
@@ -499,7 +501,8 @@ def review_changeset(changeset, schema_version=None, user=None):
         user = utils.get_model_instance(user, models.User)
 
     changeset_review = ChangesetReview(
-        changeset, schema_version, user, send_mail=False)
+        changeset, schema_version, user, send_mail=False,
+        message_callback=message_callback)
     changeset_review.run()
 
     tasks.send_mail_changeset_reviewed.delay(changeset)

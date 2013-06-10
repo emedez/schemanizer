@@ -68,7 +68,7 @@ class ChangesetSyntaxTest(object):
             message=message,
             message_type=message_type))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def _execute_query(self, cursor, query):
         """Executes query."""
