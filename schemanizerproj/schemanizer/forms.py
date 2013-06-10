@@ -166,7 +166,7 @@ class ServerForm(forms.ModelForm):
 class SelectRemoteSchemaForm(forms.Form):
     """Form for selecting remote schema."""
 
-    schema = forms.ChoiceField()
+    schema = forms.ChoiceField(help_text='System Databases Not Displayed')
 
     def __init__(self, *args, **kwargs):
         super(SelectRemoteSchemaForm, self).__init__(*args, **kwargs)

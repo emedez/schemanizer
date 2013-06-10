@@ -891,7 +891,8 @@ def schema_version_create(
                 cur.execute('SHOW DATABASES')
                 rows = cur.fetchall()
                 for row in rows:
-                    schema_choices.append((row[0], row[0]))
+                    if row[0] not in ['information_schema', 'mysql']:
+                        schema_choices.append((row[0], row[0]))
 
             if request.method == 'POST':
                 form = forms.SelectRemoteSchemaForm(request.POST)
