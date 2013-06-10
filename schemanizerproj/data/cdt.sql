@@ -128,7 +128,6 @@ DROP TABLE IF EXISTS `changeset_details`;
 CREATE TABLE `changeset_details` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('add','drop','change','upd','ins','del') DEFAULT NULL,
   `description` text,
   `apply_sql` text,
   `revert_sql` text,
@@ -933,4 +932,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-07  0:21:53
+-- Dump completed on 2013-06-10 20:00:15
