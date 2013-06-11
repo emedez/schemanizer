@@ -32,7 +32,7 @@ ALLOWED_HOSTS = []
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'Asia/Manila'
+TIME_ZONE = 'UTC'
 
 
 # Mail is sent using the SMTP host and port specified in the EMAIL_HOST and
