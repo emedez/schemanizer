@@ -88,6 +88,6 @@ urlpatterns = patterns('schemanizer.views',
     # celery tasks
     #
     url(
-        r'^on-going-changeset-reviews/$', 'on_going_changeset_reviews',
-        name='schemanizer_ongoing_changeset_reviews'),
+        r'^changeset-reviews/$', 'changeset_reviews',
+        name='schemanizer_changeset_reviews'),
 )

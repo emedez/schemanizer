@@ -58,7 +58,7 @@ class EC2InstanceStarter(object):
             message=message,
             message_type=message_type))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def _delay_running_state_check(self):
         """Delays running state check."""
