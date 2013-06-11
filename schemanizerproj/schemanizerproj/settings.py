@@ -334,6 +334,8 @@ BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'
 # default user to use for changeset actions as changeset review (reviewed_by)
 DEFAULT_CHANGESET_ACTION_USERNAME = u'admin'
 
+# If True, no schemanizer emails will be sent.
+DISABLE_SEND_MAIL = False
 
 try:
     from local_settings import *

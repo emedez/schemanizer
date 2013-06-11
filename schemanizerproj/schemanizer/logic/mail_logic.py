@@ -2,6 +2,7 @@
 
 import logging
 
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
@@ -16,6 +17,9 @@ def send_mail(
         connection=None, attachments=None, headers=None,
         cc=None):
     """Sends email."""
+
+    if settings.DISABLE_SEND_MAIL:
+        return
 
     if to and not isinstance(to, list) and not isinstance(to, tuple):
         to = [to]
