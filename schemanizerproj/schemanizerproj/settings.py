@@ -33,7 +33,7 @@ ALLOWED_HOSTS = []
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'Asia/Manila'
+TIME_ZONE = 'UTC'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -334,6 +334,8 @@ BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/'
 # default user to use for changeset actions as changeset review (reviewed_by)
 DEFAULT_CHANGESET_ACTION_USERNAME = u'admin'
 
+# If True, no schemanizer emails will be sent.
+DISABLE_SEND_MAIL = False
 
 try:
     from local_settings import *

@@ -133,8 +133,6 @@ class ChangesetReview(object):
         """Starts changeset review."""
 
         self._init_run_vars()
-        self._store_message('review started.')
-
         if not privileges_logic.can_user_review_changeset(
                 self._user, self._changeset):
             raise exceptions.PrivilegeError(
@@ -327,6 +325,10 @@ class ChangesetReview(object):
                 changeset=self._changeset,
                 type=models.ChangesetAction.TYPE_REVIEWED,
                 timestamp=timezone.now())
+
+            msg = 'Changeset review ended.'
+            log.info(msg)
+            self._store_message(msg)
 
 
 class ChangesetReviewThread(threading.Thread):

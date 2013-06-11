@@ -32,7 +32,7 @@ ALLOWED_HOSTS = []
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'Asia/Manila'
+TIME_ZONE = 'UTC'
 
 
 # Mail is sent using the SMTP host and port specified in the EMAIL_HOST and
@@ -45,6 +45,8 @@ EMAIL_HOST_USER = 'test@example.com'
 EMAIL_HOST_PASSWORD = 'pass'
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'Schemanizer <schemanizer@localhost.local>'
+# If True, no schemanizer emails will be sent.
+DISABLE_SEND_MAIL = False
 
 
 #==============================================================================
@@ -156,3 +158,4 @@ TEST_DB_PASSWORD = 'sandbox'
 #
 # The following is the broker URL for RabbitMQ
 BROKER_URL = 'amqp://sandbox:sandbox@localhost:5672/myhostname'
+
