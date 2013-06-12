@@ -83,7 +83,10 @@
                         <th>Apply SQL</th>
                         <th>Revert SQL</th>
                         <th>Apply Verification SQL</th>
+                        <th>Revert Verification SQL</th>
+                        {% comment %}
                         <th>Volumetric values</th>
+                        {% endcomment %}
                     </tr>
                 </thead>
                 <tbody>
@@ -94,7 +97,10 @@
                             <td>{{ detail.apply_sql }}</td>
                             <td>{{ detail.revert_sql }}</td>
                             <td>{{ detail.apply_verification_sql }}</td>
+                            <td>{{ detail.revert_verification_sql }}</td>
+                            {% comment %}
                             <td>{{ detail.volumetric_values }}</td>
+                            {% endcomment %}
                         </tr>
                     {% endfor %}
                 </tbody>

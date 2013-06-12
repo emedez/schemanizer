@@ -630,7 +630,7 @@ def changeset_review(
 
                         tasks.review_changeset.delay(
                             changeset=changeset.pk,
-                            schema_version=schema_version.pk,
+                            schema_version=schema_version,
                             user=user.pk)
                         messages.info(
                             request,
