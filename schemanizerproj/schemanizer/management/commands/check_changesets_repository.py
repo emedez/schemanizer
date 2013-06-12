@@ -11,24 +11,23 @@ from django.core.management.base import BaseCommand, CommandError
 import requests
 import yaml
 
-from schemanizer import exceptions
+from schemanizer import exceptions, models
 from schemanizer.logic import changeset_logic
 
 log = logging.getLogger(__name__)
 
 
-def requests_get(url, params=None):
+def requests_get(url, params=None, headers=None):
+    if headers is None:
+        headers = {}
     request_get_params = dict(
         url=url, params=params)
-    if settings.CHANGESET_REPO_USER:
-        password = settings.CHANGESET_REPO_PASSWORD
-        if not password:
-            password = ''
-        request_get_params['auth'] = (settings.CHANGESET_REPO_USER, password)
 
-    # r = requests.get(
-    #     url, params=params,
-    #     auth=(settings.CHANGESET_REPO_USER, settings.CHANGESET_REPO_PASSWORD))
+    if settings.AUTHORIZATION_TOKEN:
+        headers.update({
+            'Authorization': 'token %s' % (
+                settings.AUTHORIZATION_TOKEN,)})
+    request_get_params['headers'] = headers
 
     r = requests.get(**request_get_params)
     if r.status_code != 200:
@@ -39,10 +38,13 @@ def requests_get(url, params=None):
 def process_file(f):
     try:
         filename = f['filename']
-        print u'status: %s' % (f['status'],)
+        #print u'status: %s' % (f['status'],)
 
         if f['status'] == 'added':
-            msg = u'New file: %s' % (filename,)
+            if models.Changeset.objects.filter(
+                    repo_filename=filename).exists():
+                return
+            msg = u'File: %s' % (filename,)
             print msg
             log.debug(msg)
             r = requests_get(f['contents_url'])
@@ -52,21 +54,24 @@ def process_file(f):
                 yaml_obj = yaml.load(content)
                 if not isinstance(yaml_obj, dict):
                     raise exceptions.Error('File format is invalid.')
-                msg = pprint.pformat(yaml_obj)
-                print msg
-                log.debug(msg)
+                # msg = pprint.pformat(yaml_obj)
+                # print msg
+                # log.debug(msg)
                 changeset = changeset_logic.save_changeset_yaml(
                     yaml_obj, filename)
-                print u'Changeset [id=%s] was submitted.' % (changeset.id,)
-                print 
+                if changeset:
+                    msg = u'Changeset [id=%s] was submitted.' % (changeset.id,)
+                    print msg
+                    log.debug(msg)
+                print
             else:
-                msg = u'status_code = %s' % (r.status_code,)
+                msg = u'Aborting, HTTP status code was %s.' % (r.status_code,)
                 print msg
                 log.error(msg)
-        else:
-            msg = u'Ignored file: %s' % (filename,)
-            print msg
-            log.debug(msg)
+        # else:
+        #     msg = u'Ignored file: %s' % (filename,)
+        #     print msg
+        #     log.debug(msg)
     except Exception, e:
         msg = 'ERROR %s: %s' % (type(e), e)
         sys.stderr.write('%s\n' % (msg,))
@@ -80,6 +85,8 @@ def get_commit(url):
         for f in commit['files']:
             process_file(f)
             print ''
+    else:
+        print u'Aborting, HTTP status code was %s.' % (r.status_code,)
 
 
 def get_commits(path=None, since=None):
@@ -95,6 +102,8 @@ def get_commits(path=None, since=None):
         commits = json.loads(r.text)
         for commit in commits:
             get_commit(commit['url'])
+    else:
+        print u'Aborting, HTTP status code was %s.' % (r.status_code,)
 
 
 class Command(BaseCommand):

@@ -283,8 +283,7 @@ DEV_NO_EC2_APPLY_CHANGESET = False
 # Example:
 #   https://api.github.com/repos/palominodb/schemanizer/commits
 CHANGESET_REPO_URL = None
-CHANGESET_REPO_USER = None
-CHANGESET_REPO_PASSWORD = None
+AUTHORIZATION_TOKEN = None
 # directory to look for changesets, for example: /changesets
 CHANGESET_PATH = None
 

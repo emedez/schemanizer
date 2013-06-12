@@ -114,8 +114,12 @@ AWS_MYSQL_START_WAIT = 60
 # Example:
 #   https://api.github.com/repos/palominodb/schemanizer/commits
 CHANGESET_REPO_URL = None
-CHANGESET_REPO_USER = None
-CHANGESET_REPO_PASSWORD = None
+#
+# To create a token, POST to https://api.github.com/authorizations with note
+# and scopes values in the data hash,
+# for example:
+# $ curl -u username -d '{"scopes":["repo"],"note":"Schemanizer repo access token."}' https:/api.github.com/authorizations
+AUTHORIZATION_TOKEN = None
 # directory to look for changesets, for example: /changesets
 CHANGESET_PATH = None
 

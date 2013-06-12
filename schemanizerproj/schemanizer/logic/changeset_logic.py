@@ -114,9 +114,10 @@ def save_changeset_yaml(yaml_obj, repo_filename):
     """Saves changeset from YAML document."""
 
     if models.Changeset.objects.filter(repo_filename=repo_filename).exists():
-        msg = (u'Changeset with repo_filename=%s already exists.' % (
-            repo_filename,))
-        raise exceptions.Error(msg)
+        #msg = (u'Changeset with repo_filename=%s already exists.' % (
+        #    repo_filename,))
+        #raise exceptions.Error(msg)
+        return
 
     with transaction.commit_on_success():
         changeset_obj = yaml_obj['changeset']
@@ -128,7 +129,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
                         'version_control_url', 'submitted_by']):
                 new_changeset_obj[k] = v
             else:
-                log.warn(u'%s is invalid changeset submit field.' % (k,))
+                log.warn(u'Ignored changeset field %s.' % (k,))
         changeset_obj = new_changeset_obj
         changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
             name=changeset_obj['database_schema'])
@@ -141,6 +142,17 @@ def save_changeset_yaml(yaml_obj, repo_filename):
 
         for changeset_detail_obj in yaml_obj['changeset_details']:
             changeset_detail_obj['changeset'] = changeset
+            new_changeset_detail_obj = {}
+            for k, v in changeset_detail_obj.iteritems():
+                if (k in
+                        [
+                            'description', 'apply_sql', 'revert_sql',
+                            'apply_verification_sql',
+                            'revert_verification_sql']):
+                    new_changeset_detail_obj[k] = v
+                else:
+                    log.warn(u'Ignored changeset detail field %s.' % (k,))
+            changeset_detail_obj = new_changeset_detail_obj
             log.debug(pprint.pformat(changeset_detail_obj))
             models.ChangesetDetail.objects.create(**changeset_detail_obj)
 

@@ -184,10 +184,10 @@ class ChangesetSyntaxTest(object):
                 started_at = timezone.now()
                 results_log_items = []
                 try:
-                    counts_before = utils.execute_count_statements(
-                        cursor, changeset_detail.apply_verification_sql)
-                    log.debug('Row count(s) before apply_sql: %s' % (
-                        counts_before,))
+                    # counts_before = utils.execute_count_statements(
+                    #     cursor, changeset_detail.apply_verification_sql)
+                    # log.debug('Row count(s) before apply_sql: %s' % (
+                    #     counts_before,))
 
                     # Test apply_sql
                     log.debug('Testing apply_sql')
@@ -200,10 +200,19 @@ class ChangesetSyntaxTest(object):
                     log.debug('Structure=\n%s\nChecksum=%s' % (
                         structure_after, hash_after))
 
-                    counts_after = utils.execute_count_statements(
-                        cursor, changeset_detail.apply_verification_sql)
-                    log.debug('Row count(s) after apply_sql: %s' % (
-                        counts_after,))
+                    # counts_after = utils.execute_count_statements(
+                    #     cursor, changeset_detail.apply_verification_sql)
+                    # log.debug('Row count(s) after apply_sql: %s' % (
+                    #     counts_after,))
+
+                    try:
+                        self._execute_query(
+                            cursor, changeset_detail.apply_verification_sql)
+                    except Exception, e:
+                        msg = (
+                            u'Apply verification failed (Error %s: %s).' % (
+                                type(e), e))
+                        raise exceptions.Error(msg)
 
                     # Test revert_sql
                     log.debug('Testing revert_sql')
@@ -220,38 +229,47 @@ class ChangesetSyntaxTest(object):
                             'not the same as before apply_sql was '
                             'applied.')
 
-                    test_counts = utils.execute_count_statements(
-                        cursor, changeset_detail.apply_verification_sql)
-                    log.debug('Row count(s) after revert_sql: %s' % (
-                        test_counts,))
-                    if test_counts != counts_before:
-                        raise exceptions.Error(
-                            'Count SQL result after revert_sql does not '
-                            'match the result before apply_sql was '
-                            'applied.')
+                    try:
+                        self._execute_query(
+                            cursor, changeset_detail.revert_verification_sql)
+                    except Exception, e:
+                        msg = (
+                            u'Revert verification failed (Error %s: %s).' % (
+                                type(e), e))
+                        raise exceptions.Error(msg)
+
+                    # test_counts = utils.execute_count_statements(
+                    #     cursor, changeset_detail.apply_verification_sql)
+                    # log.debug('Row count(s) after revert_sql: %s' % (
+                    #     test_counts,))
+                    # if test_counts != counts_before:
+                    #     raise exceptions.Error(
+                    #         'Count SQL result after revert_sql does not '
+                    #         'match the result before apply_sql was '
+                    #         'applied.')
 
                     # revert_sql worked, reapply appy sql again
                     log.debug('Reapplying apply_sql')
                     self._execute_query(cursor, changeset_detail.apply_sql)
 
-                    test_counts = utils.execute_count_statements(
-                        cursor, changeset_detail.apply_verification_sql)
-                    log.debug('Row count(s) after reapplying apply_sql: %s' % (
-                        test_counts,))
-                    if test_counts != counts_after:
-                        raise exceptions.Error(
-                            'Count SQL result after apply_sql was reapplied '
-                            'was different from expected value.')
+                    # test_counts = utils.execute_count_statements(
+                    #     cursor, changeset_detail.apply_verification_sql)
+                    # log.debug('Row count(s) after reapplying apply_sql: %s' % (
+                    #     test_counts,))
+                    # if test_counts != counts_after:
+                    #     raise exceptions.Error(
+                    #         'Count SQL result after apply_sql was reapplied '
+                    #         'was different from expected value.')
 
                     changeset_detail.before_checksum = hash_before
                     changeset_detail.after_checksum = hash_after
-                    changeset_detail.volumetric_values = u','.join(
-                        itertools.imap(
-                            lambda before, after:
-                                unicode(after - before)
-                                if (before is not None and after is not None)
-                                else '',
-                            counts_before, counts_after))
+                    # changeset_detail.volumetric_values = u','.join(
+                    #     itertools.imap(
+                    #         lambda before, after:
+                    #             unicode(after - before)
+                    #             if (before is not None and after is not None)
+                    #             else '',
+                    #         counts_before, counts_after))
                     changeset_detail.save()
 
                     self._structure_after = structure_after
@@ -260,14 +278,14 @@ class ChangesetSyntaxTest(object):
                     msg = 'ERROR %s: %s' % (type(e), e)
                     log.exception(msg)
                     self._store_message(msg, 'error')
-                    if cursor.messages:
-                        log.error(cursor.messages)
-                        for exc, val in cursor.messages:
-                            val_str = 'ERROR %s: %s' % (exc, val)
-                            if val_str not in results_log_items:
-                                results_log_items.append(val_str)
-                    else:
-                        results_log_items.append(msg)
+                    # if cursor.messages:
+                    #     log.error(cursor.messages)
+                    #     for exc, val in cursor.messages:
+                    #         val_str = 'ERROR %s: %s' % (exc, val)
+                    #         if val_str not in results_log_items:
+                    #             results_log_items.append(val_str)
+                    # else:
+                    results_log_items.append(msg)
                     self._has_errors = True
                 finally:
                     while cursor.nextset() is not None:

@@ -19,14 +19,6 @@
 },
 {
     "pk": 1, 
-    "model": "sites.site", 
-    "fields": {
-        "domain": "localhost:8000", 
-        "name": "Schemanizer"
-    }
-},
-{
-    "pk": 1, 
     "model": "schemanizer.role", 
     "fields": {
         "created_at": "2013-03-31T12:02:25Z", 
