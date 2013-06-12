@@ -17,18 +17,17 @@ from schemanizer.logic import changeset_logic
 log = logging.getLogger(__name__)
 
 
-def requests_get(url, params=None):
+def requests_get(url, params=None, headers=None):
+    if headers is None:
+        headers = {}
     request_get_params = dict(
         url=url, params=params)
-    if settings.CHANGESET_REPO_USER:
-        password = settings.CHANGESET_REPO_PASSWORD
-        if not password:
-            password = ''
-        request_get_params['auth'] = (settings.CHANGESET_REPO_USER, password)
 
-    # r = requests.get(
-    #     url, params=params,
-    #     auth=(settings.CHANGESET_REPO_USER, settings.CHANGESET_REPO_PASSWORD))
+    if settings.AUTHORIZATION_TOKEN:
+        headers.update({
+            'Authorization': 'token %s' % (
+                settings.AUTHORIZATION_TOKEN,)})
+    request_get_params['headers'] = headers
 
     r = requests.get(**request_get_params)
     if r.status_code != 200:
