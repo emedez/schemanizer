@@ -113,6 +113,8 @@ def on_changeset_submit(changeset):
 def save_changeset_yaml(yaml_obj, repo_filename):
     """Saves changeset from YAML document."""
 
+    log.debug(yaml_obj)
+
     if models.Changeset.objects.filter(repo_filename=repo_filename).exists():
         #msg = (u'Changeset with repo_filename=%s already exists.' % (
         #    repo_filename,))
@@ -148,7 +150,8 @@ def save_changeset_yaml(yaml_obj, repo_filename):
                         [
                             'description', 'apply_sql', 'revert_sql',
                             'apply_verification_sql',
-                            'revert_verification_sql']):
+                            'revert_verification_sql',
+                            'changeset']):
                     new_changeset_detail_obj[k] = v
                 else:
                     log.warn(u'Ignored changeset detail field %s.' % (k,))
@@ -160,6 +163,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
             changeset=changeset,
             type=models.ChangesetAction.TYPE_CREATED,
             timestamp=timezone.now())
+
     on_changeset_submit(changeset)
 
     return changeset
