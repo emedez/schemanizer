@@ -257,9 +257,22 @@ for example:
 AUTHORIZATION_TOKEN = None
 ```
 
-The directory, in the repository, to look for changesets.
+The directory (no leading/trailing slash), in the repository, to look for changesets.
 ```
 CHANGESET_PATH = None
+```
+
+Github requests that return multiple items will be paginated to
+this number of items (upto maximum of 100)
+```
+GITHUB_ITEMS_PER_PAGE = 30
+```
+
+Used by check_changesets_repository management command.
+This is the number of hours subtracted from the current datetime to determine
+the starting limit of commit datetime.
+```
+CHANGESET_CHECK_HOUR_OFFSET = 1
 ```
 
 #### Site Information Settings
