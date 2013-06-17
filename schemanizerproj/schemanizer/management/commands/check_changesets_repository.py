@@ -46,13 +46,12 @@ def process_file(f, commit):
         print msg
         log.debug(msg)
 
-        if f['status'] == 'added':
-            if models.Changeset.objects.filter(
-                    repo_filename=filename).exists():
-                msg = 'File was ignored, it has been submitted previously.'
-                print msg
-                log.debug(msg)
-                return
+        repo_filename_exists = models.Changeset.objects.filter(
+            repo_filename=filename).exists()
+
+        if not repo_filename_exists and (
+                status == 'added' or status == 'modified'):
+
             r = requests_get(f['contents_url'])
             if r.status_code == 200:
                 data = json.loads(r.text)
@@ -72,10 +71,40 @@ def process_file(f, commit):
                 msg = u'Aborting, HTTP status code was %s.' % (r.status_code,)
                 print msg
                 log.error(msg)
-        else:
-            msg = 'File was ignored, not a newly added changeset.'
+
+        elif repo_filename_exists and status == 'added':
+            msg = 'File was ignored, it has been submitted previously.'
             print msg
             log.debug(msg)
+
+        elif repo_filename_exists and status == 'modified':
+            r = requests_get(f['contents_url'])
+            if r.status_code == 200:
+                data = json.loads(r.text)
+                content = base64.b64decode(data['content'])
+                yaml_obj = yaml.load(content)
+                if not isinstance(yaml_obj, dict):
+                    raise exceptions.Error('File format is invalid.')
+                changeset = changeset_logic.update_changeset_yaml(
+                    yaml_obj, filename)
+                if changeset:
+                    msg = u'Changeset [id=%s] was updated.' % (
+                        changeset.id,)
+                    print msg
+                    log.debug(msg)
+                else:
+                    print 'Changeset was not processed.'
+                print
+            else:
+                msg = u'Aborting, HTTP status code was %s.' % (r.status_code,)
+                print msg
+                log.error(msg)
+
+        else:
+            msg = 'File was ignored.'
+            print msg
+            log.debug(msg)
+
     except Exception, e:
         msg = 'ERROR %s: %s' % (type(e), e)
         sys.stderr.write('%s\n' % (msg,))

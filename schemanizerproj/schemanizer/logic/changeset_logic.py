@@ -110,6 +110,65 @@ def on_changeset_submit(changeset):
     tasks.review_changeset.delay(changeset=changeset.pk)
 
 
+def update_changeset_yaml(yaml_obj, repo_filename):
+    """Updates existing changeset from YAML document."""
+
+    log.debug(yaml_obj)
+
+    qs = models.Changeset.objects.filter(repo_filename=repo_filename)
+    if not qs.exists():
+        log.warn('Changeset does not exists.')
+        return None
+    changeset = qs[0]
+
+    with transaction.commit_on_success():
+        models.ChangesetDetail.objects.filter(changeset=changeset).delete()
+
+        changeset_obj = yaml_obj['changeset']
+        new_changeset_obj = {}
+        for k, v in changeset_obj.iteritems():
+            if (k in [
+                    'database_schema', 'type', 'classification',
+                    'version_control_url']):
+                new_changeset_obj[k] = v
+            else:
+                log.warn(u'Ignored changeset field %s.' % (k,))
+        changeset_obj = new_changeset_obj
+        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
+            name=changeset_obj['database_schema'])
+        log.debug(pprint.pformat(changeset_obj))
+        for k, v in changeset_obj.iteritems():
+            setattr(changeset, k, v)
+        changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+        changeset.save()
+
+        for changeset_detail_obj in yaml_obj['changeset_details']:
+            changeset_detail_obj['changeset'] = changeset
+            new_changeset_detail_obj = {}
+            for k, v in changeset_detail_obj.iteritems():
+                if (k in
+                        [
+                            'description', 'apply_sql', 'revert_sql',
+                            'apply_verification_sql',
+                            'revert_verification_sql',
+                            'changeset']):
+                    new_changeset_detail_obj[k] = v
+                else:
+                    log.warn(u'Ignored changeset detail field %s.' % (k,))
+            changeset_detail_obj = new_changeset_detail_obj
+            log.debug(pprint.pformat(changeset_detail_obj))
+            models.ChangesetDetail.objects.create(**changeset_detail_obj)
+
+        models.ChangesetAction.objects.create(
+            changeset=changeset,
+            type=models.ChangesetAction.TYPE_CHANGED,
+            timestamp=timezone.now())
+
+    mail_logic.send_changeset_updated_mail(changeset)
+    log.debug('changeset = %s' % (changeset,))
+    return changeset
+
+
 def save_changeset_yaml(yaml_obj, repo_filename):
     """Saves changeset from YAML document."""
 
@@ -119,6 +178,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
         #msg = (u'Changeset with repo_filename=%s already exists.' % (
         #    repo_filename,))
         #raise exceptions.Error(msg)
+        log.warn('Changeset is already existing.')
         return
 
     with transaction.commit_on_success():
@@ -167,52 +227,6 @@ def save_changeset_yaml(yaml_obj, repo_filename):
     on_changeset_submit(changeset)
 
     return changeset
-
-
-def update_changeset_yaml(yaml_obj, repo_filename):
-    """Updates changeset from YAML document."""
-
-    changeset_qs = models.Changeset.objects.filter(
-        repo_filename=repo_filename)
-    if not changeset_qs.exists():
-        msg = (u'Changeset with repo_filename=%s does not exists.' % (
-            repo_filename,))
-        raise exceptions.Error(msg)
-    changeset = changeset_qs[0]
-
-    with transaction.commit_on_success():
-        changeset_obj = yaml_obj['changeset']
-        new_changeset_obj = {}
-        for k, v in changeset_obj.iteritems():
-            if (
-                    k in [
-                        'database_schema', 'type', 'classification',
-                        'version_control_url']):
-                new_changeset_obj[k] = v
-            else:
-                log.warn(u'%s is invalid changeset submit field.' % (k,))
-        changeset_obj = new_changeset_obj
-        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
-            name=changeset_obj['database_schema'])
-        changeset_obj['repo_filename'] = repo_filename
-        log.debug(pprint.pformat(changeset_obj))
-        for k, v in changeset_obj.iteritems():
-            setattr(changeset, k, v)
-        changeset.save()
-
-        models.ChangesetDetail.objects.filter(changeset=changeset).delete()
-
-        for changeset_detail_obj in yaml_obj['changeset_details']:
-            changeset_detail_obj['changeset'] = changeset
-            log.debug(pprint.pformat(changeset_detail_obj))
-            models.ChangesetDetail.objects.create(**changeset_detail_obj)
-
-        models.ChangesetAction.objects.create(
-            changeset=changeset,
-            type=models.ChangesetAction.TYPE_CHANGED,
-            timestamp=timezone.now())
-
-    mail_logic.send_changeset_updated_mail(changeset)
 
 
 def changeset_submit(changeset, changeset_details, user):
