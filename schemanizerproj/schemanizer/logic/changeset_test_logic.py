@@ -206,8 +206,10 @@ class ChangesetSyntaxTest(object):
                     #     counts_after,))
 
                     try:
-                        self._execute_query(
-                            cursor, changeset_detail.apply_verification_sql)
+                        if changeset_detail.apply_verification_sql:
+                            self._execute_query(
+                                cursor,
+                                changeset_detail.apply_verification_sql)
                     except Exception, e:
                         msg = (
                             u'Apply verification failed (Error %s: %s).' % (
@@ -230,8 +232,10 @@ class ChangesetSyntaxTest(object):
                             'applied.')
 
                     try:
-                        self._execute_query(
-                            cursor, changeset_detail.revert_verification_sql)
+                        if changeset_detail.revert_verification_sql:
+                            self._execute_query(
+                                cursor,
+                                changeset_detail.revert_verification_sql)
                     except Exception, e:
                         msg = (
                             u'Revert verification failed (Error %s: %s).' % (
