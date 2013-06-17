@@ -122,6 +122,11 @@ CHANGESET_REPO_URL = None
 AUTHORIZATION_TOKEN = None
 # directory to look for changesets, for example: /changesets
 CHANGESET_PATH = None
+# Github requests that return multiple items will be paginated to
+# this number of items (upto maximum of 100)
+GITHUB_ITEMS_PER_PAGE = 30
+# number of hours ago from 'now'
+CHANGESET_CHECK_HOUR_OFFSET = 1
 
 
 #==============================================================================

@@ -252,7 +252,7 @@ CHANGESET_REPO_URL = https://api.github.com/repos/user_name/repository_name/comm
 The authorization token used when calling Github APIs. 
 To create a token, POST to https://api.github.com/authorizations with note and scopes values in the data hash,
 for example:
-    $ curl -u username -d '{"scopes":["repo"],"note":"Schemanizer repo access token."}' https:/api.github.com/authorizations
+    $ curl -u username -d '{"scopes":["repo"],"note":"Schemanizer repo access token."}' https://api.github.com/authorizations
 ```
 AUTHORIZATION_TOKEN = None
 ```
