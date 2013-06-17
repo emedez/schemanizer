@@ -206,7 +206,7 @@ class ChangesetSyntaxTest(object):
                     #     counts_after,))
 
                     try:
-                        if changeset_detail.appyl_verification_sql:
+                        if changeset_detail.apply_verification_sql:
                             self._execute_query(
                                 cursor,
                                 changeset_detail.apply_verification_sql)
