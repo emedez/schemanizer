@@ -135,7 +135,7 @@ To use a particular database, specifiy the connection details in the 'default' k
             'NAME': 'dbname',                       # database name or path to database file if using sqlite3
             'USER': 'dbuser',                       # database user, unused with sqlite3
             'PASSWORD': 'dbpassword',               # database password, unused with sqlite3
-            'HOST': '',                             # set empty string for localhost 
+            'HOST': '',                             # set empty string for localhost
             'PORT': ''                              # set empty string for default
         }
     }
@@ -199,8 +199,8 @@ The names (list of strings) of the security groups with which to associate insta
 AWS_SECURITY_GROUPS = ['quicklaunch-1']
 ```
 
-The type of instance to run, 
-choices are: t1.micro, m1.small, m1.medium, m1.large, m1.xlarge, c1.medium, c1.xlarge, 
+The type of instance to run,
+choices are: t1.micro, m1.small, m1.medium, m1.large, m1.xlarge, c1.medium, c1.xlarge,
 m2.xlarge, m2.2xlarge, m2.4xlarge, cc1.4xlarge, cg1.4xlarge, cc2.8xlarge
 ```
 AWS_INSTANCE_TYPE = 'm1.small'
@@ -218,7 +218,7 @@ AWS_MYSQL_USER = 'sandbox'
 AWS_MYSQL_PASSWORD = 'sandbox'
 ```
 
-When an EC2 instance is launched, it needs some time before it can be utilized. 
+When an EC2 instance is launched, it needs some time before it can be utilized.
 This setting value is the number of seconds to wait for EC2 instance to start before accessing it.
 ```
 AWS_EC2_INSTANCE_START_WAIT = 60
@@ -249,7 +249,7 @@ Github repo commits URL in the following format: https://api.github.com/repos/ow
 CHANGESET_REPO_URL = https://api.github.com/repos/user_name/repository_name/commits
 ```
 
-The authorization token used when calling Github APIs. 
+The authorization token used when calling Github APIs.
 To create a token, POST to https://api.github.com/authorizations with note and scopes values in the data hash,
 for example:
     $ curl -u username -d '{"scopes":["repo"],"note":"Schemanizer repo access token."}' https://api.github.com/authorizations
@@ -305,7 +305,7 @@ To use the schemanizer application, the following processes needs to be launched
 * Celery cam - updates database with status of tasks
 
 These processes can be ran inside a terminal multiplexer such as screen for convenience.
-To run these processes inside screen, following the following steps 
+To run these processes inside screen, following the following steps
 (don't forget to activate virtual environment in each window):
 
 Start screen:
@@ -325,7 +325,7 @@ Start Celery worker to process job queues:
 ```
 $ ./manage.py celery worker -E --loglevel=DEBUG
 ```
-Notes: 
+Notes:
 -E option needs to be present to enable capturing of tasks events with Celery cam.
 --loglevel is optional
 
@@ -340,7 +340,7 @@ $ ./manage.py celerycam
 Switching between windows:
 Ctrl-A n    next window
 Ctrl-A p    previous window
-Ctrl-A d    detach 
+Ctrl-A d    detach
 
 To list screens:
 ```
@@ -447,12 +447,36 @@ The workflow for the changesets are the following:
 Custom django-admin Commands
 ============================
 
-```
-$ python manage.py check_changesets_repository
-```
+### check_changesets_repository
 
-Currently outputs to screens information about github repository commits.
+Processes changesets stored in commits in a Github repository.
+Files with status equal to 'added' are treated as changeset submission.
+File with status equal to 'modified', but has never been processed, is also treated as changeset submission, otherwise it updates existing changeset.
 
+```
+Usage: python manage.py check_changesets_repository [options]
+
+Options:
+  -v VERBOSITY, --verbosity=VERBOSITY
+                        Verbosity level; 0=minimal output, 1=normal output,
+                        2=verbose output, 3=very verbose output
+  --settings=SETTINGS   The Python path to a settings module, e.g.
+                        "myproject.settings.main". If this isn't provided, the
+                        DJANGO_SETTINGS_MODULE environment variable will be
+                        used.
+  --pythonpath=PYTHONPATH
+                        A directory to add to the Python path, e.g.
+                        "/home/djangoprojects/myproject".
+  --traceback           Print traceback on exception
+  --since=SINCE         ISO 8601 Date, for example, 2011-04-14T16:00:49Z. Only
+                        commits after this date will be processed.
+  --since-hours=SINCE_HOURS
+                        Only commits after the date/time SINCE_HOURS ago will
+                        be processed. If not None, this overrides the value of
+                        --since option
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+```
 
 Dumping and Restoring Data
 ==========================
