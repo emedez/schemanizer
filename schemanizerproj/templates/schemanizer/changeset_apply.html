@@ -5,65 +5,48 @@
 
 {% block contents %}
     {% if user_has_access %}
-        {% if show_form %}
-            <h2>Apply Changeset</h2>
-            <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
-            {% crispy form form.helper %}
-        {% endif %}
+        <h2>Apply Changeset</h2>
+        <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
 
-        {% if poll_thread_status %}
-            <div>
-                <div id="thread_messages_html">
-                </div>
-                <div id="thread_changeset_detail_applies_html">
-                </div>
-                <div id="ajax_loader_animation">
-                    <img src="{{ STATIC_URL }}site/img/ajax-loader.gif"/>
+        <form>
+            <div class="control-group" id="div_id_environment">
+                <label class="control-label" for="id_environment">Environment</label>
+                <div class="controls">
+                    <select id="id_environment" class="select" name="environment">
+                        {% for environment in environments %}
+                            <option value="{{ environment.id }}">{{ environment.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-        {% endif %}
+        </form>
+
+        <div id="id_environment_servers"></div>
     {% endif %}
 {% endblock %}
 
 {% block scripts_extra %}
     {{ block.super }}
-    {% if poll_thread_status %}
-        <script type="text/javascript">
-            $(function() {
-                var status_url = "{% url 'schemanizer_changeset_apply_status' request_id %}";
+    <script type="text/javascript">
+        $(function() {
+            var select_environment_servers_url = "{% url 'schemanizer_select_environment_servers' %}";
+            var changeset_id = "{{ changeset.id }}";
 
-                // check frequency in seconds
-                var check_freq = 2;
-
-                function getStatus() {
-                    $.get(status_url, function(data) {
-                        console.log(data);
-                        if ('error' in data) {
-                            alert(data['error']);
-                        }
-                        else {
-                            if ('thread_messages_html' in data) {
-                                $('#thread_messages_html').html(data['thread_messages_html']);
-                            }
-                            if ('thread_is_alive' in data) {
-                                if (data['thread_is_alive']) {
-                                    // sched check again if thread is still alive
-                                    setTimeout(getStatus, check_freq * 1000);
-                                }
-                                else {
-                                    if ('thread_changeset_detail_applies_html' in data) {
-                                        $('#thread_changeset_detail_applies_html').html(data['thread_changeset_detail_applies_html']);
-                                    }
-                                    $('#ajax_loader_animation').hide();
-                                }
-                            }
-                        }
+            function showEnvironmentServers() {
+                var environment_id = $('#id_environment').val();
+                $.get(
+                    select_environment_servers_url + "?environment_id=" +
+                        environment_id + "&changeset_id=" + changeset_id,
+                    function(data) {
+                        $('#id_environment_servers').html(data['html']);
                     });
-                };
+            }
 
-                console.log(status_url);
-                getStatus();
+            $('#id_environment').change(function() {
+                showEnvironmentServers();
             });
-        </script>
-    {% endif %}
+
+            showEnvironmentServers();
+        });
+    </script>
 {% endblock %}

@@ -7,6 +7,7 @@ from celery import current_task, states, task
 
 from schemanizer import models, utils
 from schemanizer.logic import (
+    changeset_apply_logic,
     changeset_review_logic,
     mail_logic)
 
@@ -33,6 +34,51 @@ def review_changeset(changeset, schema_version=None, user=None):
         meta=dict(
             message='Changeset review completed.',
             message_type='info'))
+
+
+@task(ignore_result=True)
+def apply_changeset(changeset_id, user_id, server_id):
+    """Applies changeset."""
+
+    messages = []
+
+    current_task.update_state(
+        state=states.STARTED,
+        meta=dict(
+            changeset_id=changeset_id,
+            user_id=user_id,
+            server_id=server_id,
+            messages=messages
+        ))
+
+    def message_callback(message, message_type):
+        messages.append(dict(
+            message=message,
+            message_type=message_type))
+        current_task.update_state(
+            state=states.STARTED,
+            meta=dict(
+                changeset_id=changeset_id,
+                user_id=user_id,
+                server_id=server_id,
+                messages=messages))
+
+    changeset_apply_obj = changeset_apply_logic.apply_changeset(
+        changeset_id, user_id, server_id, message_callback)
+
+    messages.append(dict(
+        message='Changeset apply completed.',
+        message_type='info'))
+
+    current_task.update_state(
+        state=states.STARTED,
+        meta=dict(
+            changeset_id=changeset_id,
+            user_id=user_id,
+            server_id=server_id,
+            messages=messages,
+            changeset_detail_apply_ids=
+                changeset_apply_obj.changeset_detail_apply_ids))
 
 
 @task()

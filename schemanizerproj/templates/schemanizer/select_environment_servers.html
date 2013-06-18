@@ -1,0 +1,24 @@
+<form action="{% url 'schemanizer_apply_changesets_to_multiple_hosts' changeset_id %}" method="post">
+    {% csrf_token %}
+    {% if servers %}
+        <p><strong>Select servers:</strong></p>
+        <table class="table table-striped table-condensed table-bordered table-hover">
+            <tbody>
+                {% for server in servers %}
+                    <tr>
+                        <td>
+                            <input id="id_server_{{ forloop.counter0 }}" type="checkbox" name="server_{{ forloop.counter0 }}" value="{{ server.id }}"/>
+                            {{ server.name }} [{{ server.hostname }}{% if server.port %}:{{ server.port }}{% endif %}]
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="form-actions">
+            <input type="submit" name="submit" value="Apply Changeset to Selected Hosts"/>
+        </div>
+    {% else %}
+        <p class="text-info"><em>No servers found.</em></p>
+    {% endif %}
+</form>
