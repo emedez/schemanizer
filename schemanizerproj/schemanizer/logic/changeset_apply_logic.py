@@ -75,7 +75,7 @@ class ChangesetApply(object):
             message=message,
             message_type=message_type))
         if self._message_callback:
-            self._message_callback(self, message, message_type)
+            self._message_callback(message, message_type)
 
     def _apply_changeset_detail(self, changeset_detail, cursor):
         has_errors = False
@@ -291,7 +291,7 @@ class ChangesetApplyThread(threading.Thread):
             self._store_message(msg)
 
 
-def changeset_apply(changeset, user, server):
+def start_changeset_apply_thread(changeset, user, server):
     changeset = utils.get_model_instance(changeset, models.Changeset)
     user = utils.get_model_instance(user, models.User)
     server = utils.get_model_instance(server, models.Server)
@@ -309,3 +309,27 @@ def changeset_apply(changeset, user, server):
     thread = ChangesetApplyThread(changeset, user, server, connection_options)
     thread.start()
     return thread
+
+
+def apply_changeset(changeset, user, server, message_callback=None):
+    """Applies changeset to specified server."""
+
+    changeset = utils.get_model_instance(changeset, models.Changeset)
+    user = utils.get_model_instance(user, models.User)
+    server = utils.get_model_instance(server, models.Server)
+
+    if not privileges_logic.can_user_apply_changeset(user, changeset):
+        raise exceptions.PrivilegeError(
+            'User is not allowed to apply changeset.')
+
+    connection_options = {}
+    if settings.AWS_MYSQL_USER:
+        connection_options['user'] = settings.AWS_MYSQL_USER
+    if settings.AWS_MYSQL_PASSWORD:
+        connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
+
+    changeset_apply_obj = ChangesetApply(
+        changeset, user, server, connection_options, message_callback)
+    changeset_apply_obj.run()
+
+    return changeset_apply_obj

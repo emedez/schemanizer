@@ -33,7 +33,14 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
 #    url(r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$', 'changeset_apply_results', name='schemanizer_changeset_apply_results'),
 #    url(r'^changeset/view-apply-results/', 'changeset_view_apply_results', name='schemanizer_changeset_view_apply_results'),
-    url(r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply', name='schemanizer_changeset_apply'),
+    url(
+        r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply',
+        name='schemanizer_changeset_apply'),
+    url(
+        r'^changeset/apply-to-multiple-hosts/(?P<changeset_id>\d+)/$',
+        'apply_changeset_to_multiple_hosts',
+        name='schemanizer_apply_changesets_to_multiple_hosts'),
+
     url(r'^changeset/apply-status/(?P<request_id>.+?)/$', 'changeset_apply_status', name='schemanizer_changeset_apply_status'),
     #url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
     #url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
@@ -90,4 +97,17 @@ urlpatterns = patterns('schemanizer.views',
     url(
         r'^changeset-reviews/$', 'changeset_reviews',
         name='schemanizer_changeset_reviews'),
+    url(
+        r'^changeset-applies/$', 'changeset_applies',
+        name='schemanizer_changeset_applies'),
+
+    #
+    # ajax views
+    #
+    url(
+        r'^select-environment-servers/$', 'select_environment_servers',
+        name='schemanizer_select_environment_servers'),
+    url(
+        r'^ajax-changeset-applies/', 'ajax_changeset_applies',
+        name='schemanizer_ajax_changeset_applies'),
 )

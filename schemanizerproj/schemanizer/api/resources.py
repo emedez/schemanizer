@@ -358,7 +358,7 @@ class ChangesetResource(ModelResource):
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
 
-            thread = changeset_apply_logic.changeset_apply(
+            thread = changeset_apply_logic.start_changeset_apply_thread(
                 changeset_id, request.user.schemanizer_user, server_id)
             apply_threads[request_id] = thread
 
