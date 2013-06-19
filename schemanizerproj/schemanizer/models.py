@@ -214,7 +214,9 @@ class ChangesetDetail(models.Model):
 
 class ChangesetAction(models.Model):
     TYPE_CREATED = u'created'
+    TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO = u'created with data from github repo'
     TYPE_CHANGED = u'changed'
+    TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO = u'changed with data from github repo'
     TYPE_DELETED = u'deleted'
     TYPE_REVIEW_STARTED = u'review started'
     TYPE_REVIEWED = u'reviewed'
@@ -228,7 +230,13 @@ class ChangesetAction(models.Model):
 
     TYPE_CHOICES = (
         (TYPE_CREATED, TYPE_CREATED),
+        (
+            TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO,
+            TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO),
         (TYPE_CHANGED, TYPE_CHANGED),
+        (
+            TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO,
+            TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO),
         (TYPE_DELETED, TYPE_DELETED),
         (TYPE_REVIEW_STARTED, TYPE_REVIEW_STARTED),
         (TYPE_REVIEWED, TYPE_REVIEWED),
@@ -244,7 +252,7 @@ class ChangesetAction(models.Model):
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True)
     type = models.CharField(
-        max_length=18, blank=True, choices=TYPE_CHOICES,
+        max_length=34, null=True, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])
     timestamp = models.DateTimeField(null=True, blank=True)
 

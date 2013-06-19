@@ -128,3 +128,11 @@ CREATE  TABLE `changeset_action_server_map` (
     `changeset_action_id` INT NULL ,
     `server_id` INT NULL ,
     PRIMARY KEY (`id`) );
+
+ALTER TABLE `changeset_actions`
+CHANGE COLUMN `type` `type` ENUM(
+    'created','created with data from github repo',
+    'changed','changed with data from github repo',
+    'deleted','review started','reviewed','validations passed',
+    'validations failed','tests passed','tests failed','approved','rejected',
+    'applied') NULL DEFAULT NULL  ;

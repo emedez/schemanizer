@@ -60,7 +60,7 @@ def process_file(f, commit):
                 if not isinstance(yaml_obj, dict):
                     raise exceptions.Error('File format is invalid.')
                 changeset = changeset_logic.save_changeset_yaml(
-                    yaml_obj, filename)
+                    yaml_obj, f)
                 if changeset:
                     msg = u'Changeset [id=%s] was submitted.' % (
                         changeset.id,)
@@ -86,7 +86,7 @@ def process_file(f, commit):
                 if not isinstance(yaml_obj, dict):
                     raise exceptions.Error('File format is invalid.')
                 changeset = changeset_logic.update_changeset_yaml(
-                    yaml_obj, filename)
+                    yaml_obj, f)
                 if changeset:
                     msg = u'Changeset [id=%s] was updated.' % (
                         changeset.id,)

@@ -110,10 +110,12 @@ def on_changeset_submit(changeset):
     tasks.review_changeset.delay(changeset=changeset.pk)
 
 
-def update_changeset_yaml(yaml_obj, repo_filename):
+def update_changeset_yaml(yaml_obj, f):
     """Updates existing changeset from YAML document."""
 
     log.debug(yaml_obj)
+    repo_filename = f['filename']
+    blob_url = f['blob_url']
 
     qs = models.Changeset.objects.filter(repo_filename=repo_filename)
     if not qs.exists():
@@ -128,14 +130,14 @@ def update_changeset_yaml(yaml_obj, repo_filename):
         new_changeset_obj = {}
         for k, v in changeset_obj.iteritems():
             if (k in [
-                    'database_schema', 'type', 'classification',
-                    'version_control_url']):
+                    'database_schema', 'type', 'classification']):
                 new_changeset_obj[k] = v
             else:
                 log.warn(u'Ignored changeset field %s.' % (k,))
         changeset_obj = new_changeset_obj
         changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
             name=changeset_obj['database_schema'])
+        changeset_obj['version_control_url'] = blob_url
         log.debug(pprint.pformat(changeset_obj))
         for k, v in changeset_obj.iteritems():
             setattr(changeset, k, v)
@@ -161,7 +163,7 @@ def update_changeset_yaml(yaml_obj, repo_filename):
 
         models.ChangesetAction.objects.create(
             changeset=changeset,
-            type=models.ChangesetAction.TYPE_CHANGED,
+            type=models.ChangesetAction.TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO,
             timestamp=timezone.now())
 
     mail_logic.send_changeset_updated_mail(changeset)
@@ -169,10 +171,12 @@ def update_changeset_yaml(yaml_obj, repo_filename):
     return changeset
 
 
-def save_changeset_yaml(yaml_obj, repo_filename):
+def save_changeset_yaml(yaml_obj, f):
     """Saves changeset from YAML document."""
 
     log.debug(yaml_obj)
+    repo_filename = f['filename']
+    blob_url = f['blob_url']
 
     if models.Changeset.objects.filter(repo_filename=repo_filename).exists():
         #msg = (u'Changeset with repo_filename=%s already exists.' % (
@@ -188,7 +192,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
             if (
                     k in [
                         'database_schema', 'type', 'classification',
-                        'version_control_url', 'submitted_by']):
+                        'submitted_by']):
                 new_changeset_obj[k] = v
             else:
                 log.warn(u'Ignored changeset field %s.' % (k,))
@@ -199,6 +203,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
             name=changeset_obj['submitted_by'])
         changeset_obj['submitted_at'] = timezone.now()
         changeset_obj['repo_filename'] = repo_filename
+        changeset_obj['version_control_url'] = blob_url
         log.debug(pprint.pformat(changeset_obj))
         changeset = models.Changeset.objects.create(**changeset_obj)
 
@@ -221,7 +226,7 @@ def save_changeset_yaml(yaml_obj, repo_filename):
 
         models.ChangesetAction.objects.create(
             changeset=changeset,
-            type=models.ChangesetAction.TYPE_CREATED,
+            type=models.ChangesetAction.TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO,
             timestamp=timezone.now())
 
     on_changeset_submit(changeset)
