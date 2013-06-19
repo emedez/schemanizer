@@ -487,3 +487,25 @@ class ChangesetApply(models.Model):
 
     def __unicode__(self):
         return u'<ChangesetApply id=%s>' % (self.pk,)
+
+
+class ChangesetActionServerMap(models.Model):
+    changeset_action = models.ForeignKey(
+        ChangesetAction, db_column='changeset_action_id', null=True,
+        blank=True, default=None)
+    server = models.ForeignKey(
+        Server, db_column='server_id', null=True, blank=True, default=None)
+
+    class Meta:
+        db_table = 'changeset_action_server_map'
+
+    def __unicode__(self):
+        changeset_action_id = None
+        if self.changeset_action:
+            changeset_action_id = self.changeset_action.id
+        server_id = None
+        if self.server:
+            server_id = self.server.id
+        return (
+            u'<ChangesetActionServerMap: changeset_action.id=%s, '
+            u'server.id=%s>' % (changeset_action_id, server_id))

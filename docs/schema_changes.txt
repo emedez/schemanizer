@@ -118,3 +118,13 @@ CHANGE COLUMN `count_sql` `apply_verification_sql` TEXT NULL DEFAULT NULL  ;
 
 ALTER TABLE `changeset_details`
 ADD COLUMN `revert_verification_sql` TEXT NULL  AFTER `apply_verification_sql` ;
+
+
+2013-06-19 GMT+08
+=================
+
+CREATE  TABLE `changeset_action_server_map` (
+    `id` INT NOT NULL AUTO_INCREMENT ,
+    `changeset_action_id` INT NULL ,
+    `server_id` INT NULL ,
+    PRIMARY KEY (`id`) );

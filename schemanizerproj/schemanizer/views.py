@@ -364,6 +364,37 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             changeset_applies = models.ChangesetApply.objects.filter(
                 changeset=changeset)
 
+            changeset_action_qs = models.ChangesetAction.objects.filter(
+                changeset=changeset)
+            changeset_actions = []
+            for changeset_action in changeset_action_qs:
+                changeset_action_server_map_qs = (
+                    models.ChangesetActionServerMap.objects.filter(
+                        changeset_action=changeset_action))
+                changeset_action_server_map = None
+                if changeset_action_server_map_qs.exists():
+                    changeset_action_server_map = (
+                        changeset_action_server_map_qs[0])
+                type_col = changeset_action.type
+                if (
+                        type_col == models.ChangesetAction.TYPE_APPLIED and
+                        changeset_action_server_map):
+                    server = changeset_action_server_map.server
+                    server_name = server.name
+                    environment_name = None
+                    if server.environment:
+                        environment_name = server.environment.name
+                    type_col = (
+                        u'%s (server: %s, environment: %s)' % (
+                            type_col, server_name, environment_name))
+
+                changeset_actions.append(
+                    dict(
+                        changeset_action=changeset_action,
+                        changeset_action_server_map=
+                        changeset_action_server_map,
+                        type=type_col))
+
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:

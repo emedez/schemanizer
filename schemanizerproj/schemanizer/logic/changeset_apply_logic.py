@@ -214,10 +214,12 @@ class ChangesetApply(object):
                 changeset_apply = models.ChangesetApply.objects.create(
                     changeset=self._changeset, server=self._server,
                     applied_at=applied_at, applied_by=self._user)
-                models.ChangesetAction.objects.create(
+                changeset_action = models.ChangesetAction.objects.create(
                     changeset=self._changeset,
                     type=models.ChangesetAction.TYPE_APPLIED,
                     timestamp=applied_at)
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
 
             mail_logic.send_changeset_applied_mail(
                 self._changeset, changeset_apply)
