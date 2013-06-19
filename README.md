@@ -268,9 +268,10 @@ this number of items (upto maximum of 100)
 GITHUB_ITEMS_PER_PAGE = 30
 ```
 
-Used by check_changesets_repository management command.
+Used by check_changesets_repository management command if no arguments are provided.
 This is the number of hours subtracted from the current datetime to determine
 the starting limit of commit datetime.
+For example, a value of 1 means that only commits after 1 hour ago (from the current datetime) will be processed.
 ```
 CHANGESET_CHECK_HOUR_OFFSET = 1
 ```
