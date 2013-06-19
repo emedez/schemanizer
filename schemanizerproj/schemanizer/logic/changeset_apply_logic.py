@@ -207,12 +207,16 @@ class ChangesetApply(object):
                 checksum = utils.schema_hash(ddl)
                 if not (self._changeset.after_version and (
                         self._changeset.after_version.checksum == checksum)):
+                    after_version_checksum = None
+                    if self._changeset.after_version:
+                        after_version_checksum = self._changeset.after_version.checksum
                     log.debug('checksum = %s' % (checksum,))
                     log.debug('after_version = %s' % (
                         self._changeset.after_version,))
                     raise exceptions.Error(
-                        'Final schema checksum does not match the expected '
-                        'value.')
+                        u"Final schema checksum '%s' on host does not match "
+                        u"the expected value '%s'." % (
+                            checksum, after_version_checksum))
 
                 applied_at = timezone.now()
                 changeset_apply = models.ChangesetApply.objects.create(
