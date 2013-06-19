@@ -29,6 +29,11 @@ def review_changeset(changeset, schema_version=None, user=None):
     changeset = utils.get_model_instance(changeset, models.Changeset)
     changeset_review_logic.review_changeset(
         changeset, schema_version, user, message_callback=message_callback)
+
+    # TODO: remove when no longer needed
+    # Simulate long running task by sleeping
+    #time.sleep(30)
+
     current_task.update_state(
         state=states.STARTED,
         meta=dict(
