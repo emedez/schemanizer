@@ -189,11 +189,15 @@ class ChangesetApply(object):
             checksum = utils.schema_hash(ddl)
             if not (self._changeset.before_version and
                     self._changeset.before_version.checksum == checksum):
+                before_version_checksum = None
+                if self._changeset.before_version:
+                    before_version_checksum = self._changeset.before_version.checksum
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
                 raise exceptions.Error(
-                    'Cannot apply changeset, existing schema checksum does '
-                    'not match the expected value.')
+                    u"Cannot apply changeset, existing schema checksum '%s' "
+                    u"on host does not match the expected value '%s'." % (
+                        checksum, before_version_checksum))
 
             with transaction.commit_on_success():
                 self._apply_changeset_details()
