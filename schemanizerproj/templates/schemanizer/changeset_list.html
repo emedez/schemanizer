@@ -35,7 +35,7 @@
                     <td>{{ c.r.database_schema }}</td>
                     <td>{{ c.r.type }}</td>
                     <td>{{ c.r.classification }}</td>
-                    <td>{{ c.r.version_control_url }}</td>
+                    <td>{{ c.r.version_control_url|truncatechars:20 }}</td>
                     <td>{{ c.r.submitted_by }}</td>
                     <td>{{ c.r.submitted_at }}</td>
                     <td>{{ c.r.review_status }}</td>

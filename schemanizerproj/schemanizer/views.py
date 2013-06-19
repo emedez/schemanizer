@@ -364,6 +364,37 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
             changeset_applies = models.ChangesetApply.objects.filter(
                 changeset=changeset)
 
+            changeset_action_qs = models.ChangesetAction.objects.filter(
+                changeset=changeset)
+            changeset_actions = []
+            for changeset_action in changeset_action_qs:
+                changeset_action_server_map_qs = (
+                    models.ChangesetActionServerMap.objects.filter(
+                        changeset_action=changeset_action))
+                changeset_action_server_map = None
+                if changeset_action_server_map_qs.exists():
+                    changeset_action_server_map = (
+                        changeset_action_server_map_qs[0])
+                type_col = changeset_action.type
+                if (
+                        type_col == models.ChangesetAction.TYPE_APPLIED and
+                        changeset_action_server_map):
+                    server = changeset_action_server_map.server
+                    server_name = server.name
+                    environment_name = None
+                    if server.environment:
+                        environment_name = server.environment.name
+                    type_col = (
+                        u'%s (server: %s, environment: %s)' % (
+                            type_col, server_name, environment_name))
+
+                changeset_actions.append(
+                    dict(
+                        changeset_action=changeset_action,
+                        changeset_action_server_map=
+                        changeset_action_server_map,
+                        type=type_col))
+
             if request.method == 'POST':
                 try:
                     if u'submit_update' in request.POST:
@@ -1397,46 +1428,72 @@ def changeset_applies(request, template='schemanizer/changeset_applies.html'):
         template, locals(), context_instance=RequestContext(request))
 
 
+def ajax_changeset_reviews(
+        request, template='schemanizer/ajax_changeset_reviews.html'):
+    """Ajax view for on-going changeset review jobs."""
+
+    if not request.is_ajax():
+        return HttpResponseForbidden(MSG_NOT_AJAX)
+
+    data = {}
+    try:
+        if not request.user.is_authenticated():
+            raise exceptions.Error('Login is required.')
+
+        task_states = djcelery_models.TaskState.objects.filter(
+            name='schemanizer.tasks.review_changeset',
+            state__in=states.UNREADY_STATES)
+        task_state_list = []
+        for task_state in task_states:
+            ar = AsyncResult(task_state.task_id)
+            result = ar.result
+            if result and isinstance(result, dict) and 'message' in result:
+                show_message = True
+            else:
+                show_message = False
+            kwargs_obj = {}
+            if task_state.kwargs:
+                try:
+                    kwargs_obj = yaml.load(task_state.kwargs)
+                    if 'changeset' in kwargs_obj:
+                        kwargs_obj['changeset'] = long(kwargs_obj['changeset'])
+                except:
+                    pass
+            changeset_id = kwargs_obj.get('changeset')
+            show_changeset_view_url = False
+            if changeset_id:
+                show_changeset_view_url = (
+                    models.Changeset.objects.filter(pk=changeset_id).exists())
+
+            task_state_list.append(dict(
+                task_id=task_state.task_id,
+                tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
+                state=task_state.state,
+                params=task_state.kwargs,
+                #result=task_state.result,
+                result=result,
+                show_message=show_message,
+                changeset_id=changeset_id,
+                show_changeset_view_url=show_changeset_view_url,
+            ))
+
+        data['html'] = render_to_string(
+            template, locals(), context_instance=RequestContext(request))
+
+        data_json = json.dumps(data)
+
+    except Exception, e:
+        msg = 'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        data = dict(error=msg, html='')
+        data_json = json.dumps(data)
+
+    return HttpResponse(data_json, mimetype='application/json')
+
+
 @login_required
 def changeset_reviews(
         request, template='schemanizer/changeset_reviews.html'):
-    task_states = djcelery_models.TaskState.objects.filter(
-        name='schemanizer.tasks.review_changeset',
-        state__in=states.UNREADY_STATES)
-    task_state_list = []
-    for task_state in task_states:
-        ar = AsyncResult(task_state.task_id)
-        result = ar.result
-        if result and isinstance(result, dict) and 'message' in result:
-            show_message = True
-        else:
-            show_message = False
-        kwargs_obj = {}
-        if task_state.kwargs:
-            try:
-                kwargs_obj = yaml.load(task_state.kwargs)
-                if 'changeset' in kwargs_obj:
-                    kwargs_obj['changeset'] = long(kwargs_obj['changeset'])
-            except:
-                pass
-        changeset_id = kwargs_obj.get('changeset')
-        show_changeset_view_url = False
-        if changeset_id:
-            show_changeset_view_url = (
-                models.Changeset.objects.filter(pk=changeset_id).exists())
-
-        task_state_list.append(dict(
-            task_id=task_state.task_id,
-            tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
-            state=task_state.state,
-            params=task_state.kwargs,
-            #result=task_state.result,
-            result=result,
-            show_message=show_message,
-            changeset_id=changeset_id,
-            show_changeset_view_url=show_changeset_view_url,
-        ))
-
     return render_to_response(
         template, locals(), context_instance=RequestContext(request))
 

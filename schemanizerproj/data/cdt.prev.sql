@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: cdt
 -- ------------------------------------------------------
--- Server version	5.5.31-0ubuntu0.12.04.1-log
+-- Server version	5.5.31-0ubuntu0.12.04.2-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,6 +14,30 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `changeset_action_server_map`
+--
+
+DROP TABLE IF EXISTS `changeset_action_server_map`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `changeset_action_server_map` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `changeset_action_id` int(11) DEFAULT NULL,
+  `server_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `changeset_action_server_map`
+--
+
+LOCK TABLES `changeset_action_server_map` WRITE;
+/*!40000 ALTER TABLE `changeset_action_server_map` DISABLE KEYS */;
+/*!40000 ALTER TABLE `changeset_action_server_map` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `changeset_actions`
@@ -134,6 +158,7 @@ CREATE TABLE `changeset_details` (
   `before_checksum` varchar(255) DEFAULT NULL,
   `after_checksum` varchar(255) DEFAULT NULL,
   `apply_verification_sql` text,
+  `revert_verification_sql` text,
   `volumetric_values` text,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -931,4 +956,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-10 21:04:29
+-- Dump completed on 2013-06-19 20:47:12

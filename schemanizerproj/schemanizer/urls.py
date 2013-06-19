@@ -98,7 +98,7 @@ urlpatterns = patterns('schemanizer.views',
         r'^changeset-reviews/$', 'changeset_reviews',
         name='schemanizer_changeset_reviews'),
     url(
-        r'^changeset-applies/$', 'changeset_applies',
+        r'^changeset-applies/', 'changeset_applies',
         name='schemanizer_changeset_applies'),
 
     #
@@ -110,4 +110,7 @@ urlpatterns = patterns('schemanizer.views',
     url(
         r'^ajax-changeset-applies/', 'ajax_changeset_applies',
         name='schemanizer_ajax_changeset_applies'),
+    url(
+        r'^ajax-changeset-reviews/', 'ajax_changeset_reviews',
+        name='schemanizer_ajax_changeset_reviews'),
 )

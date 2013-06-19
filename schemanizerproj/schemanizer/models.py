@@ -214,7 +214,9 @@ class ChangesetDetail(models.Model):
 
 class ChangesetAction(models.Model):
     TYPE_CREATED = u'created'
+    TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO = u'created with data from github repo'
     TYPE_CHANGED = u'changed'
+    TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO = u'changed with data from github repo'
     TYPE_DELETED = u'deleted'
     TYPE_REVIEW_STARTED = u'review started'
     TYPE_REVIEWED = u'reviewed'
@@ -228,7 +230,13 @@ class ChangesetAction(models.Model):
 
     TYPE_CHOICES = (
         (TYPE_CREATED, TYPE_CREATED),
+        (
+            TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO,
+            TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO),
         (TYPE_CHANGED, TYPE_CHANGED),
+        (
+            TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO,
+            TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO),
         (TYPE_DELETED, TYPE_DELETED),
         (TYPE_REVIEW_STARTED, TYPE_REVIEW_STARTED),
         (TYPE_REVIEWED, TYPE_REVIEWED),
@@ -244,7 +252,7 @@ class ChangesetAction(models.Model):
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True)
     type = models.CharField(
-        max_length=18, blank=True, choices=TYPE_CHOICES,
+        max_length=34, null=True, blank=True, choices=TYPE_CHOICES,
         default=TYPE_CHOICES[0][0])
     timestamp = models.DateTimeField(null=True, blank=True)
 
@@ -487,3 +495,25 @@ class ChangesetApply(models.Model):
 
     def __unicode__(self):
         return u'<ChangesetApply id=%s>' % (self.pk,)
+
+
+class ChangesetActionServerMap(models.Model):
+    changeset_action = models.ForeignKey(
+        ChangesetAction, db_column='changeset_action_id', null=True,
+        blank=True, default=None)
+    server = models.ForeignKey(
+        Server, db_column='server_id', null=True, blank=True, default=None)
+
+    class Meta:
+        db_table = 'changeset_action_server_map'
+
+    def __unicode__(self):
+        changeset_action_id = None
+        if self.changeset_action:
+            changeset_action_id = self.changeset_action.id
+        server_id = None
+        if self.server:
+            server_id = self.server.id
+        return (
+            u'<ChangesetActionServerMap: changeset_action.id=%s, '
+            u'server.id=%s>' % (changeset_action_id, server_id))

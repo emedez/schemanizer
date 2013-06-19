@@ -29,10 +29,15 @@ def review_changeset(changeset, schema_version=None, user=None):
     changeset = utils.get_model_instance(changeset, models.Changeset)
     changeset_review_logic.review_changeset(
         changeset, schema_version, user, message_callback=message_callback)
+
+    # TODO: remove when no longer needed
+    # Simulate long running task by sleeping
+    #time.sleep(30)
+
     current_task.update_state(
         state=states.STARTED,
         meta=dict(
-            message='Changeset review completed.',
+            message='Changeset review job completed.',
             message_type='info'))
 
 
@@ -67,7 +72,7 @@ def apply_changeset(changeset_id, user_id, server_id):
         changeset_id, user_id, server_id, message_callback)
 
     messages.append(dict(
-        message='Changeset apply completed.',
+        message='Changeset apply job completed.',
         message_type='info'))
 
     current_task.update_state(

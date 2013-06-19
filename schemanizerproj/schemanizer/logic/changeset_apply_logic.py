@@ -189,11 +189,15 @@ class ChangesetApply(object):
             checksum = utils.schema_hash(ddl)
             if not (self._changeset.before_version and
                     self._changeset.before_version.checksum == checksum):
+                before_version_checksum = None
+                if self._changeset.before_version:
+                    before_version_checksum = self._changeset.before_version.checksum
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
                 raise exceptions.Error(
-                    'Cannot apply changeset, existing schema checksum does '
-                    'not match the expected value.')
+                    u"Cannot apply changeset, existing schema checksum '%s' "
+                    u"on host does not match the expected value '%s'." % (
+                        checksum, before_version_checksum))
 
             with transaction.commit_on_success():
                 self._apply_changeset_details()
@@ -203,21 +207,27 @@ class ChangesetApply(object):
                 checksum = utils.schema_hash(ddl)
                 if not (self._changeset.after_version and (
                         self._changeset.after_version.checksum == checksum)):
+                    after_version_checksum = None
+                    if self._changeset.after_version:
+                        after_version_checksum = self._changeset.after_version.checksum
                     log.debug('checksum = %s' % (checksum,))
                     log.debug('after_version = %s' % (
                         self._changeset.after_version,))
                     raise exceptions.Error(
-                        'Final schema checksum does not match the expected '
-                        'value.')
+                        u"Final schema checksum '%s' on host does not match "
+                        u"the expected value '%s'." % (
+                            checksum, after_version_checksum))
 
                 applied_at = timezone.now()
                 changeset_apply = models.ChangesetApply.objects.create(
                     changeset=self._changeset, server=self._server,
                     applied_at=applied_at, applied_by=self._user)
-                models.ChangesetAction.objects.create(
+                changeset_action = models.ChangesetAction.objects.create(
                     changeset=self._changeset,
                     type=models.ChangesetAction.TYPE_APPLIED,
                     timestamp=applied_at)
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
 
             mail_logic.send_changeset_applied_mail(
                 self._changeset, changeset_apply)
