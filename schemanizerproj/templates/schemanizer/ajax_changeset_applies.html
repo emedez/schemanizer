@@ -36,7 +36,12 @@
                     </td>
                     <td>
                         {% for msg in task_state.result.messages %}
-                            <p class="text-{{ msg.message_type }}">{{ msg.message }}</p>
+                            <p class="text-{{ msg.message_type }}">
+                                {{ msg.message }}
+                                {% if msg.extra.delta %}
+                                    <pre>{{ msg.extra.delta }}</pre>
+                                {% endif %}
+                            </p>
                         {% endfor %}
                         {% if task_state.changeset_detail_applies %}
                             <h2>Changeset Detail Applies</h2>

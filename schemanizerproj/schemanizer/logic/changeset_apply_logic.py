@@ -70,13 +70,14 @@ class ChangesetApply(object):
     def changeset_detail_apply_ids(self):
         return self._changeset_detail_apply_ids
 
-    def _store_message(self, message, message_type='info'):
+    def _store_message(self, message, message_type='info', extra=None):
         """Stores message."""
         self._messages.append(dict(
             message=message,
-            message_type=message_type))
+            message_type=message_type,
+            extra=extra))
         if self._message_callback:
-            self._message_callback(message, message_type)
+            self._message_callback(message, message_type, extra)
 
     def _apply_changeset_detail(self, changeset_detail, cursor):
         has_errors = False
@@ -201,11 +202,17 @@ class ChangesetApply(object):
 
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
-                raise exceptions.Error(
-                    u"Cannot apply changeset, existing schema checksum '%s' "
-                    u"on host does not match the expected value '%s'. "
-                    u"Difference information:\n\n%s" % (
-                        checksum, before_version_checksum, ''.join(delta)))
+                # raise exceptions.Error(
+                #     u"Cannot apply changeset, existing schema checksum '%s' "
+                #     u"on host does not match the expected value '%s'. "
+                #     u"Difference information:\n\n%s" % (
+                #         checksum, before_version_checksum, ''.join(delta)))
+
+                msg = (
+                    u"Cannot apply changeset, existing schema on host "
+                    u"does not match the expected schema.")
+                raise exceptions.SchemaDoesNotMatchError(
+                    msg, before_version_ddl, ddl, ''.join(delta))
 
             with transaction.commit_on_success():
                 self._apply_changeset_details()
@@ -240,6 +247,13 @@ class ChangesetApply(object):
             mail_logic.send_changeset_applied_mail(
                 self._changeset, changeset_apply)
 
+        except exceptions.SchemaDoesNotMatchError, e:
+            msg = 'ERROR %s: %s' % (type(e), e.message)
+            log.exception(msg)
+            extra = dict(delta=e.delta)
+            self._store_message(msg, 'error', extra)
+            self._has_errors = True
+
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
             log.exception(msg)
@@ -263,18 +277,18 @@ class ChangesetApplyThread(threading.Thread):
         self.changeset_detail_applies = []
         self.changeset_detail_apply_ids = []
 
-    def _store_message(self, message, message_type='info'):
+    def _store_message(self, message, message_type='info', extra=None):
         """Stores message."""
         self.messages.append(dict(
-            message=message, message_type=message_type))
+            message=message, message_type=message_type, extra=extra))
 
-    def _message_callback(self, obj, message, message_type):
+    def _message_callback(self, obj, message, message_type, extra=None):
         """Message callback.
 
         This is provided to allow thread to take a look at the messages
         even when the ChangesetApply logic run has not yet completed.
         """
-        self._store_message(message, message_type)
+        self._store_message(message, message_type, extra)
 
     def run(self):
         msg = 'Changeset apply thread started.'

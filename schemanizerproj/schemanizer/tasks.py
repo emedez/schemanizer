@@ -56,10 +56,11 @@ def apply_changeset(changeset_id, user_id, server_id):
             messages=messages
         ))
 
-    def message_callback(message, message_type):
+    def message_callback(message, message_type, extra=None):
         messages.append(dict(
             message=message,
-            message_type=message_type))
+            message_type=message_type,
+            extra=extra))
         current_task.update_state(
             state=states.STARTED,
             meta=dict(
@@ -73,7 +74,8 @@ def apply_changeset(changeset_id, user_id, server_id):
 
     messages.append(dict(
         message='Changeset apply job completed.',
-        message_type='info'))
+        message_type='info',
+        extra=None))
 
     current_task.update_state(
         state=states.STARTED,
