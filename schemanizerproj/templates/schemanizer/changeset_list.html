@@ -17,7 +17,9 @@
                     <th>Database schema</th>
                     <th>Type</th>
                     <th>Classification</th>
+                    {% comment %}
                     <th>Version control URL</th>
+                    {% endcomment %}
                     <th>Submitted by</th>
                     <th>Submitted at</th>
                     <th>Review status</th>
@@ -35,7 +37,9 @@
                     <td>{{ c.r.database_schema }}</td>
                     <td>{{ c.r.type }}</td>
                     <td>{{ c.r.classification }}</td>
+                    {% comment %}
                     <td>{{ c.r.version_control_url|truncatechars:20 }}</td>
+                    {% endcomment %}
                     <td>{{ c.r.submitted_by }}</td>
                     <td>{{ c.r.submitted_at }}</td>
                     <td>{{ c.r.review_status }}</td>

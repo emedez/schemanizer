@@ -116,7 +116,7 @@ class AuthenticationForm(BuiltinAuthenticationForm):
 class ChangesetForm(forms.ModelForm):
     class Meta:
         model = models.Changeset
-        fields = ('database_schema', 'type', 'classification', 'version_control_url')
+        fields = ('database_schema', 'type', 'classification')
 
     def __init__(self, *args, **kwargs):
         super(ChangesetForm, self).__init__(*args, **kwargs)
