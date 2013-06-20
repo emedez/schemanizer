@@ -32,6 +32,7 @@ class User(models.Model):
     name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, blank=True)
     role = models.ForeignKey(Role, db_column='role_id', null=True, blank=True)
+    github_login = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(

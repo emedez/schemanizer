@@ -100,16 +100,18 @@ def user_update(request, id, template='schemanizer/update_user.html'):
             user2 = models.User.objects.get(id=id)
 
             initial = dict(
-                name=user2.name, email=user2.email, role=user2.role_id)
+                name=user2.name, email=user2.email, role=user2.role_id,
+                github_login=user2.github_login)
             if request.method == 'POST':
                 form = forms.UpdateUserForm(request.POST, initial=initial)
                 if form.is_valid():
                     name = form.cleaned_data['name']
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
+                    github_login = form.cleaned_data['github_login']
                     role = models.Role.objects.get(id=role_id)
                     schemanizer_user = user_logic.update_user(
-                        user, id, name, email, role)
+                        user, id, name, email, role, github_login)
                     messages.success(
                         request, u'User was updated, id=%s.' % (
                             schemanizer_user.id,))
@@ -140,9 +142,10 @@ def user_create(request, template='schemanizer/user_create.html'):
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
                     password = form.cleaned_data['password']
+                    github_login = form.cleaned_data['github_login']
                     role = models.Role.objects.get(id=role_id)
                     schemanizer_user = user_logic.create_user(
-                        user, name, email, role, password)
+                        user, name, email, role, password, github_login)
                     messages.success(
                         request, u'User was created, id=%s.' % (
                             schemanizer_user.id,))

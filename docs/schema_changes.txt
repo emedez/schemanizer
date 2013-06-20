@@ -136,3 +136,10 @@ CHANGE COLUMN `type` `type` ENUM(
     'deleted','review started','reviewed','validations passed',
     'validations failed','tests passed','tests failed','approved','rejected',
     'applied') NULL DEFAULT NULL  ;
+
+
+2013-06-20 GMT+08
+=================
+
+ALTER TABLE `users`
+ADD COLUMN `github_login` VARCHAR(255) NULL  AFTER `auth_user_id` ;

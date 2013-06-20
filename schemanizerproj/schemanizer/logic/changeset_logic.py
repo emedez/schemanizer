@@ -110,12 +110,19 @@ def on_changeset_submit(changeset):
     tasks.review_changeset.delay(changeset=changeset.pk)
 
 
-def update_changeset_yaml(yaml_obj, f):
+def update_changeset_yaml(yaml_obj, f, commit):
     """Updates existing changeset from YAML document."""
 
     log.debug(yaml_obj)
     repo_filename = f['filename']
     blob_url = f['blob_url']
+
+    committer_user = None
+    if 'committer' in commit and 'login' in commit['committer']:
+        user_qs = models.User.objects.filter(
+            github_login=commit['committer']['login'])
+        if user_qs.exists():
+            committer_user = user_qs[0]
 
     qs = models.Changeset.objects.filter(repo_filename=repo_filename)
     if not qs.exists():
@@ -171,17 +178,21 @@ def update_changeset_yaml(yaml_obj, f):
     return changeset
 
 
-def save_changeset_yaml(yaml_obj, f):
+def save_changeset_yaml(yaml_obj, f, commit):
     """Saves changeset from YAML document."""
 
     log.debug(yaml_obj)
     repo_filename = f['filename']
     blob_url = f['blob_url']
 
+    committer_user = None
+    if 'committer' in commit and 'login' in commit['committer']:
+        user_qs = models.User.objects.filter(
+            github_login=commit['committer']['login'])
+        if user_qs.exists():
+            committer_user = user_qs[0]
+
     if models.Changeset.objects.filter(repo_filename=repo_filename).exists():
-        #msg = (u'Changeset with repo_filename=%s already exists.' % (
-        #    repo_filename,))
-        #raise exceptions.Error(msg)
         log.warn('Changeset is already existing.')
         return
 
@@ -199,8 +210,11 @@ def save_changeset_yaml(yaml_obj, f):
         changeset_obj = new_changeset_obj
         changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
             name=changeset_obj['database_schema'])
-        changeset_obj['submitted_by'] = models.User.objects.get(
-            name=changeset_obj['submitted_by'])
+        if committer_user:
+            changeset_obj['submitted_by'] = committer_user
+        else:
+            changeset_obj['submitted_by'] = models.User.objects.get(
+                name=changeset_obj['submitted_by'])
         changeset_obj['submitted_at'] = timezone.now()
         changeset_obj['repo_filename'] = repo_filename
         changeset_obj['version_control_url'] = blob_url

@@ -54,6 +54,7 @@ class UpdateUserForm(forms.Form):
     name = forms.CharField(max_length=255)
     email = forms.EmailField(max_length=255)
     role = forms.ChoiceField()
+    github_login = forms.CharField(max_length=255, required=False)
 
     def __init__(self, *args, **kwargs):
         super(UpdateUserForm, self).__init__(*args, **kwargs)
@@ -76,6 +77,7 @@ class CreateUserForm(forms.Form):
     name = forms.CharField(max_length=255)
     email = forms.EmailField(max_length=255)
     role = forms.ChoiceField()
+    github_login = forms.CharField(max_length=255, required=False)
     password = forms.CharField(max_length=30, widget=forms.PasswordInput)
     confirm_password = forms.CharField(max_length=30, widget=forms.PasswordInput)
 
