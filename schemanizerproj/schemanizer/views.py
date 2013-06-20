@@ -719,8 +719,8 @@ def changeset_review(
                             u'Changeset review has been started, email will '
                             u'be sent to interested parties when review '
                             u'procedure is completed.')
-                        return redirect(
-                            'schemanizer_changeset_view', changeset.id)
+
+                        return redirect('schemanizer_changeset_reviews')
 
                 else:
                     #
