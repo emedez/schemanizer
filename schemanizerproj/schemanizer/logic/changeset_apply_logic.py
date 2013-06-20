@@ -198,15 +198,13 @@ class ChangesetApply(object):
                     before_version_ddl = self._changeset.before_version.ddl
                 before_version_ddl_lines = before_version_ddl.splitlines(True)
                 current_ddl_lines = ddl.splitlines(True)
-                delta = [line for line in difflib.context_diff(before_version_ddl_lines, current_ddl_lines, fromfile='expected', tofile='actual')]
+                delta = [
+                    line for line in difflib.context_diff(
+                        before_version_ddl_lines, current_ddl_lines,
+                        fromfile='expected', tofile='actual')]
 
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
-                # raise exceptions.Error(
-                #     u"Cannot apply changeset, existing schema checksum '%s' "
-                #     u"on host does not match the expected value '%s'. "
-                #     u"Difference information:\n\n%s" % (
-                #         checksum, before_version_checksum, ''.join(delta)))
 
                 msg = (
                     u"Cannot apply changeset, existing schema on host "
@@ -223,15 +221,27 @@ class ChangesetApply(object):
                 if not (self._changeset.after_version and (
                         self._changeset.after_version.checksum == checksum)):
                     after_version_checksum = None
+                    after_version_ddl = ''
                     if self._changeset.after_version:
                         after_version_checksum = self._changeset.after_version.checksum
+                        after_version_ddl = self._changeset.after_version.dll
+                    after_version_ddl_lines = after_version_ddl.splitlines(True)
+                    current_ddl_lines = ddl.splitlines(True)
+                    delta = [
+                        line for line in difflib.context_diff(
+                            after_version_ddl_lines, current_ddl_lines,
+                            fromfile='expected', tofile='actual')]
+
                     log.debug('checksum = %s' % (checksum,))
                     log.debug('after_version = %s' % (
                         self._changeset.after_version,))
-                    raise exceptions.Error(
-                        u"Final schema checksum '%s' on host does not match "
-                        u"the expected value '%s'." % (
-                            checksum, after_version_checksum))
+
+                    msg = (
+                        u"Final schema on host does not match the expected "
+                        u"schema."
+                    )
+                    raise exceptions.SchemaDoesNotMatchError(
+                        msg, after_version_ddl, ddl, ''.join(delta))
 
                 applied_at = timezone.now()
                 changeset_apply = models.ChangesetApply.objects.create(
