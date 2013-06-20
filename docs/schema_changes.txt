@@ -143,3 +143,21 @@ CHANGE COLUMN `type` `type` ENUM(
 
 ALTER TABLE `users`
 ADD COLUMN `github_login` VARCHAR(255) NULL  AFTER `auth_user_id` ;
+
+-
+
+ALTER TABLE `changeset_applies`
+ADD COLUMN `results_log` TEXT NULL  AFTER `applied_by` ,
+ADD COLUMN `success` TINYINT(1) NULL  AFTER `results_log` ,
+ADD COLUMN `task_id` VARCHAR(36) NULL  AFTER `success` ,
+ADD COLUMN `changeset_action_id` INT NULL  AFTER `task_id` ;
+
+ALTER TABLE `changeset_actions`
+CHANGE COLUMN `type` `type` ENUM(
+    'created','created with data from github repo','changed',
+    'changed with data from github repo','deleted','review started',
+    'reviewed','validations passed','validations failed','tests passed',
+    'tests failed','approved','rejected','applied',
+    'applied - failed') NULL DEFAULT NULL  ;
+
+-

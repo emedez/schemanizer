@@ -109,6 +109,7 @@
             <p class="text-info"><em>No changeset details.</em></p>
         {% endif %}
 
+        {% comment %}
         {% if changeset_applies.exists %}
             <p><strong>Apply History</strong></p>
             <table class="table table-striped table-condensed table-bordered table-hover">
@@ -132,6 +133,7 @@
                 </tbody>
             </table>
         {% endif %}
+        {% endcomment %}
 
         <p><strong>Changeset Actions</strong></p>
         {% if changeset_actions %}
@@ -147,7 +149,12 @@
                 {% for changeset_action in changeset_actions %}
                     <tr>
                         <td>{{ changeset_action.changeset_action.id }}</td>
-                        <td>{{ changeset_action.type }}</td>
+                        <td>
+                            {{ changeset_action.type }}
+                            {% if changeset_action.changeset_applies_url %}
+                                <a href="{{ changeset_action.changeset_applies_url }}">View Results</a>
+                            {% endif %}
+                        </td>
                         <td>{{ changeset_action.changeset_action.timestamp }}</td>
                     </tr>
                 {% endfor %}

@@ -22,7 +22,7 @@ class ChangesetApply(object):
 
     def __init__(
             self, changeset, user, server, connection_options=None,
-            message_callback=None):
+            message_callback=None, task_id=None):
         """Initializes instance."""
 
         super(ChangesetApply, self).__init__()
@@ -42,6 +42,8 @@ class ChangesetApply(object):
         if self._server.port:
             self._connection_options['port'] = self._server.port
 
+        self._task_id = task_id
+
         self._init_run_vars()
 
     def _init_run_vars(self):
@@ -51,6 +53,11 @@ class ChangesetApply(object):
         self._has_errors = False
         self._changeset_detail_applies = []
         self._changeset_detail_apply_ids = []
+
+    @property
+    def task_id(self):
+        """Returns task ID."""
+        return self._task_id
 
     @property
     def messages(self):
@@ -182,9 +189,11 @@ class ChangesetApply(object):
 
         try:
             if models.ChangesetApply.objects.filter(
-                    changeset=self._changeset, server=self._server).exists():
+                    changeset=self._changeset, server=self._server,
+                    success=True).exists():
                 raise exceptions.Error(
-                    "Changeset has been applied already at server '%s'." % (
+                    "Changeset has been successfully applied already at "
+                    "server '%s'." % (
                         self._server.name,))
 
             ddl = utils.mysql_dump(**self._connection_options)
@@ -244,15 +253,18 @@ class ChangesetApply(object):
                         msg, after_version_ddl, ddl, ''.join(delta))
 
                 applied_at = timezone.now()
-                changeset_apply = models.ChangesetApply.objects.create(
-                    changeset=self._changeset, server=self._server,
-                    applied_at=applied_at, applied_by=self._user)
                 changeset_action = models.ChangesetAction.objects.create(
                     changeset=self._changeset,
                     type=models.ChangesetAction.TYPE_APPLIED,
                     timestamp=applied_at)
                 models.ChangesetActionServerMap.objects.create(
                     changeset_action=changeset_action, server=self._server)
+                changeset_apply = models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=applied_at, applied_by=self._user,
+                    success=True,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
 
             mail_logic.send_changeset_applied_mail(
                 self._changeset, changeset_apply)
@@ -264,11 +276,45 @@ class ChangesetApply(object):
             self._store_message(msg, 'error', extra)
             self._has_errors = True
 
+            try:
+                changeset_action = models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_APPLIED_FAILED,
+                    timestamp=timezone.now())
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
+                models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=timezone.now(), applied_by=self._user,
+                    results_log=u'%s\nSchema delta:\n%s' % (msg, e.delta),
+                    success=False,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
+            except:
+                pass
+
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
             log.exception(msg)
             self._store_message(msg, 'error')
             self._has_errors = True
+
+            try:
+                changeset_action = models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_APPLIED_FAILED,
+                    timestamp=timezone.now())
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
+                models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=timezone.now(), applied_by=self._user,
+                    results_log=msg,
+                    success=False,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
+            except:
+                pass
 
 
 class ChangesetApplyThread(threading.Thread):
@@ -353,7 +399,8 @@ def start_changeset_apply_thread(changeset, user, server):
     return thread
 
 
-def apply_changeset(changeset, user, server, message_callback=None):
+def apply_changeset(
+        changeset, user, server, message_callback=None, task_id=None):
     """Applies changeset to specified server."""
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
@@ -371,7 +418,8 @@ def apply_changeset(changeset, user, server, message_callback=None):
         connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
 
     changeset_apply_obj = ChangesetApply(
-        changeset, user, server, connection_options, message_callback)
+        changeset, user, server, connection_options, message_callback,
+        task_id=task_id)
     changeset_apply_obj.run()
 
     return changeset_apply_obj

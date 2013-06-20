@@ -13,10 +13,11 @@
     {{ block.super }}
     <script type="text/javascript">
         $(function() {
-            var ajax_changeset_applies_url = "{% url 'schemanizer_ajax_changeset_applies' %}";
-            var request_id = "{{ request_id|default_if_none:'' }}";
+            //var ajax_changeset_applies_url = "{% url 'schemanizer_ajax_changeset_applies' %}";
+            //var request_id = "{{ request_id|default_if_none:'' }}";
 
-            ajax_changeset_applies_url = ajax_changeset_applies_url + "?request_id=" + request_id;
+            //ajax_changeset_applies_url = ajax_changeset_applies_url + "?request_id=" + request_id;
+            var ajax_changeset_applies_url = "{{ ajax_changeset_applies_url }}";
 
             // check frequency in seconds
             var check_freq = 2;

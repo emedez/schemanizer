@@ -78,7 +78,8 @@ def apply_changeset(changeset_id, user_id, server_id):
                 messages=messages))
 
     changeset_apply_obj = changeset_apply_logic.apply_changeset(
-        changeset_id, user_id, server_id, message_callback)
+        changeset_id, user_id, server_id, message_callback,
+        task_id=current_task.request.id)
 
     messages.append(dict(
         message='Changeset apply job completed.',

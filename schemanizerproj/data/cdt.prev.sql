@@ -905,6 +905,7 @@ CREATE TABLE `users` (
   `email` varchar(255) DEFAULT NULL,
   `role_id` int(11) DEFAULT NULL,
   `auth_user_id` int(11) DEFAULT NULL,
+  `github_login` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -956,4 +957,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-19 22:00:48
+-- Dump completed on 2013-06-20 20:13:56
