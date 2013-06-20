@@ -1,3 +1,4 @@
+import difflib
 import itertools
 import logging
 import pprint
@@ -190,14 +191,21 @@ class ChangesetApply(object):
             if not (self._changeset.before_version and
                     self._changeset.before_version.checksum == checksum):
                 before_version_checksum = None
+                before_version_ddl = ''
                 if self._changeset.before_version:
                     before_version_checksum = self._changeset.before_version.checksum
+                    before_version_ddl = self._changeset.before_version.ddl
+                before_version_ddl_lines = before_version_ddl.splitlines(True)
+                current_ddl_lines = ddl.splitlines(True)
+                delta = [line for line in difflib.context_diff(before_version_ddl_lines, current_ddl_lines, fromfile='expected', tofile='actual')]
+
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
                 raise exceptions.Error(
                     u"Cannot apply changeset, existing schema checksum '%s' "
-                    u"on host does not match the expected value '%s'." % (
-                        checksum, before_version_checksum))
+                    u"on host does not match the expected value '%s'. "
+                    u"Difference information:\n\n%s" % (
+                        checksum, before_version_checksum, ''.join(delta)))
 
             with transaction.commit_on_success():
                 self._apply_changeset_details()
