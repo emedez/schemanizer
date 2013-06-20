@@ -37,6 +37,8 @@ def requests_get(url, params=None, headers=None):
 
 
 def process_file(f, commit):
+    from schemanizer import tasks
+
     try:
         filename = f['filename']
         status = f['status']
@@ -54,18 +56,29 @@ def process_file(f, commit):
 
             r = requests_get(f['contents_url'])
             if r.status_code == 200:
-                data = json.loads(r.text)
-                content = base64.b64decode(data['content'])
-                yaml_obj = yaml.load(content)
-                if not isinstance(yaml_obj, dict):
-                    raise exceptions.Error('File format is invalid.')
-                changeset = changeset_logic.save_changeset_yaml(
-                    yaml_obj, f)
-                if changeset:
-                    msg = u'Changeset [id=%s] was submitted.' % (
-                        changeset.id,)
-                    print msg
-                    log.debug(msg)
+                content = None
+                try:
+                    data = json.loads(r.text)
+                    content = base64.b64decode(data['content'])
+                    yaml_obj = yaml.load(content)
+                    if not isinstance(yaml_obj, dict):
+                        raise exceptions.Error('File format is invalid.')
+                    changeset = changeset_logic.save_changeset_yaml(
+                        yaml_obj, f, commit)
+                    if changeset:
+                        msg = u'Changeset [id=%s] was submitted.' % (
+                            changeset.id,)
+                        print msg
+                        log.debug(msg)
+                except Exception, e:
+                    msg = 'ERROR %s: %s' % (type(e), e)
+                    sys.stderr.write('%s\n' % (msg,))
+                    log.exception(msg)
+                    if not content:
+                        content = ''
+                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                        content, msg, f, commit)
+
                 print
             else:
                 msg = u'Aborting, HTTP status code was %s.' % (r.status_code,)
@@ -80,20 +93,31 @@ def process_file(f, commit):
         elif repo_filename_exists and status == 'modified':
             r = requests_get(f['contents_url'])
             if r.status_code == 200:
-                data = json.loads(r.text)
-                content = base64.b64decode(data['content'])
-                yaml_obj = yaml.load(content)
-                if not isinstance(yaml_obj, dict):
-                    raise exceptions.Error('File format is invalid.')
-                changeset = changeset_logic.update_changeset_yaml(
-                    yaml_obj, f)
-                if changeset:
-                    msg = u'Changeset [id=%s] was updated.' % (
-                        changeset.id,)
-                    print msg
-                    log.debug(msg)
-                else:
-                    print 'Changeset was not processed.'
+                content = None
+                try:
+                    data = json.loads(r.text)
+                    content = base64.b64decode(data['content'])
+                    yaml_obj = yaml.load(content)
+                    if not isinstance(yaml_obj, dict):
+                        raise exceptions.Error('File format is invalid.')
+                    changeset = changeset_logic.update_changeset_yaml(
+                        yaml_obj, f, commit)
+                    if changeset:
+                        msg = u'Changeset [id=%s] was updated.' % (
+                            changeset.id,)
+                        print msg
+                        log.debug(msg)
+                    else:
+                        print 'Changeset was not processed.'
+                except Exception, e:
+                    msg = 'ERROR %s: %s' % (type(e), e)
+                    sys.stderr.write('%s\n' % (msg,))
+                    log.exception(msg)
+                    if not content:
+                        content = ''
+                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                        content, msg, f, commit)
+
                 print
             else:
                 msg = u'Aborting, HTTP status code was %s.' % (r.status_code,)

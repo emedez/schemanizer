@@ -1,3 +1,4 @@
+import difflib
 import itertools
 import logging
 import pprint
@@ -21,7 +22,7 @@ class ChangesetApply(object):
 
     def __init__(
             self, changeset, user, server, connection_options=None,
-            message_callback=None):
+            message_callback=None, task_id=None):
         """Initializes instance."""
 
         super(ChangesetApply, self).__init__()
@@ -41,6 +42,8 @@ class ChangesetApply(object):
         if self._server.port:
             self._connection_options['port'] = self._server.port
 
+        self._task_id = task_id
+
         self._init_run_vars()
 
     def _init_run_vars(self):
@@ -50,6 +53,11 @@ class ChangesetApply(object):
         self._has_errors = False
         self._changeset_detail_applies = []
         self._changeset_detail_apply_ids = []
+
+    @property
+    def task_id(self):
+        """Returns task ID."""
+        return self._task_id
 
     @property
     def messages(self):
@@ -69,13 +77,14 @@ class ChangesetApply(object):
     def changeset_detail_apply_ids(self):
         return self._changeset_detail_apply_ids
 
-    def _store_message(self, message, message_type='info'):
+    def _store_message(self, message, message_type='info', extra=None):
         """Stores message."""
         self._messages.append(dict(
             message=message,
-            message_type=message_type))
+            message_type=message_type,
+            extra=extra))
         if self._message_callback:
-            self._message_callback(message, message_type)
+            self._message_callback(message, message_type, extra)
 
     def _apply_changeset_detail(self, changeset_detail, cursor):
         has_errors = False
@@ -180,9 +189,11 @@ class ChangesetApply(object):
 
         try:
             if models.ChangesetApply.objects.filter(
-                    changeset=self._changeset, server=self._server).exists():
+                    changeset=self._changeset, server=self._server,
+                    success=True).exists():
                 raise exceptions.Error(
-                    "Changeset has been applied already at server '%s'." % (
+                    "Changeset has been successfully applied already at "
+                    "server '%s'." % (
                         self._server.name,))
 
             ddl = utils.mysql_dump(**self._connection_options)
@@ -190,14 +201,25 @@ class ChangesetApply(object):
             if not (self._changeset.before_version and
                     self._changeset.before_version.checksum == checksum):
                 before_version_checksum = None
+                before_version_ddl = ''
                 if self._changeset.before_version:
                     before_version_checksum = self._changeset.before_version.checksum
+                    before_version_ddl = self._changeset.before_version.ddl
+                before_version_ddl_lines = before_version_ddl.splitlines(True)
+                current_ddl_lines = ddl.splitlines(True)
+                delta = [
+                    line for line in difflib.context_diff(
+                        before_version_ddl_lines, current_ddl_lines,
+                        fromfile='expected', tofile='actual')]
+
                 log.debug('checksum = %s' % (checksum,))
                 log.debug('before_version = %s' % (self._changeset.before_version,))
-                raise exceptions.Error(
-                    u"Cannot apply changeset, existing schema checksum '%s' "
-                    u"on host does not match the expected value '%s'." % (
-                        checksum, before_version_checksum))
+
+                msg = (
+                    u"Cannot apply changeset, existing schema on host "
+                    u"does not match the expected schema.")
+                raise exceptions.SchemaDoesNotMatchError(
+                    msg, before_version_ddl, ddl, ''.join(delta))
 
             with transaction.commit_on_success():
                 self._apply_changeset_details()
@@ -208,35 +230,91 @@ class ChangesetApply(object):
                 if not (self._changeset.after_version and (
                         self._changeset.after_version.checksum == checksum)):
                     after_version_checksum = None
+                    after_version_ddl = ''
                     if self._changeset.after_version:
                         after_version_checksum = self._changeset.after_version.checksum
+                        after_version_ddl = self._changeset.after_version.dll
+                    after_version_ddl_lines = after_version_ddl.splitlines(True)
+                    current_ddl_lines = ddl.splitlines(True)
+                    delta = [
+                        line for line in difflib.context_diff(
+                            after_version_ddl_lines, current_ddl_lines,
+                            fromfile='expected', tofile='actual')]
+
                     log.debug('checksum = %s' % (checksum,))
                     log.debug('after_version = %s' % (
                         self._changeset.after_version,))
-                    raise exceptions.Error(
-                        u"Final schema checksum '%s' on host does not match "
-                        u"the expected value '%s'." % (
-                            checksum, after_version_checksum))
+
+                    msg = (
+                        u"Final schema on host does not match the expected "
+                        u"schema."
+                    )
+                    raise exceptions.SchemaDoesNotMatchError(
+                        msg, after_version_ddl, ddl, ''.join(delta))
 
                 applied_at = timezone.now()
-                changeset_apply = models.ChangesetApply.objects.create(
-                    changeset=self._changeset, server=self._server,
-                    applied_at=applied_at, applied_by=self._user)
                 changeset_action = models.ChangesetAction.objects.create(
                     changeset=self._changeset,
                     type=models.ChangesetAction.TYPE_APPLIED,
                     timestamp=applied_at)
                 models.ChangesetActionServerMap.objects.create(
                     changeset_action=changeset_action, server=self._server)
+                changeset_apply = models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=applied_at, applied_by=self._user,
+                    success=True,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
 
             mail_logic.send_changeset_applied_mail(
                 self._changeset, changeset_apply)
+
+        except exceptions.SchemaDoesNotMatchError, e:
+            msg = 'ERROR %s: %s' % (type(e), e.message)
+            log.exception(msg)
+            extra = dict(delta=e.delta)
+            self._store_message(msg, 'error', extra)
+            self._has_errors = True
+
+            try:
+                changeset_action = models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_APPLIED_FAILED,
+                    timestamp=timezone.now())
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
+                models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=timezone.now(), applied_by=self._user,
+                    results_log=u'%s\nSchema delta:\n%s' % (msg, e.delta),
+                    success=False,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
+            except:
+                pass
 
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
             log.exception(msg)
             self._store_message(msg, 'error')
             self._has_errors = True
+
+            try:
+                changeset_action = models.ChangesetAction.objects.create(
+                    changeset=self._changeset,
+                    type=models.ChangesetAction.TYPE_APPLIED_FAILED,
+                    timestamp=timezone.now())
+                models.ChangesetActionServerMap.objects.create(
+                    changeset_action=changeset_action, server=self._server)
+                models.ChangesetApply.objects.create(
+                    changeset=self._changeset, server=self._server,
+                    applied_at=timezone.now(), applied_by=self._user,
+                    results_log=msg,
+                    success=False,
+                    changeset_action=changeset_action,
+                    task_id=self._task_id)
+            except:
+                pass
 
 
 class ChangesetApplyThread(threading.Thread):
@@ -255,18 +333,18 @@ class ChangesetApplyThread(threading.Thread):
         self.changeset_detail_applies = []
         self.changeset_detail_apply_ids = []
 
-    def _store_message(self, message, message_type='info'):
+    def _store_message(self, message, message_type='info', extra=None):
         """Stores message."""
         self.messages.append(dict(
-            message=message, message_type=message_type))
+            message=message, message_type=message_type, extra=extra))
 
-    def _message_callback(self, obj, message, message_type):
+    def _message_callback(self, obj, message, message_type, extra=None):
         """Message callback.
 
         This is provided to allow thread to take a look at the messages
         even when the ChangesetApply logic run has not yet completed.
         """
-        self._store_message(message, message_type)
+        self._store_message(message, message_type, extra)
 
     def run(self):
         msg = 'Changeset apply thread started.'
@@ -321,7 +399,8 @@ def start_changeset_apply_thread(changeset, user, server):
     return thread
 
 
-def apply_changeset(changeset, user, server, message_callback=None):
+def apply_changeset(
+        changeset, user, server, message_callback=None, task_id=None):
     """Applies changeset to specified server."""
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
@@ -339,7 +418,8 @@ def apply_changeset(changeset, user, server, message_callback=None):
         connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
 
     changeset_apply_obj = ChangesetApply(
-        changeset, user, server, connection_options, message_callback)
+        changeset, user, server, connection_options, message_callback,
+        task_id=task_id)
     changeset_apply_obj.run()
 
     return changeset_apply_obj

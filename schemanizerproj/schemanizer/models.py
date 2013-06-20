@@ -32,6 +32,7 @@ class User(models.Model):
     name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, blank=True)
     role = models.ForeignKey(Role, db_column='role_id', null=True, blank=True)
+    github_login = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
     updated_at = models.DateTimeField(
@@ -227,6 +228,7 @@ class ChangesetAction(models.Model):
     TYPE_APPROVED = u'approved'
     TYPE_REJECTED = u'rejected'
     TYPE_APPLIED = u'applied'
+    TYPE_APPLIED_FAILED = u'applied - failed'
 
     TYPE_CHOICES = (
         (TYPE_CREATED, TYPE_CREATED),
@@ -247,6 +249,7 @@ class ChangesetAction(models.Model):
         (TYPE_APPROVED, TYPE_APPROVED),
         (TYPE_REJECTED, TYPE_REJECTED),
         (TYPE_APPLIED, TYPE_APPLIED),
+        (TYPE_APPLIED_FAILED, TYPE_APPLIED_FAILED),
     )
 
     changeset = models.ForeignKey(
@@ -489,6 +492,13 @@ class ChangesetApply(models.Model):
     applied_at = models.DateTimeField(null=True, blank=True)
     applied_by = models.ForeignKey(
         User, db_column='applied_by', null=True, blank=True, default=None)
+    results_log = models.TextField(null=True, blank=True, default=None)
+    success = models.BooleanField(default=False)
+    task_id = models.CharField(
+        max_length=36, null=True, blank=True, default=None)
+    changeset_action = models.ForeignKey(
+        ChangesetAction, db_column='changeset_action_id', null=True,
+        blank=True, default=None)
 
     class Meta:
         db_table = 'changeset_applies'

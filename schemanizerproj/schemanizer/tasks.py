@@ -15,6 +15,14 @@ log = logging.getLogger(__name__)
 
 
 @task(ignore_result=True)
+def send_changeset_submission_through_repo_failed_mail(
+        changeset_content, error_message, file_data, commit_data):
+    """Task for sending changeset-submission-through-repo-failed email."""
+    mail_logic.send_changeset_submission_through_repo_failed_mail(
+        changeset_content, error_message, file_data, commit_data)
+
+
+@task(ignore_result=True)
 def review_changeset(changeset, schema_version=None, user=None):
     """Reviews changeset."""
     def message_callback(message, message_type, current_task):
@@ -56,10 +64,11 @@ def apply_changeset(changeset_id, user_id, server_id):
             messages=messages
         ))
 
-    def message_callback(message, message_type):
+    def message_callback(message, message_type, extra=None):
         messages.append(dict(
             message=message,
-            message_type=message_type))
+            message_type=message_type,
+            extra=extra))
         current_task.update_state(
             state=states.STARTED,
             meta=dict(
@@ -69,11 +78,13 @@ def apply_changeset(changeset_id, user_id, server_id):
                 messages=messages))
 
     changeset_apply_obj = changeset_apply_logic.apply_changeset(
-        changeset_id, user_id, server_id, message_callback)
+        changeset_id, user_id, server_id, message_callback,
+        task_id=current_task.request.id)
 
     messages.append(dict(
         message='Changeset apply job completed.',
-        message_type='info'))
+        message_type='info',
+        extra=None))
 
     current_task.update_state(
         state=states.STARTED,

@@ -100,16 +100,18 @@ def user_update(request, id, template='schemanizer/update_user.html'):
             user2 = models.User.objects.get(id=id)
 
             initial = dict(
-                name=user2.name, email=user2.email, role=user2.role_id)
+                name=user2.name, email=user2.email, role=user2.role_id,
+                github_login=user2.github_login)
             if request.method == 'POST':
                 form = forms.UpdateUserForm(request.POST, initial=initial)
                 if form.is_valid():
                     name = form.cleaned_data['name']
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
+                    github_login = form.cleaned_data['github_login']
                     role = models.Role.objects.get(id=role_id)
                     schemanizer_user = user_logic.update_user(
-                        user, id, name, email, role)
+                        user, id, name, email, role, github_login)
                     messages.success(
                         request, u'User was updated, id=%s.' % (
                             schemanizer_user.id,))
@@ -140,9 +142,10 @@ def user_create(request, template='schemanizer/user_create.html'):
                     email = form.cleaned_data['email']
                     role_id = form.cleaned_data['role']
                     password = form.cleaned_data['password']
+                    github_login = form.cleaned_data['github_login']
                     role = models.Role.objects.get(id=role_id)
                     schemanizer_user = user_logic.create_user(
-                        user, name, email, role, password)
+                        user, name, email, role, password, github_login)
                     messages.success(
                         request, u'User was created, id=%s.' % (
                             schemanizer_user.id,))
@@ -376,6 +379,18 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                     changeset_action_server_map = (
                         changeset_action_server_map_qs[0])
                 type_col = changeset_action.type
+
+                changeset_applies_url = None
+                changeset_apply_qs = models.ChangesetApply.objects.filter(
+                    changeset_action=changeset_action)
+                if changeset_apply_qs.exists():
+                    changeset_apply = changeset_apply_qs[0]
+                    if changeset_apply.task_id:
+                        changeset_applies_url = '%s?%s' % (
+                            reverse('schemanizer_changeset_applies'),
+                            urllib.urlencode(
+                                dict(task_id=changeset_apply.task_id)))
+
                 if (
                         type_col == models.ChangesetAction.TYPE_APPLIED and
                         changeset_action_server_map):
@@ -387,13 +402,26 @@ def changeset_view(request, id, template='schemanizer/changeset_view.html'):
                     type_col = (
                         u'%s (server: %s, environment: %s)' % (
                             type_col, server_name, environment_name))
+                elif(
+                        type_col == models.ChangesetAction.TYPE_APPLIED_FAILED and
+                        changeset_action_server_map):
+                    server = changeset_action_server_map.server
+                    server_name = server.name
+                    environment_name = None
+                    if server.environment:
+                        environment_name = server.environment.name
+                    type_col = (
+                        u'%s (server: %s, environment: %s)' % (
+                            type_col, server_name, environment_name))
+
 
                 changeset_actions.append(
                     dict(
                         changeset_action=changeset_action,
                         changeset_action_server_map=
                         changeset_action_server_map,
-                        type=type_col))
+                        type=type_col,
+                        changeset_applies_url=changeset_applies_url))
 
             if request.method == 'POST':
                 try:
@@ -716,8 +744,8 @@ def changeset_review(
                             u'Changeset review has been started, email will '
                             u'be sent to interested parties when review '
                             u'procedure is completed.')
-                        return redirect(
-                            'schemanizer_changeset_view', changeset.id)
+
+                        return redirect('schemanizer_changeset_reviews')
 
                 else:
                     #
@@ -1315,9 +1343,13 @@ def ajax_changeset_applies(
             raise exceptions.Error('Login is required.')
 
         request_id = request.GET.get('request_id')
+        task_id = request.GET.get('task_id')
         task_ids = None
-        if request_id and request_id in request.session:
-            task_ids = request.session[request_id]
+        if task_id:
+            task_ids = [task_id]
+        else:
+            if request_id and request_id in request.session:
+                task_ids = request.session[request_id]
         filter_kwargs = dict(name='schemanizer.tasks.apply_changeset')
         if task_ids:
             filter_kwargs.update(dict(task_id__in=task_ids))
@@ -1345,8 +1377,11 @@ def ajax_changeset_applies(
                     server = models.Server.objects.get(pk=server_id)
                 if changeset_detail_apply_ids:
                     for id in changeset_detail_apply_ids:
-                        changeset_detail_applies.append(
-                            models.ChangesetDetailApply.objects.get(pk=id))
+                        try:
+                            changeset_detail_applies.append(
+                                models.ChangesetDetailApply.objects.get(pk=id))
+                        except:
+                            pass
 
             task_state_list.append(dict(
                 task_id=task_state.task_id,
@@ -1378,51 +1413,65 @@ def changeset_applies(request, template='schemanizer/changeset_applies.html'):
     """View for displaying statuses of changeset applies."""
 
     request_id = request.GET.get('request_id')
-    task_ids = None
-    if request_id and request_id in request.session:
-        task_ids = request.session[request_id]
-    filter_kwargs = dict(name='schemanizer.tasks.apply_changeset')
-    if task_ids:
-        filter_kwargs.update(dict(task_id__in=task_ids))
-    task_states = djcelery_models.TaskState.objects.filter(
-        **filter_kwargs)
-    task_state_list = []
-    for task_state in task_states:
-        ar = AsyncResult(task_state.task_id)
-        result = ar.result
+    task_id = request.GET.get('task_id')
 
-        if result and isinstance(result, dict) and 'message' in result:
-            show_message = True
-        else:
-            show_message = False
+    get_params = {}
+    if request_id:
+        get_params['request_id'] = request_id
+    if task_id:
+        get_params['task_id'] = task_id
+    ajax_changeset_applies_url = '%s?%s' % (
+        reverse('schemanizer_ajax_changeset_applies'),
+        urllib.urlencode(get_params))
 
-        changeset_id = None
-        server = None
-        changeset_detail_applies = []
-        if result:
-            changeset_id = result.get('changeset_id')
-            server_id = result.get('server_id')
-            changeset_detail_apply_ids = result.get(
-                'changeset_detail_apply_ids')
-            log.debug('changeset_detail_apply_ids = %s', changeset_detail_apply_ids)
-            if server_id:
-                server = models.Server.objects.get(pk=server_id)
-            if changeset_detail_apply_ids:
-                for id in changeset_detail_apply_ids:
-                    changeset_detail_applies.append(
-                        models.ChangesetDetailApply.objects.get(pk=id))
-                log.debug(changeset_detail_applies)
-
-        task_state_list.append(dict(
-            task_id=task_state.task_id,
-            tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
-            state=task_state.state,
-            result=result,
-            show_message=show_message,
-            changeset_id=changeset_id,
-            server=server,
-            changeset_detail_applies=changeset_detail_applies
-        ))
+    # task_ids = None
+    # if task_id:
+    #     task_ids = [task_id]
+    # else:
+    #     if request_id and request_id in request.session:
+    #         task_ids = request.session[request_id]
+    # filter_kwargs = dict(name='schemanizer.tasks.apply_changeset')
+    # if task_ids:
+    #     filter_kwargs.update(dict(task_id__in=task_ids))
+    # task_states = djcelery_models.TaskState.objects.filter(
+    #     **filter_kwargs)
+    # task_state_list = []
+    # for task_state in task_states:
+    #     ar = AsyncResult(task_state.task_id)
+    #     result = ar.result
+    #
+    #     if result and isinstance(result, dict) and 'message' in result:
+    #         show_message = True
+    #     else:
+    #         show_message = False
+    #
+    #     changeset_id = None
+    #     server = None
+    #     changeset_detail_applies = []
+    #     if result:
+    #         changeset_id = result.get('changeset_id')
+    #         server_id = result.get('server_id')
+    #         changeset_detail_apply_ids = result.get(
+    #             'changeset_detail_apply_ids')
+    #         log.debug('changeset_detail_apply_ids = %s', changeset_detail_apply_ids)
+    #         if server_id:
+    #             server = models.Server.objects.get(pk=server_id)
+    #         if changeset_detail_apply_ids:
+    #             for id in changeset_detail_apply_ids:
+    #                 changeset_detail_applies.append(
+    #                     models.ChangesetDetailApply.objects.get(pk=id))
+    #             log.debug(changeset_detail_applies)
+    #
+    #     task_state_list.append(dict(
+    #         task_id=task_state.task_id,
+    #         tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
+    #         state=task_state.state,
+    #         result=result,
+    #         show_message=show_message,
+    #         changeset_id=changeset_id,
+    #         server=server,
+    #         changeset_detail_applies=changeset_detail_applies
+    #     ))
 
     return render_to_response(
         template, locals(), context_instance=RequestContext(request))

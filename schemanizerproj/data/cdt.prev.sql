@@ -49,7 +49,7 @@ DROP TABLE IF EXISTS `changeset_actions`;
 CREATE TABLE `changeset_actions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('created','changed','deleted','review started','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected','applied') DEFAULT NULL,
+  `type` enum('created','created with data from github repo','changed','changed with data from github repo','deleted','review started','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected','applied') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -905,6 +905,7 @@ CREATE TABLE `users` (
   `email` varchar(255) DEFAULT NULL,
   `role_id` int(11) DEFAULT NULL,
   `auth_user_id` int(11) DEFAULT NULL,
+  `github_login` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -956,4 +957,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-19 20:47:12
+-- Dump completed on 2013-06-20 20:13:56
