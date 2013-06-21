@@ -313,6 +313,12 @@ def changeset_view_review_results(
             models.Role.ROLE_ADMIN)
         if user_has_access:
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
+            changeset_review = None
+            try:
+                changeset_review = models.ChangesetReview.objects.get(
+                    changeset=changeset)
+            except ObjectDoesNotExist:
+                pass
             if (
                     changeset.review_status in [
                         models.Changeset.REVIEW_STATUS_IN_PROGRESS,
@@ -1318,7 +1324,7 @@ def schema_version_download_ddl(request, schema_version_id):
 
         response = HttpResponse(
             FileWrapper(ddl_file), content_type='text/plain')
-        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.txt' % (
+        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.sql' % (
             schema_version.pk,)
         response['Content-Length'] = ddl_file.tell()
         ddl_file.seek(0)

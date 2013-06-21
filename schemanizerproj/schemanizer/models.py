@@ -483,6 +483,28 @@ class ChangesetTest(models.Model):
             return False
 
 
+class ChangesetReview(models.Model):
+    """Result and other related info about a changeset review."""
+
+    changeset = models.OneToOneField(
+        Changeset, db_column='changeset_id', null=True, blank=True,
+        default=None)
+    results_log = models.TextField(null=True, blank=True, default=None)
+    success = models.BooleanField(default=False)
+    task_id = models.CharField(
+        max_length=36, null=True, blank=True, default=None)
+    created_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True)
+    updated_at = models.DateTimeField(
+        null=True, blank=True, auto_now_add=True, auto_now=True)
+
+    class Meta:
+        db_table = 'changeset_reviews'
+
+    def __unicode__(self):
+        return u'<ChangesetReview id=%s>' % (self.pk,)
+
+
 class ChangesetApply(models.Model):
     changeset = models.ForeignKey(
         Changeset, db_column='changeset_id', null=True, blank=True,

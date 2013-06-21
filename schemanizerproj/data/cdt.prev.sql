@@ -49,7 +49,7 @@ DROP TABLE IF EXISTS `changeset_actions`;
 CREATE TABLE `changeset_actions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
-  `type` enum('created','created with data from github repo','changed','changed with data from github repo','deleted','review started','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected','applied') DEFAULT NULL,
+  `type` enum('created','created with data from github repo','changed','changed with data from github repo','deleted','review started','reviewed','validations passed','validations failed','tests passed','tests failed','approved','rejected','applied','applied - failed') DEFAULT NULL,
   `timestamp` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -77,6 +77,10 @@ CREATE TABLE `changeset_applies` (
   `server_id` int(11) DEFAULT NULL,
   `applied_at` datetime DEFAULT NULL,
   `applied_by` int(11) DEFAULT NULL,
+  `results_log` text,
+  `success` tinyint(1) DEFAULT NULL,
+  `task_id` varchar(36) DEFAULT NULL,
+  `changeset_action_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -957,4 +961,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-20 20:13:56
+-- Dump completed on 2013-06-21  0:18:13

@@ -180,6 +180,34 @@ LOCK TABLES `changeset_details` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `changeset_reviews`
+--
+
+DROP TABLE IF EXISTS `changeset_reviews`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `changeset_reviews` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `changeset_id` int(11) DEFAULT NULL,
+  `results_log` text,
+  `success` tinyint(1) DEFAULT NULL,
+  `task_id` varchar(36) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `changeset_reviews`
+--
+
+LOCK TABLES `changeset_reviews` WRITE;
+/*!40000 ALTER TABLE `changeset_reviews` DISABLE KEYS */;
+/*!40000 ALTER TABLE `changeset_reviews` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `changeset_tests`
 --
 
@@ -961,4 +989,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-21  0:18:13
+-- Dump completed on 2013-06-21 22:42:52
