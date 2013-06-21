@@ -122,6 +122,7 @@ def send_mail_changeset_reviewed(changeset):
     """Sends reviewed changeset email."""
 
     changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset_review = models.ChangesetReview.objects.get(changeset=changeset)
 
     # urls
     site = Site.objects.get_current()
@@ -142,23 +143,27 @@ def send_mail_changeset_reviewed(changeset):
 
     if to:
         subject = 'Changeset reviewed'
-        body_lines = []
+        lines = []
 
-        if changeset.review_status == models.Changeset.REVIEW_STATUS_IN_PROGRESS:
-            body_lines.append(
+        if changeset_review.success:
+            lines.append(
                 u"The following changeset has been reviewed without errors "
                 u"and is ready for approval:")
         else:
-            body_lines.append(
+            lines.append(
                 u"The following changeset has errors and was rejected:")
-        body_lines.append(changeset_url)
-        body_lines.append(u'')
-        body_lines.append(
+        lines.append(changeset_url)
+        lines.append(u'')
+        lines.append(
             u'The results of changeset review process can be viewed at:')
-        body_lines.append(review_results_url)
+        lines.append(review_results_url)
 
-        body = u'\n'.join(body_lines)
-        send_mail(subject=subject, body=body, to=to)
+        if changeset_review.results_log:
+            lines.append(u'')
+            lines.append(u'Results log:')
+            lines.append(u'%s' % (changeset_review.results_log,))
+
+        send_mail(subject=subject, body=u'\n'.join(lines), to=to)
 
         log.debug(u'Reviewed changeset email sent to: %s' % (to,))
     else:
