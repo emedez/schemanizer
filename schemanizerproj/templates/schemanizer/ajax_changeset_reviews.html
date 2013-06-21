@@ -3,10 +3,6 @@
         <thead>
             <tr>
                 <th>Started</th>
-                {% comment %}
-                <th>Task ID</th>
-                {% endcomment %}
-                <th>State</th>
                 <th>Changeset</th>
                 <th>Result</th>
             </tr>
@@ -15,10 +11,6 @@
             {% for task_state in task_state_list %}
                 <tr>
                     <td>{{ task_state.tstamp }}</td>
-                    {% comment %}
-                    <td>{{ task_state.task_id }}</td>
-                    {% endcomment %}
-                    <td>{{ task_state.state }}</td>
                     <td>
                         {% if task_state.show_changeset_view_url %}
                             <a href="{% url 'schemanizer_changeset_view' task_state.changeset_id %}">

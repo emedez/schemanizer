@@ -3,7 +3,6 @@
         <thead>
             <tr>
                 <th>Started</th>
-                <th>State</th>
                 <th>Changeset ID</th>
                 <th>Server</th>
                 <th>Result</th>
@@ -13,15 +12,6 @@
             {% for task_state in task_state_list %}
                 <tr>
                     <td>{{ task_state.tstamp }}</td>
-                    <td>
-                        {% if task_state.state == 'SUCCESS' %}
-                            <span class="text-success">SUCCESS</span>
-                        {% elif task_state.state == 'FAILURE' %}
-                            <span class="text-error">FAILURE</span>
-                        {% else %}
-                            {{ task_state.state }}
-                        {% endif %}
-                    </td>
                     <td>
                         {{ task_state.changeset_id|default_if_none:'' }}
                         {% if task_state.changeset_id %}
