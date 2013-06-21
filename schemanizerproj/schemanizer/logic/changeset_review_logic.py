@@ -133,21 +133,24 @@ class ChangesetReview(object):
         """Starts changeset review."""
 
         self._init_run_vars()
-        if not privileges_logic.can_user_review_changeset(
-                self._user, self._changeset):
-            raise exceptions.PrivilegeError(
-                MSG_CHANGESET_REVIEW_NOT_ALLOWED.format(
-                    user=self._user.auth_user.username,
-                    changeset_id=self._changeset.id))
-
-        # Create changeset action entry.
-        models.ChangesetAction.objects.create(
-            changeset=self._changeset,
-            type=models.ChangesetAction.TYPE_REVIEW_STARTED,
-            timestamp=timezone.now())
+        # if not privileges_logic.can_user_review_changeset(
+        #         self._user, self._changeset):
+        #     raise exceptions.PrivilegeError(
+        #         MSG_CHANGESET_REVIEW_NOT_ALLOWED.format(
+        #             user=self._user.auth_user.username,
+        #             changeset_id=self._changeset.id))
 
         ec2_instance_starter = None
         try:
+            models.ChangesetReview.objects.filter(
+                changeset=self._changeset).delete()
+
+            # Create changeset action entry.
+            models.ChangesetAction.objects.create(
+                changeset=self._changeset,
+                type=models.ChangesetAction.TYPE_REVIEW_STARTED,
+                timestamp=timezone.now())
+
             if not self._no_ec2_instance_launch:
                 ec2_instance_starter = ec2_logic.EC2InstanceStarter(
                     region=settings.AWS_REGION,
@@ -306,6 +309,10 @@ class ChangesetReview(object):
                 self._review_results_url = 'http://%s%s' % (
                     site.domain, url)
 
+                models.ChangesetReview.objects.create(
+                    changeset=self._changeset, results_log='',
+                    success=not self._has_errors)
+
                 log.info('Changeset was reviewed, id=%s.' % (
                     self._changeset.id,))
                 try:
@@ -316,6 +323,12 @@ class ChangesetReview(object):
                     msg = 'ERROR %s: %s'  % (type(e), e)
                     log.exception(msg)
                     self._store_message(msg, 'error')
+        except Exception, e:
+            msg = 'ERROR %s: %s' % (type(e), e)
+            log.exception(msg)
+            self._has_errors = True
+            models.ChangesetReview.objects.create(
+                changeset=self._changeset, results_log=msg, success=False)
         finally:
             if ec2_instance_starter:
                 ec2_instance_starter.terminate_instances()

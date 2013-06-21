@@ -311,6 +311,7 @@ class ChangesetSyntaxTest(object):
             log.exception(msg)
             self._store_message(msg, 'error')
             self._has_errors = True
+            raise e
 
         finally:
             if cursor:

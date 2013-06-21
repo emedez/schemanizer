@@ -313,6 +313,12 @@ def changeset_view_review_results(
             models.Role.ROLE_ADMIN)
         if user_has_access:
             changeset = models.Changeset.objects.get(pk=int(changeset_id))
+            changeset_review = None
+            try:
+                changeset_review = models.ChangesetReview.objects.get(
+                    changeset=changeset)
+            except ObjectDoesNotExist:
+                pass
             if (
                     changeset.review_status in [
                         models.Changeset.REVIEW_STATUS_IN_PROGRESS,

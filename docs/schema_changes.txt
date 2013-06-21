@@ -161,3 +161,18 @@ CHANGE COLUMN `type` `type` ENUM(
     'applied - failed') NULL DEFAULT NULL  ;
 
 -
+
+
+2013-06-21 GMT+08
+=================
+
+create table changeset_reviews(
+  id int primary key auto_increment,
+  changeset_id int,
+  results_log text,
+  success tinyint(1),
+  task_id varchar(36),
+  created_at datetime,
+  updated_at datetime
+) default charset=utf8
+
