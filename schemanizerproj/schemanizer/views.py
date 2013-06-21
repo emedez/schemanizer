@@ -1324,7 +1324,7 @@ def schema_version_download_ddl(request, schema_version_id):
 
         response = HttpResponse(
             FileWrapper(ddl_file), content_type='text/plain')
-        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.txt' % (
+        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.sql' % (
             schema_version.pk,)
         response['Content-Length'] = ddl_file.tell()
         ddl_file.seek(0)
