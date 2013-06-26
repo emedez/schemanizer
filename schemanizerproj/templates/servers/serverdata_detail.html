@@ -1,0 +1,53 @@
+{% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ block.super }} - Host Data{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        <h2>Host Data</h2>
+        <table class="table table-striped table-condensed table-bordered table-hover">
+            <tbody>
+                <tr>
+                    <th>ID:</th>
+                    <td>{{ object.pk }}</td>
+                </tr>
+                <tr>
+                    <th>Schema:</th>
+                    <td>{{ object.database_schema }}</td>
+                </tr>
+                <tr>
+                    <th>
+                        Schema Exists on Host:
+                    </th>
+                    <td>
+                        {% if object.schema_exists %}
+                            <i class="icon-ok"></i>
+                        {% else %}
+                            <i class="icon-remove"></i>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Schema Version:</th>
+                    <td>
+                        {% if object.schema_version %}
+                            <a href="{% url 'schemaversions_schema_version' object.schema_version.pk %}">ID: {{ object.schema_version.pk }}</a>
+                        {% else %}
+                            <span class="text-error">UNKNOWN</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Schema Version Diff:</th>
+                    <td>
+                        {% if object.schema_version_diff %}
+                            <pre>{{ object.schema_version_diff }}</pre>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    {% endif %}
+{% endblock %}

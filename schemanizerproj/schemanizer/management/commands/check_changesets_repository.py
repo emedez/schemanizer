@@ -16,6 +16,7 @@ import yaml
 
 from schemanizer import exceptions, models
 from schemanizer.logic import changeset_logic
+from utilities.exceptions import Error
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ def process_file(f, commit):
                     content = base64.b64decode(data['content'])
                     yaml_obj = yaml.load(content)
                     if not isinstance(yaml_obj, dict):
-                        raise exceptions.Error('File format is invalid.')
+                        raise Error('File format is invalid.')
                     changeset = changeset_logic.save_changeset_yaml(
                         yaml_obj, f, commit)
                     if changeset:
@@ -99,7 +100,7 @@ def process_file(f, commit):
                     content = base64.b64decode(data['content'])
                     yaml_obj = yaml.load(content)
                     if not isinstance(yaml_obj, dict):
-                        raise exceptions.Error('File format is invalid.')
+                        raise Error('File format is invalid.')
                     changeset = changeset_logic.update_changeset_yaml(
                         yaml_obj, f, commit)
                     if changeset:

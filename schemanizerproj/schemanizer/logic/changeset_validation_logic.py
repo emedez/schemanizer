@@ -6,16 +6,18 @@ from django.db import transaction
 from django.utils import timezone
 import sqlparse
 
-from schemanizer import models, exceptions, utils
+from schemanizer import models, exceptions, utilities
 from schemanizer.logic import privileges_logic
+from users.models import User
+from utils.helpers import get_model_instance
 
 log = logging.getLogger(__name__)
 
 def changeset_validate_no_update_with_where_clause(changeset, user):
     """Changeset validate no update with where clause."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    user = utils.get_model_instance(user, models.User)
+    changeset = get_model_instance(changeset, models.Changeset)
+    user = get_model_instance(user, User)
     now = timezone.now()
 
     if not privileges_logic.can_user_review_changeset(user, changeset):

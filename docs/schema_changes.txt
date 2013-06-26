@@ -176,3 +176,40 @@ create table changeset_reviews(
   updated_at datetime
 ) default charset=utf8
 
+-----
+
+2013-06-25 GMT+08
+=================
+
+ALTER TABLE `environments`
+CHANGE COLUMN `update_at` `updated_at` DATETIME NULL DEFAULT NULL  ;
+
+
+CREATE TABLE `events` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    `datetime` DATETIME,
+    `type` VARCHAR(255),
+    `description` TEXT,
+    `user_id` INT
+) DEFAULT CHARSET=utf8
+
+
+ALTER TABLE `schema_versions`
+ADD COLUMN `pulled_from` INT NULL  AFTER `checksum` ,
+ADD COLUMN `pull_datetime` DATETIME NULL  AFTER `pulled_from` ;
+
+
+CREATE TABLE `server_data` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `server_id` INT,
+  `database_schema_id` INT,
+  `schema_exists` TINYINT(1),
+  `schema_version_id` INT,
+  `schema_version_diff` TEXT,
+  `created_at` DATETIME,
+  `updated_at` DATETIME
+) DEFAULT CHARSET=utf8
+
+
+
+

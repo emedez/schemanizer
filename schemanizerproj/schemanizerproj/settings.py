@@ -1,6 +1,7 @@
 # Django settings for schemanizerproj project.
 
 import os
+from django.conf import global_settings
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -109,6 +110,9 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
+    'django.core.context_processors.request',)
+
 ROOT_URLCONF = 'schemanizerproj.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
@@ -138,10 +142,15 @@ INSTALLED_APPS = (
     'tastypie',
     'debug_toolbar',
     'djcelery',
+    'bootstrap-pagination',
 
     #=============
     # project apps
     #=============
+    'events',
+    'users',
+    'servers',
+    'schemaversions',
     'schemanizer',
 
 )
@@ -197,14 +206,39 @@ LOGGING = {
             'propagate': True,
         },
         'schemanizerproj': {
-            'handlers': ['console', 'file'],
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },
         'schemanizer': {
-            'handlers': ['console', 'file'],
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'utils': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'events': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'users': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'servers': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'schemaversions': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
         }
     },
 }

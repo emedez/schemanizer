@@ -7,7 +7,9 @@ from django.utils import timezone
 import MySQLdb
 import sqlparse
 
-from schemanizer import exceptions, models, utils
+from schemanizer import exceptions, models, utilities
+from utils.exceptions import Error
+from utils.mysql_functions import generate_schema_hash
 
 log = logging.getLogger(__name__)
 
@@ -194,9 +196,9 @@ class ChangesetSyntaxTest(object):
                     self._execute_query(cursor, changeset_detail.apply_sql)
                     cursor.execute('FLUSH TABLES')
 
-                    structure_after = utils.mysql_dump(
+                    structure_after = mysql_dump(
                         **dump_connection_options)
-                    hash_after = utils.schema_hash(structure_after)
+                    hash_after = generate_schema_hash(structure_after)
                     log.debug('Structure=\n%s\nChecksum=%s' % (
                         structure_after, hash_after))
 
@@ -214,19 +216,19 @@ class ChangesetSyntaxTest(object):
                         msg = (
                             u'Apply verification failed (Error %s: %s).' % (
                                 type(e), e))
-                        raise exceptions.Error(msg)
+                        raise Error(msg)
 
                     # Test revert_sql
                     log.debug('Testing revert_sql')
                     self._execute_query(cursor, changeset_detail.revert_sql)
                     cursor.execute('FLUSH TABLES')
 
-                    structure_after_revert = utils.mysql_dump(
+                    structure_after_revert = mysql_dump(
                         **dump_connection_options)
-                    hash_after_revert = utils.schema_hash(
+                    hash_after_revert = generate_schema_hash(
                         structure_after_revert)
                     if hash_after_revert != hash_before:
-                        raise exceptions.Error(
+                        raise Error(
                             'Checksum after revert_sql was applied was '
                             'not the same as before apply_sql was '
                             'applied.')
@@ -240,7 +242,7 @@ class ChangesetSyntaxTest(object):
                         msg = (
                             u'Revert verification failed (Error %s: %s).' % (
                                 type(e), e))
-                        raise exceptions.Error(msg)
+                        raise Error(msg)
 
                     # test_counts = utils.execute_count_statements(
                     #     cursor, changeset_detail.apply_verification_sql)

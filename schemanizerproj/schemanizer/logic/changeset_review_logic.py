@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.utils import timezone
 
-from schemanizer import models, exceptions, utils
+from schemanizer import models, exceptions, utilities
 from schemanizer.logic import (
     changeset_test_logic,
     changeset_validation_logic,
@@ -17,6 +17,10 @@ from schemanizer.logic import (
     mail_logic,
     mysql_logic,
     privileges_logic)
+from schemaversions.models import SchemaVersion
+from users.models import User
+from utils.exceptions import Error
+from utils.helpers import get_model_instance
 
 log = logging.getLogger(__name__)
 
@@ -47,10 +51,10 @@ class ChangesetReview(object):
         """
         super(ChangesetReview, self).__init__()
 
-        self._changeset = utils.get_model_instance(changeset, models.Changeset)
-        self._schema_version = utils.get_model_instance(
-            schema_version, models.SchemaVersion)
-        self._user = utils.get_model_instance(user, models.User)
+        self._changeset = get_model_instance(changeset, models.Changeset)
+        self._schema_version = get_model_instance(
+            schema_version, SchemaVersion)
+        self._user = get_model_instance(user, User)
         self._no_ec2_instance_launch = settings.DEV_NO_EC2_APPLY_CHANGESET
         self._message_callback = message_callback
         self._send_mail = send_mail
@@ -167,7 +171,7 @@ class ChangesetReview(object):
                 ec2_instance_starter.run()
                 if ec2_instance_starter.instance and not (
                         ec2_instance_starter.instance.state == 'running'):
-                    raise exceptions.Error(
+                    raise Error(
                         'Instance did not reach \'running\' state.')
 
             if self._no_ec2_instance_launch or (
@@ -196,7 +200,7 @@ class ChangesetReview(object):
                 )
                 conn = connection_tester.run()
                 if not conn:
-                    raise exceptions.Error('Unable to connect to MySQL server.')
+                    raise Error('Unable to connect to MySQL server.')
 
                 now = timezone.now()
                 # Create changeset action entry.
@@ -254,13 +258,13 @@ class ChangesetReview(object):
                 #
                 if not self._has_errors:
                     try:
-                        after_version = models.SchemaVersion.objects.get(
+                        after_version = SchemaVersion.objects.get(
                             database_schema=self._schema_version.database_schema,
                             checksum=hash_after)
                         after_version.ddl = structure_after
                         after_version.save()
                     except ObjectDoesNotExist:
-                        after_version = models.SchemaVersion.objects.create(
+                        after_version = SchemaVersion.objects.create(
                             database_schema=self._schema_version.database_schema,
                             ddl=structure_after,
                             checksum=hash_after
@@ -352,10 +356,10 @@ class ChangesetReviewThread(threading.Thread):
         super(ChangesetReviewThread, self).__init__()
 
         self.daemon = True
-        self._changeset = utils.get_model_instance(changeset, models.Changeset)
-        self._schema_version = utils.get_model_instance(
-            schema_version, models.SchemaVersion)
-        self._user = utils.get_model_instance(user, models.User)
+        self._changeset = get_model_instance(changeset, models.Changeset)
+        self._schema_version = get_model_instance(
+            schema_version, SchemaVersion)
+        self._user = get_model_instance(user, User)
 
         self._init_run_vars()
 
@@ -467,10 +471,10 @@ class ChangesetReviewThread(threading.Thread):
 def start_changeset_review_thread(changeset, schema_version, user):
     """Reviews changeset."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    schema_version = utils.get_model_instance(
-        schema_version, models.SchemaVersion)
-    user = utils.get_model_instance(user, models.User)
+    changeset = get_model_instance(changeset, models.Changeset)
+    schema_version = get_model_instance(
+        schema_version, SchemaVersion)
+    user = get_model_instance(user, User)
 
     #if changeset_can_be_reviewed_by_user(changeset, user):
     #    thread = ReviewThread(changeset, schema_version, request_id, user, server)
@@ -491,29 +495,29 @@ def review_changeset(
 
     from schemanizer import tasks
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
     database_schema = changeset.database_schema
 
     if schema_version is None:
         # use the latest schema version if not specified
         schema_version_qs = (
-            models.SchemaVersion.objects.filter(
+            SchemaVersion.objects.filter(
                 database_schema=database_schema)
             .order_by('-created_at', '-id'))
         if not schema_version_qs.exists():
-            raise exceptions.Error(
+            raise Error(
                 MSG_NO_VERSION_FOUND_FOR_SCHEMA % (database_schema.name,))
         schema_version = schema_version_qs[0]
     else:
-        schema_version = utils.get_model_instance(
-            schema_version, models.SchemaVersion)
+        schema_version = get_model_instance(
+            schema_version, SchemaVersion)
 
     if user is None:
         # use default user if not specified
-        user = models.User.objects.get(
+        user = User.objects.get(
             name=settings.DEFAULT_CHANGESET_ACTION_USERNAME)
     else:
-        user = utils.get_model_instance(user, models.User)
+        user = get_model_instance(user, User)
 
     changeset_review = ChangesetReview(
         changeset, schema_version, user, send_mail=False,

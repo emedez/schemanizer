@@ -1,0 +1,41 @@
+{% extends 'site_base.html' %}
+
+{% block title %}{{ block.super }} - Schema Versions{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        <h2>Schema Versions</h2>
+        <p>
+            <a href="{% url 'servers_server_list' %}">
+                Add schema version (you will be taken to server list page, select
+                a server and choose the 'Generate schema version' link)</a>
+        </p>
+        <table class="table table-striped table-condensed table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Database schema</th>
+                <th>DDL</th>
+                <th>Pulled From</th>
+                <th>Pull Datetime</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in object_list %}
+                <tr>
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.database_schema }}</td>
+                    <td><code>{{ obj.ddl|truncatechars:30 }}</code></td>
+                    <td>{{ obj.pulled_from.name|default_if_none:'' }}</td>
+                    <td>{{ obj.pull_datetime|default_if_none:'' }}</td>
+                    <td>
+                        <a href="{% url 'schemaversions_schema_version' obj.id %}">View</a> |
+                        <a href="{% url 'schemaversions_schema_version_download_ddl' obj.id %}">Download DDL</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

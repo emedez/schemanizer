@@ -11,8 +11,13 @@ from django.utils import timezone
 import MySQLdb
 import sqlparse
 
-from schemanizer import exceptions, models, utils
+from schemanizer import exceptions, models, utilities
 from schemanizer.logic import mail_logic, privileges_logic
+from servers.models import Server
+from users.models import User
+from utils.exceptions import Error
+from utils.helpers import get_model_instance
+from utils.mysql_functions import generate_schema_hash
 
 log = logging.getLogger(__name__)
 
@@ -27,9 +32,9 @@ class ChangesetApply(object):
 
         super(ChangesetApply, self).__init__()
 
-        self._changeset = utils.get_model_instance(changeset, models.Changeset)
-        self._user = utils.get_model_instance(user, models.User)
-        self._server = utils.get_model_instance(server, models.Server)
+        self._changeset = get_model_instance(changeset, models.Changeset)
+        self._user = get_model_instance(user, User)
+        self._server = get_model_instance(server, Server)
         if connection_options is None:
             connection_options = {}
         self._connection_options = connection_options
@@ -95,7 +100,7 @@ class ChangesetApply(object):
             if (
                     changeset_detail.apply_verification_sql and
                     changeset_detail.apply_verification_sql.strip()):
-                counts_before = utils.execute_count_statements(
+                counts_before = utilities.execute_count_statements(
                     cursor, changeset_detail.apply_verification_sql)
                 log.debug('Row count(s) before apply_sql: %s' % (
                     counts_before,))
@@ -127,7 +132,7 @@ class ChangesetApply(object):
             if (
                     changeset_detail.apply_verification_sql and
                     changeset_detail.apply_verification_sql.strip()):
-                counts_after = utils.execute_count_statements(
+                counts_after = utilities.execute_count_statements(
                     cursor, changeset_detail.apply_verification_sql)
                 log.debug('Row count(s) after apply_sql: %s' % (
                     counts_after,))
@@ -191,13 +196,13 @@ class ChangesetApply(object):
             if models.ChangesetApply.objects.filter(
                     changeset=self._changeset, server=self._server,
                     success=True).exists():
-                raise exceptions.Error(
+                raise Error(
                     "Changeset has been successfully applied already at "
                     "server '%s'." % (
                         self._server.name,))
 
-            ddl = utils.mysql_dump(**self._connection_options)
-            checksum = utils.schema_hash(ddl)
+            ddl = mysql_dump(**self._connection_options)
+            checksum = generate_schema_hash(ddl)
             if not (self._changeset.before_version and
                     self._changeset.before_version.checksum == checksum):
                 before_version_checksum = None
@@ -224,9 +229,9 @@ class ChangesetApply(object):
             with transaction.commit_on_success():
                 self._apply_changeset_details()
 
-                ddl = utils.mysql_dump(**self._connection_options)
+                ddl = mysql_dump(**self._connection_options)
                 log.debug('DDL:\n%s' % (ddl,))
-                checksum = utils.schema_hash(ddl)
+                checksum = generate_schema_hash(ddl)
                 if not (self._changeset.after_version and (
                         self._changeset.after_version.checksum == checksum)):
                     after_version_checksum = None
@@ -322,9 +327,9 @@ class ChangesetApplyThread(threading.Thread):
         super(ChangesetApplyThread, self).__init__()
         self.daemon = True
 
-        self.changeset = utils.get_model_instance(changeset, models.Changeset)
-        self.user = utils.get_model_instance(user, models.User)
-        self.server = utils.get_model_instance(server, models.Server)
+        self.changeset = get_model_instance(changeset, models.Changeset)
+        self.user = get_model_instance(user, User)
+        self.server = get_model_instance(server, Server)
         self.connection_options = connection_options
 
         self.messages = []
@@ -380,9 +385,9 @@ class ChangesetApplyThread(threading.Thread):
 
 
 def start_changeset_apply_thread(changeset, user, server):
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    user = utils.get_model_instance(user, models.User)
-    server = utils.get_model_instance(server, models.Server)
+    changeset = get_model_instance(changeset, models.Changeset)
+    user = get_model_instance(user, User)
+    server = get_model_instance(server, Server)
 
     if not privileges_logic.can_user_apply_changeset(user, changeset):
         raise exceptions.PrivilegeError(
@@ -403,9 +408,9 @@ def apply_changeset(
         changeset, user, server, message_callback=None, task_id=None):
     """Applies changeset to specified server."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    user = utils.get_model_instance(user, models.User)
-    server = utils.get_model_instance(server, models.Server)
+    changeset = get_model_instance(changeset, models.Changeset)
+    user = get_model_instance(user, User)
+    server = get_model_instance(server, Server)
 
     if not privileges_logic.can_user_apply_changeset(user, changeset):
         raise exceptions.PrivilegeError(

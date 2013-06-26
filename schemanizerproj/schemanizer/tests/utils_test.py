@@ -7,7 +7,8 @@ from django.test import TestCase
 
 import MySQLdb
 
-from schemanizer import exceptions, utils
+from schemanizer import exceptions, utilities
+from utilities.exceptions import Error
 
 log = logging.getLogger(__name__)
 
@@ -29,9 +30,9 @@ class ExecuteCountStatementsTest(TestCase):
         # exclude elements with None values
         self.no_db_connect_args = dict(
             [(k, v) for k, v in no_db_connect_args.iteritems() if v is not None])
-        utils.drop_schema_if_exists(
+        utilities.drop_schema_if_exists(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
-        utils.create_schema(
+        utilities.create_schema(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
         self.connect_args = self.no_db_connect_args.copy()
@@ -70,7 +71,7 @@ class ExecuteCountStatementsTest(TestCase):
             conn.close()
 
     def tearDown(self):
-        utils.drop_schema_if_exists(
+        utilities.drop_schema_if_exists(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
     def test_single_statement(self):
@@ -80,7 +81,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utils.execute_count_statements(
+                    utilities.execute_count_statements(
                         cursor,
                         'select count(*) from %s where id in (1,2,3,4,5)' % (
                             self.table_name,)),
@@ -95,7 +96,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utils.execute_count_statements(
+                    utilities.execute_count_statements(
                         cursor,
                         """
                         select count(*) from %s where id in (1,2,3,4,5);
@@ -114,8 +115,8 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertRaises(
-                    exceptions.Error,
-                    utils.execute_count_statements,
+                    Error,
+                    utilities.execute_count_statements,
                     cursor,
                     'select id, name from %s' % (self.table_name,))
         finally:
@@ -128,8 +129,8 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertRaises(
-                    exceptions.Error,
-                    utils.execute_count_statements,
+                    Error,
+                    utilities.execute_count_statements,
                     cursor,
                     'select id from %s' % (self.table_name,))
         finally:
@@ -142,8 +143,8 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertRaises(
-                    exceptions.Error,
-                    utils.execute_count_statements,
+                    Error,
+                    utilities.execute_count_statements,
                     cursor,
                     'select id from %s where id=-1' % (self.table_name,))
         finally:
@@ -156,7 +157,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utils.execute_count_statements(cursor, ''), [])
+                    utilities.execute_count_statements(cursor, ''), [])
         finally:
             conn.close()
 
@@ -167,7 +168,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utils.execute_count_statements(
+                    utilities.execute_count_statements(
                         cursor,
                         """
                         select count(*) from %s where id in (1, 2, 3);

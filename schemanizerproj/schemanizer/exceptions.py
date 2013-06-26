@@ -1,8 +1,5 @@
 """Exceptions"""
-
-class Error(StandardError):
-    """Base class for exceptions in this module."""
-    pass
+from utils.exceptions import Error
 
 
 class PrivilegeError(Error):

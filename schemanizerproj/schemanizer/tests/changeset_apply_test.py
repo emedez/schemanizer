@@ -9,9 +9,14 @@ from django.utils import timezone
 
 import MySQLdb
 
-from schemanizer import models, utils
+from schemanizer import models, utilities
 from schemanizer.logic import changeset_apply_logic
 from schemanizer.logic import changeset_review_logic
+from schemaversions.models import DatabaseSchema, SchemaVersion
+from servers.models import Server
+from utils.mysql import mysql_dump
+from users.models import User
+from utils.mysql_functions import generate_schema_hash
 
 log = logging.getLogger(__name__)
 
@@ -88,31 +93,31 @@ class ChangesetApplyTest(TestCase):
             [
                 (k, v) for k, v in no_db_connect_args.iteritems()
                 if v is not None])
-        utils.drop_schema_if_exists(
+        utilities.drop_schema_if_exists(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
-        utils.create_schema(
+        utilities.create_schema(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
         self.connect_args = self.no_db_connect_args.copy()
         self.connect_args['db'] = settings.TEST_DB_NAME
 
-        self.user_dev = models.User.objects.get(name='dev')
-        self.user_dba = models.User.objects.get(name='dba')
-        self.user_admin = models.User.objects.get(name='admin')
+        self.user_dev = User.objects.get(name='dev')
+        self.user_dba = User.objects.get(name='dba')
+        self.user_admin = User.objects.get(name='admin')
 
-        self.server = models.Server.objects.create(
+        self.server = Server.objects.create(
             name='localhost', hostname='localhost')
-        self.database_schema = models.DatabaseSchema.objects.create(
+        self.database_schema = DatabaseSchema.objects.create(
             name=settings.TEST_DB_NAME)
 
         # create initial schema version
-        dump = utils.mysql_dump(**self.connect_args)
-        self.initial_schema_version = models.SchemaVersion.objects.create(
+        dump = mysql_dump(**self.connect_args)
+        self.initial_schema_version = SchemaVersion.objects.create(
             database_schema=self.database_schema,
-            ddl=dump, checksum=utils.schema_hash(dump))
+            ddl=dump, checksum=generate_schema_hash(dump))
 
     def tearDown(self):
-        utils.drop_schema_if_exists(
+        utilities.drop_schema_if_exists(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
     @override_settings(
@@ -178,9 +183,9 @@ class ChangesetApplyTest(TestCase):
             models.Changeset.REVIEW_STATUS_IN_PROGRESS)
 
         # delete and recreate schema to prepare for changeset apply
-        utils.drop_schema_if_exists(
+        utilities.drop_schema_if_exists(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
-        utils.create_schema(
+        utilities.create_schema(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
         changeset_apply = changeset_apply_logic.ChangesetApply(
@@ -204,6 +209,6 @@ class ChangesetApplyTest(TestCase):
             """
         with conn as cursor:
             self.assertEqual(
-                utils.execute_count_statements(cursor, statements),
+                utilities.execute_count_statements(cursor, statements),
                 [2, 3, 5])
         conn.close()

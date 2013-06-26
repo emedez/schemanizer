@@ -1,0 +1,22 @@
+{% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{{ block.super }} - Confirm Server Delete{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        <div class="alert">
+            <h2>Warning!</h2>
+            <p>The following server will be deleted:</p>
+            <p>
+                ID: {{ object.pk }}<br />
+                {{ object }}
+            </p>
+            <p>Other related records will also be deleted.</p>
+        </div>
+
+        {% if form %}
+            {% crispy form form.helper %}
+        {% endif %}
+
+    {% endif %}
+{% endblock %}

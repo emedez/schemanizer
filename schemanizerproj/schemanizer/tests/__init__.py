@@ -11,13 +11,18 @@ from django.utils import timezone
 
 from tastypie.test import ResourceTestCase
 
-from schemanizer import exceptions, models, utils
+from schemanizer import exceptions, models, utilities
 from schemanizer.logic import changeset_logic
 from schemanizer.logic import changeset_review_logic
 from schemanizer.logic import privileges_logic
 from schemanizer.logic import user_logic
 from schemanizer.tests.changeset_apply_test import ChangesetApplyTest
 from schemanizer.tests.utils_test import ExecuteCountStatementsTest
+from schemaversions.models import DatabaseSchema, SchemaVersion
+from servers.models import Environment, Server
+from users.models import Role, User
+from users.user_functions import add_user
+from utils.mysql_functions import generate_schema_hash
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +45,7 @@ class ChangesetReviewLogicTest(TransactionTestCase):
         self.assertTrue(logged_in)
 
     def _create_changeset(self, database_schema):
-        user = models.User.objects.get(name='dev')
+        user = User.objects.get(name='dev')
         changeset = models.Changeset.objects.create(
             database_schema=database_schema,
             type=models.Changeset.DDL_TABLE_CREATE,
@@ -73,7 +78,7 @@ class ChangesetReviewLogicTest(TransactionTestCase):
     def test_changeset_review(self):
         log.debug('__name__ = %s' % (__name__,))
         schema_name = 'schemanizer_test_changeset_review'
-        database_schema = models.DatabaseSchema.objects.create(
+        database_schema = DatabaseSchema.objects.create(
             name=schema_name
         )
         ddl = """
@@ -107,10 +112,10 @@ CREATE TABLE `t1` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
         """
-        schema_version = models.SchemaVersion.objects.create(
+        schema_version = SchemaVersion.objects.create(
             database_schema=database_schema,
             ddl=ddl,
-            checksum=utils.schema_hash(ddl)
+            checksum=generate_schema_hash(ddl)
         )
 
         #c = Client()
@@ -118,7 +123,7 @@ CREATE TABLE `t1` (
             #self._login(c, u, p)
             #log.debug('%s logged in.' % (u,))
 
-            user = models.User.objects.get(name=u)
+            user = User.objects.get(name=u)
 
             try:
 #                cursor = connection.cursor()
@@ -202,12 +207,12 @@ class HomeViewTestCase(TestCase):
             user = r.context['user']
             role_name = user.role.name
 
-            if role_name in [models.Role.ROLE_DEVELOPER]:
+            if role_name in [Role.ROLE_DEVELOPER]:
                 # developers should not be able to review changesets
                 self.assertTrue('show_to_be_reviewed_changesets' not in r.context)
                 self.assertTrue('can_apply_changesets' not in r.context)
                 self.assertTrue('changesets' not in r.context)
-            elif role_name in [models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]:
+            elif role_name in [Role.ROLE_DBA, Role.ROLE_ADMIN]:
                 self.assertTrue(r.context['show_to_be_reviewed_changesets'])
                 self.assertTrue(r.context['can_apply_changesets'])
                 self.assertTrue('changesets' in r.context)
@@ -224,7 +229,7 @@ class UserViewsTestCase(TestCase):
             ('admin', 'admin')
         )
 
-        self.admin_user = models.User.objects.get(name='admin')
+        self.admin_user = User.objects.get(name='admin')
 
     def _login(self, client, username, password):
         logged_in = client.login(username=username, password=password)
@@ -244,7 +249,7 @@ class UserViewsTestCase(TestCase):
 
             user = r.context['user']
 
-            if user.role.name in [models.Role.ROLE_ADMIN]:
+            if user.role.name in [Role.ROLE_ADMIN]:
                 # only admins can view user list
                 self.assertTrue(r.context['user_has_access'])
                 self.assertTrue('users' in r.context)
@@ -267,7 +272,7 @@ class UserViewsTestCase(TestCase):
 
             user = r.context['user']
 
-            if user.role.name in [models.Role.ROLE_ADMIN]:
+            if user.role.name in [Role.ROLE_ADMIN]:
                 # only admin can access view, and is presented a form
                 self.assertTrue(r.context['user_has_access'])
                 self.assertTrue('form' in r.context)
@@ -282,7 +287,7 @@ class UserViewsTestCase(TestCase):
         for u, p in self.users:
             self._login(c, u, p)
 
-            role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
+            role = Role.objects.get(name=Role.ROLE_DEVELOPER)
             data = dict(
                 name='test_dev',
                 email='test_dev@example.com',
@@ -296,15 +301,15 @@ class UserViewsTestCase(TestCase):
             if u == 'admin':
                 self.assertRedirects(r, reverse('schemanizer_users'))
                 # user should now exist
-                created_user = models.User.objects.get(name=data['name'])
+                created_user = User.objects.get(name=data['name'])
                 user_logic.delete_user(self.admin_user, created_user)
             else:
                 self.assertFalse(r.context['user_has_access'])
 
     def _create_user_dev(self):
-        user = models.User.objects.get(name='admin')
-        role = models.Role.objects.get(name=models.Role.ROLE_DEVELOPER)
-        created_user = user_logic.create_user(
+        user = User.objects.get(name='admin')
+        role = Role.objects.get(name=Role.ROLE_DEVELOPER)
+        created_user = add_user(
             user=user,
             name='test_dev',
             email='test_dev@example.com',
@@ -330,7 +335,7 @@ class UserViewsTestCase(TestCase):
 
                 user = r.context['user']
 
-                if user.role.name in [models.Role.ROLE_ADMIN]:
+                if user.role.name in [Role.ROLE_ADMIN]:
                     # only admins should have access and are presented with form
                     self.assertTrue(r.context['user_has_access'])
                     self.assertTrue('form' in r.context)
@@ -351,7 +356,7 @@ class UserViewsTestCase(TestCase):
             for u, p in self.users:
                 self._login(c, u, p)
 
-                new_role = models.Role.objects.get(name=models.Role.ROLE_DBA)
+                new_role = Role.objects.get(name=Role.ROLE_DBA)
                 data = dict(
                     name='test_dev_updated',
                     email='test_dev_updated@example.com',
@@ -363,7 +368,7 @@ class UserViewsTestCase(TestCase):
                     self.assertRedirects(r, reverse('schemanizer_users'))
 
                     # check that updates did went through
-                    updated_user = models.User.objects.get(pk=created_user_id)
+                    updated_user = User.objects.get(pk=created_user_id)
                     self.assertEqual(updated_user.name, data['name'])
                     self.assertEqual(updated_user.email, data['email'])
                     self.assertEqual(updated_user.role_id, data['role'])
@@ -388,7 +393,7 @@ class UserViewsTestCase(TestCase):
 
                 user = r.context['user']
 
-                if user.role.name in [models.Role.ROLE_ADMIN]:
+                if user.role.name in [Role.ROLE_ADMIN]:
                     self.assertTrue(r.context['user_has_access'])
                     self.assertTrue('to_be_del_user' in r.context)
                 else:
@@ -412,13 +417,13 @@ class UserViewsTestCase(TestCase):
 
                 if u == 'admin':
                     self.assertRedirects(r, reverse('schemanizer_users'))
-                    qs = models.User.objects.filter(pk=create_user_id)
+                    qs = User.objects.filter(pk=create_user_id)
                     self.assertFalse(qs.exists())
                 else:
                     self.assertFalse(r.context['user_has_access'])
 
         finally:
-            models.User.objects.filter(pk=create_user_id).delete()
+            User.objects.filter(pk=create_user_id).delete()
 
 
 class ChangesetViewsTestCase(TestCase):
@@ -432,7 +437,7 @@ class ChangesetViewsTestCase(TestCase):
             ('admin', 'admin')
         )
 
-        self.database_schema = models.DatabaseSchema.objects.create(
+        self.database_schema = DatabaseSchema.objects.create(
             name='test_schemanizer_schema_1'
         )
         log.debug('Database schema [id=%s] was created.' % (
@@ -449,7 +454,7 @@ class ChangesetViewsTestCase(TestCase):
         self.assertTrue(logged_in)
 
     def _create_changeset(self):
-        user = models.User.objects.get(name='dev')
+        user = User.objects.get(name='dev')
         with transaction.commit_on_success():
             changeset = models.Changeset.objects.create(
                 database_schema=self.database_schema,
@@ -490,7 +495,7 @@ class ChangesetViewsTestCase(TestCase):
 
             user = r.context['user']
 
-            if user.role.name in [models.Role.ROLE_ADMIN]:
+            if user.role.name in [Role.ROLE_ADMIN]:
                 # only admins can soft delete changeset
                 self.assertTrue(r.context['can_soft_delete'])
             else:
@@ -598,7 +603,7 @@ class ChangesetViewsTestCase(TestCase):
 
             for u, p in self.users:
                 self._login(c, u, p)
-                user = models.User.objects.get(name=u)
+                user = User.objects.get(name=u)
                 user_privileges = privileges_logic.UserPrivileges(user)
                 can_update = user_privileges.can_update_changeset(changeset)
                 can_set_review_status_to_in_progress = (
@@ -652,7 +657,7 @@ class ChangesetViewsTestCase(TestCase):
         c = Client()
         for u, p in self.users:
             self._login(c, u, p)
-            user = models.User.objects.get(name=u)
+            user = User.objects.get(name=u)
             changeset = self._create_changeset()
             changeset_id = changeset.id
             try:
@@ -672,7 +677,7 @@ class ChangesetViewsTestCase(TestCase):
         c = Client()
         for u, p in self.users:
             self._login(c, u, p)
-            user = models.User.objects.get(name=u)
+            user = User.objects.get(name=u)
             changeset = self._create_changeset()
             changeset_id = changeset.id
             try:
@@ -722,7 +727,7 @@ class ChangesetViewsTestCase(TestCase):
         for u, p in self.users:
             self._login(c, u, p)
 
-            user = models.User.objects.get(name=u)
+            user = User.objects.get(name=u)
             changeset = self._create_changeset()
             changeset_id = changeset.id
             try:
@@ -739,7 +744,7 @@ class ChangesetViewsTestCase(TestCase):
         for u, p in self.users:
             self._login(c, u, p)
 
-            user = models.User.objects.get(name=u)
+            user = User.objects.get(name=u)
             changeset = self._create_changeset()
             changeset_id = changeset.id
             try:
@@ -814,7 +819,7 @@ class ServerViewsTestCase(TestCase):
         for u, p in self.users:
             self._login(c, u, p)
 
-            environment = models.Environment.objects.get(name='test')
+            environment = Environment.objects.get(name='test')
             data = dict(
                 name='test_localhost',
                 hostname='localhost',
@@ -822,16 +827,16 @@ class ServerViewsTestCase(TestCase):
             )
             r = c.post(url, data)
 
-            server = models.Server.objects.filter(name=data['name'])
+            server = Server.objects.filter(name=data['name'])
             try:
                 self.assertTrue(server.exists())
                 self.assertRedirects(r, reverse('schemanizer_server_list'))
             finally:
-                models.Server.objects.filter(name=data['name']).delete()
+                Server.objects.filter(name=data['name']).delete()
 
     def _create_server(self):
-        environment = models.Environment.objects.get(name='test')
-        server = models.Server.objects.create(
+        environment = Environment.objects.get(name='test')
+        server = Server.objects.create(
             name='test_localhost',
             hostname='localhost',
             environment=environment
@@ -854,7 +859,7 @@ class ServerViewsTestCase(TestCase):
                 self.assertTrue('form' in r.context)
 
             finally:
-                models.Server.objects.filter(pk=server_id).delete()
+                Server.objects.filter(pk=server_id).delete()
 
     def test_server_update_post(self):
         for u, p in self.users:
@@ -866,7 +871,7 @@ class ServerViewsTestCase(TestCase):
 
                 self._login(c, u, p)
 
-                environment = models.Environment.objects.get(name='test')
+                environment = Environment.objects.get(name='test')
                 data = dict(
                     name='test_localhost_new',
                     hostname='localhost_new',
@@ -874,10 +879,10 @@ class ServerViewsTestCase(TestCase):
                 )
                 r = c.post(url, data)
 
-                self.assertTrue(models.Server.objects.filter(pk=server_id).exists())
+                self.assertTrue(Server.objects.filter(pk=server_id).exists())
                 self.assertRedirects(r, reverse('schemanizer_server_list'))
             finally:
-                models.Server.objects.filter(pk=server_id).delete()
+                Server.objects.filter(pk=server_id).delete()
 
     def test_server_delete(self):
         for u, p in self.users:
@@ -895,7 +900,7 @@ class ServerViewsTestCase(TestCase):
                 self.assertTrue('form' in r.context)
 
             finally:
-                models.Server.objects.filter(pk=server_id).delete()
+                Server.objects.filter(pk=server_id).delete()
 
     def test_server_delete_post(self):
         for u, p in self.users:
@@ -907,7 +912,7 @@ class ServerViewsTestCase(TestCase):
             self._login(c, u, p)
             r = c.post(url)
 
-            self.assertFalse(models.Server.objects.filter(pk=server_id).exists())
+            self.assertFalse(Server.objects.filter(pk=server_id).exists())
             self.assertRedirects(r, reverse('schemanizer_server_list'))
 
 
@@ -958,7 +963,7 @@ class EnvironmentViewsTestCase(TestCase):
 
             user = r.context['user']
 
-            if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+            if user.role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN):
                 self.assertTrue(r.context['user_has_access'])
                 self.assertTrue('form' in r.context)
             else:
@@ -979,17 +984,17 @@ class EnvironmentViewsTestCase(TestCase):
             qs = None
             try:
                 if u in ('dba', 'admin'):
-                    qs = models.Environment.objects.filter(name=data['name'])
+                    qs = Environment.objects.filter(name=data['name'])
                     self.assertTrue(qs.exists())
                     self.assertRedirects(r, reverse('schemanizer_environment_list'))
                 else:
                     self.assertFalse(r.context['user_has_access'])
             finally:
-                models.Environment.objects.filter(name=data['name']).delete()
+                Environment.objects.filter(name=data['name']).delete()
 
 
     def _create_environment(self):
-        o = models.Environment.objects.create(
+        o = Environment.objects.create(
             name='test_env'
         )
         return o
@@ -1009,14 +1014,14 @@ class EnvironmentViewsTestCase(TestCase):
                 self.assertTrue('user_has_access' in r.context)
 
                 user = r.context['user']
-                if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+                if user.role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN):
                     self.assertTrue(r.context['user_has_access'])
                     self.assertTrue('form' in r.context)
                 else:
                     self.assertFalse(r.context['user_has_access'])
 
             finally:
-                models.Server.objects.filter(pk=env_id).delete()
+                Server.objects.filter(pk=env_id).delete()
 
 
     def test_environment_update_post(self):
@@ -1035,12 +1040,12 @@ class EnvironmentViewsTestCase(TestCase):
                 r = c.post(url, data)
 
                 if u in ('dba', 'admin'):
-                    self.assertTrue(models.Environment.objects.filter(pk=env_id).exists())
+                    self.assertTrue(Environment.objects.filter(pk=env_id).exists())
                     self.assertRedirects(r, reverse('schemanizer_environment_list'))
                 else:
                     self.assertFalse(r.context['user_has_access'])
             finally:
-                models.Environment.objects.filter(pk=env_id).delete()
+                Environment.objects.filter(pk=env_id).delete()
 
     def test_environment_del(self):
         for u, p in self.users:
@@ -1057,13 +1062,13 @@ class EnvironmentViewsTestCase(TestCase):
                 user = r.context['user']
                 self.assertTrue('user_has_access' in r.context)
 
-                if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+                if user.role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN):
                     self.assertTrue(r.context['user_has_access'])
                 else:
                     self.assertFalse(r.context['user_has_access'])
 
             finally:
-                models.Environment.objects.filter(pk=env_id).delete()
+                Environment.objects.filter(pk=env_id).delete()
 
     def test_environment_del_post(self):
         for u, p in self.users:
@@ -1076,7 +1081,7 @@ class EnvironmentViewsTestCase(TestCase):
             r = c.post(url)
 
             if u in ('dba', 'admin'):
-                self.assertFalse(models.Environment.objects.filter(pk=env_id).exists())
+                self.assertFalse(Environment.objects.filter(pk=env_id).exists())
             else:
                 self.assertFalse(r.context['user_has_access'])
 
@@ -1124,7 +1129,7 @@ class SchemaVersionViewsTestCase(TestCase):
         self.assertTrue(logged_in)
 
     def test_schema_version_list(self):
-        database_schema = models.DatabaseSchema.objects.create(
+        database_schema = DatabaseSchema.objects.create(
             name='test_schemanizer_schema_1'
         )
         try:
@@ -1142,8 +1147,8 @@ class SchemaVersionViewsTestCase(TestCase):
             database_schema.delete()
 
     def test_schema_version_create(self):
-        environment = models.Environment.objects.get(name='test')
-        server = models.Server.objects.create(
+        environment = Environment.objects.get(name='test')
+        server = Server.objects.create(
             name='test_server_1',
             hostname='localhost',
             environment=environment
@@ -1169,8 +1174,8 @@ class SchemaVersionViewsTestCase(TestCase):
             cursor.execute('create schema if not exists %s' % (schema_name,))
         except Warning:
             pass
-        environment = models.Environment.objects.get(name='test')
-        server = models.Server.objects.create(
+        environment = Environment.objects.get(name='test')
+        server = Server.objects.create(
             name='test_server_1',
             hostname='localhost',
             environment=environment
@@ -1193,11 +1198,11 @@ class SchemaVersionViewsTestCase(TestCase):
         database_schema = None
         schema_version = None
         try:
-            database_schema = models.DatabaseSchema.objects.create(
+            database_schema = DatabaseSchema.objects.create(
                 name='schemanizer_test_schema')
-            schema_version = models.SchemaVersion.objects.create(
+            schema_version = SchemaVersion.objects.create(
                 database_schema=database_schema, ddl='',
-                checksum=utils.schema_hash(''))
+                checksum=generate_schema_hash(''))
             url = reverse(
                 'schemanizer_schema_version_view', args=[schema_version.id])
             c = Client()
@@ -1233,7 +1238,7 @@ class RestApiTest(ResourceTestCase):
         return self.create_basic(username='dev', password='dev')
 
     def create_database_schema(self):
-        database_schema = models.DatabaseSchema.objects.create(
+        database_schema = DatabaseSchema.objects.create(
             name='schemanizer_test_schema_1')
         return database_schema
 
@@ -1242,16 +1247,16 @@ class RestApiTest(ResourceTestCase):
         changeset = models.Changeset.objects.create(
             database_schema=database_schema, type='DDL:Table:Create',
             classification='painless',
-            submitted_by=models.User.objects.get(name='dev'),
+            submitted_by=User.objects.get(name='dev'),
             submitted_at=timezone.now())
         return changeset
 
     def test_user_create(self):
-        current_user_count = models.User.objects.count()
+        current_user_count = User.objects.count()
         post_data = dict(
             name='dev2',
             email='dev2@example.com',
-            role_id=models.Role.objects.get(name='developer').pk,
+            role_id=Role.objects.get(name='developer').pk,
             password='dev2'
         )
         resp = self.api_client.post(
@@ -1259,7 +1264,7 @@ class RestApiTest(ResourceTestCase):
             authentication=self.get_admin_credentials())
         log.debug('status_code = %s' % (resp.status_code,))
         log.debug(resp.content)
-        self.assertEqual(models.User.objects.count(), current_user_count + 1)
+        self.assertEqual(User.objects.count(), current_user_count + 1)
 
         # Scenario: Developer attempts to create user.
         resp = self.api_client.post(

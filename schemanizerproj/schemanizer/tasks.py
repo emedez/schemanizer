@@ -5,11 +5,12 @@ import time
 
 from celery import current_task, states, task
 
-from schemanizer import models, utils
+from schemanizer import models, utilities
 from schemanizer.logic import (
     changeset_apply_logic,
     changeset_review_logic,
     mail_logic)
+from utils.helpers import get_model_instance
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def review_changeset(changeset, schema_version=None, user=None):
 
     message_callback = functools.partial(
         message_callback, current_task=current_task)
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
     changeset_review_logic.review_changeset(
         changeset, schema_version, user, message_callback=message_callback)
 
@@ -102,7 +103,7 @@ def send_mail_changeset_reviewed(changeset):
     """Sends 'changeset reviewed' email."""
 
     log.debug('task: send_mail_changeset_reviewed')
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
     mail_logic.send_mail_changeset_reviewed(changeset)
 
 

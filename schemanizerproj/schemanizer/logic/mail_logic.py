@@ -7,7 +7,9 @@ from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 
-from schemanizer import models, utils
+from schemanizer import models, utilities
+from users.models import Role, User
+from utils.helpers import get_model_instance
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +42,12 @@ def send_changeset_submission_through_repo_failed_mail(
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+        .filter(role__name=Role.ROLE_DBA))
 
     committer_user = None
     if 'committer' in commit_data and 'login' in commit_data['committer']:
-        user_qs = models.User.objects.filter(
+        user_qs = User.objects.filter(
             github_login=commit_data['committer']['login'])
         if user_qs.exists():
             committer_user = user_qs[0]
@@ -89,7 +91,7 @@ def send_changeset_submission_through_repo_failed_mail(
 def send_changeset_submitted_mail(changeset):
     """Sends changeset submitted email."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
 
     # urls
     site = Site.objects.get_current()
@@ -100,8 +102,8 @@ def send_changeset_submitted_mail(changeset):
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+        .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 
@@ -121,7 +123,7 @@ def send_changeset_submitted_mail(changeset):
 def send_mail_changeset_reviewed(changeset):
     """Sends reviewed changeset email."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
     changeset_review = models.ChangesetReview.objects.get(changeset=changeset)
 
     # urls
@@ -136,8 +138,8 @@ def send_mail_changeset_reviewed(changeset):
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-            .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+            .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 
@@ -173,7 +175,7 @@ def send_mail_changeset_reviewed(changeset):
 def send_changeset_updated_mail(changeset):
     """Sends changeset updated email."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
 
     # urls
     site = Site.objects.get_current()
@@ -183,8 +185,8 @@ def send_changeset_updated_mail(changeset):
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+        .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 
@@ -204,7 +206,7 @@ def send_changeset_updated_mail(changeset):
 def send_changeset_approved_mail(changeset):
     """Sends changeset approved email."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
 
     # urls
     site = Site.objects.get_current()
@@ -214,8 +216,8 @@ def send_changeset_approved_mail(changeset):
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+        .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 
@@ -234,7 +236,7 @@ def send_changeset_approved_mail(changeset):
 def send_changeset_rejected_mail(changeset):
     """Sends changeset rejected mail."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
 
     # urls
     site = Site.objects.get_current()
@@ -242,8 +244,8 @@ def send_changeset_rejected_mail(changeset):
         site.domain,
         reverse('schemanizer_changeset_view', args=[changeset.id]))
     to = list(
-        models.User.objects.values_list('email', flat=True)
-        .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+        .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 
@@ -262,8 +264,8 @@ def send_changeset_rejected_mail(changeset):
 def send_changeset_applied_mail(changeset, changeset_apply):
     """Sends changeset applied email."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    changeset_apply = utils.get_model_instance(
+    changeset = get_model_instance(changeset, models.Changeset)
+    changeset_apply = get_model_instance(
         changeset_apply, models.ChangesetApply)
 
     # urls
@@ -274,8 +276,8 @@ def send_changeset_applied_mail(changeset, changeset_apply):
 
     # recipients
     to = list(
-        models.User.objects.values_list('email', flat=True)
-            .filter(role__name=models.Role.ROLE_DBA))
+        User.objects.values_list('email', flat=True)
+            .filter(role__name=Role.ROLE_DBA))
     if changeset.submitted_by.email not in to:
         to.append(changeset.submitted_by.email)
 

@@ -1,52 +1,8 @@
 import logging
-
-from django.contrib.auth.models import User as AuthUser
 from django.db import models
-from django.utils import timezone
-
-from schemanizer import exceptions
+from users.models import User
 
 log = logging.getLogger(__name__)
-
-
-class Role(models.Model):
-    ROLE_ADMIN = u'admin'
-    ROLE_DBA = u'dba'
-    ROLE_DEVELOPER = u'developer'
-    ROLE_LIST = [ROLE_ADMIN, ROLE_DBA, ROLE_DEVELOPER]
-
-    name = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
-    class Meta:
-        db_table = 'roles'
-
-    def __unicode__(self):
-        return self.name
-
-
-class User(models.Model):
-    name = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(max_length=255, blank=True)
-    role = models.ForeignKey(Role, db_column='role_id', null=True, blank=True)
-    github_login = models.CharField(max_length=255, null=True, blank=True)
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
-    auth_user = models.OneToOneField(
-        AuthUser, related_name='schemanizer_user',
-        db_column='auth_user_id')
-
-    class Meta:
-        db_table = 'users'
-
-    def __unicode__(self):
-        return self.name
 
 
 class ChangesetManager(models.Manager):
@@ -108,7 +64,7 @@ class Changeset(models.Model):
     )
 
     database_schema = models.ForeignKey(
-        'schemanizer.DatabaseSchema', db_column='database_schema_id', null=True, blank=True,
+        'schemaversions.DatabaseSchema', db_column='database_schema_id', null=True, blank=True,
         related_name='changesets')
 
     type = models.CharField(
@@ -144,11 +100,11 @@ class Changeset(models.Model):
     is_deleted = models.IntegerField(null=True, blank=True, default=0)
 
     before_version = models.ForeignKey(
-        'schemanizer.SchemaVersion', db_column='before_version', null=True,
+        'schemaversions.SchemaVersion', db_column='before_version', null=True,
         blank=True, related_name='+', default=None
     )
     after_version = models.ForeignKey(
-        'schemanizer.SchemaVersion', db_column='after_version', null=True,
+        'schemaversions.SchemaVersion', db_column='after_version', null=True,
         blank=True, related_name='+', default=None
     )
 
@@ -272,85 +228,6 @@ class ChangesetAction(models.Model):
         return ret
 
 
-class DatabaseSchema(models.Model):
-    name = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
-    class Meta:
-        db_table = 'database_schemas'
-
-    def __unicode__(self):
-        return self.name
-
-    def get_approved_changesets(self):
-        """Returns approved changesets for this database schema."""
-        return self.changesets.all().filter(
-            review_status=Changeset.REVIEW_STATUS_APPROVED)
-
-
-class SchemaVersion(models.Model):
-    database_schema = models.ForeignKey(
-        DatabaseSchema, db_column='database_schema_id', null=True, blank=True,
-        related_name='schema_versions')
-    ddl = models.TextField(blank=True)
-    checksum = models.TextField(blank=True)
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
-    class Meta:
-        db_table = 'schema_versions'
-
-    def __unicode__(self):
-        ret = u''
-        for k, v in vars(self).iteritems():
-            if not k.startswith('_'):
-                if ret:
-                    ret += u', '
-                ret += u'%s=%s' % (k, v)
-        return ret
-
-
-class Environment(models.Model):
-    name = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True,
-        db_column='update_at')
-
-    class Meta:
-        db_table = 'environments'
-
-    def __unicode__(self):
-        return self.name
-
-
-class Server(models.Model):
-    name = models.CharField(max_length=255, unique=True, blank=True)
-    hostname = models.CharField(max_length=255, default='')
-
-    created_at = models.DateTimeField(null=True, blank=True, auto_now_add=True)
-    updated_at = models.DateTimeField(
-        null=True, blank=True, auto_now_add=True, auto_now=True)
-
-    environment = models.ForeignKey(
-        Environment, db_column='environment_id', null=True, blank=True,
-        related_name='servers')
-
-    port = models.IntegerField(null=True, blank=True, default=None)
-
-    class Meta:
-        db_table = 'servers'
-
-    def __unicode__(self):
-        return self.name
-
-
 class ChangesetDetailApplyManager(models.Manager):
     def get_by_schema_version_changeset(self, schema_version_id, changeset_id):
         """Returns all changeset_detail_applies filtered by schema version and changeset."""
@@ -366,10 +243,10 @@ class ChangesetDetailApply(models.Model):
     #before_version = models.IntegerField(null=True, blank=True)
     #after_version = models.IntegerField(null=True, blank=True)
     environment = models.ForeignKey(
-        Environment, db_column='environment_id', null=True, blank=True,
+        'servers.Environment', null=True, blank=True,
         related_name='environment_changeset_detail_applies')
     server = models.ForeignKey(
-        Server, db_column='server_id', null=True, blank=True,
+        'servers.Server', null=True, blank=True,
         related_name='server_changeset_detail_applies')
     results_log = models.TextField(blank=True)
 
@@ -459,9 +336,9 @@ class ChangesetTest(models.Model):
     test_type = models.ForeignKey(
         TestType, db_column='test_type_id', null=True, blank=True)
     environment = models.ForeignKey(
-        Environment, db_column='environment_id', null=True, blank=True)
+        'servers.Environment', null=True, blank=True)
     server = models.ForeignKey(
-        Server, db_column='server_id', null=True, blank=True)
+        'servers.Server', null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     results_log = models.TextField(blank=True)
@@ -510,7 +387,7 @@ class ChangesetApply(models.Model):
         Changeset, db_column='changeset_id', null=True, blank=True,
         default=None)
     server = models.ForeignKey(
-        Server, db_column='server_id', null=True, blank=True, default=None)
+        'servers.Server', null=True, blank=True, default=None)
     applied_at = models.DateTimeField(null=True, blank=True)
     applied_by = models.ForeignKey(
         User, db_column='applied_by', null=True, blank=True, default=None)
@@ -534,7 +411,7 @@ class ChangesetActionServerMap(models.Model):
         ChangesetAction, db_column='changeset_action_id', null=True,
         blank=True, default=None)
     server = models.ForeignKey(
-        Server, db_column='server_id', null=True, blank=True, default=None)
+        'servers.Server', null=True, blank=True, default=None)
 
     class Meta:
         db_table = 'changeset_action_server_map'

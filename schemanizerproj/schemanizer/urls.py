@@ -4,18 +4,6 @@ urlpatterns = patterns('schemanizer.views',
     url(r'^$', 'home', name='schemanizer_home'),
 
     #
-    # user
-    #
-    url(r'^user/list/$', 'users', name='schemanizer_users'),
-    url(r'^user/create/$', 'user_create', name='schemanizer_user_create'),
-    url(
-        r'^user/update/(?P<id>\d+)/$', 'user_update',
-        name='schemanizer_update_user'),
-    url(
-        r'^user/delete/(?P<id>\d+)/$', 'confirm_delete_user',
-        name='schemanizer_confirm_delete_user'),
-
-    #
     # changeset
     #
     url(
@@ -25,14 +13,8 @@ urlpatterns = patterns('schemanizer.views',
         r'^changeset/(?P<id>\d+)/$', 'changeset_view',
         name='schemanizer_changeset_view'),
     url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
-#    url(
-#        r'^changeset/review/(?P<id>\d+)/$',
-#        'changeset_review',
-#        name='schemanizer_changeset_review'),
     url(r'^changeset/delete/(?P<id>\d+)/$', 'changeset_soft_delete', name='schemanizer_changeset_soft_delete'),
     url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
-#    url(r'^changeset/apply-results/(?P<schema_version_id>\d+)/(?P<changeset_id>\d+)/$', 'changeset_apply_results', name='schemanizer_changeset_apply_results'),
-#    url(r'^changeset/view-apply-results/', 'changeset_view_apply_results', name='schemanizer_changeset_view_apply_results'),
     url(
         r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply',
         name='schemanizer_changeset_apply'),
@@ -55,41 +37,37 @@ urlpatterns = patterns('schemanizer.views',
     #
     # server
     #
-    url(r'^server/list/$', 'server_list', name='schemanizer_server_list'),
-    url(r'^server/create/$', 'server_update', name='schemanizer_server_create'),
-    url(r'^server/update/(?P<id>\d+)/$', 'server_update', name='schemanizer_server_update'),
-    url(r'^server/delete/(?P<id>\d+)/$', 'server_delete', name='schemanizer_server_delete'),
-    url(r'^server/discover/$', 'server_discover', name='schemanizer_server_discover'),
+    # url(r'^server/list/$', 'server_list', name='schemanizer_server_list'),
+    # url(r'^server/create/$', 'server_update', name='schemanizer_server_create'),
+    # url(r'^server/update/(?P<id>\d+)/$', 'server_update', name='schemanizer_server_update'),
+    # url(r'^server/delete/(?P<id>\d+)/$', 'server_delete', name='schemanizer_server_delete'),
+    # url(r'^server/discover/$', 'server_discover', name='schemanizer_server_discover'),
 
     #
     # schema version
     #
-    url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
-    url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
+    # url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
+    # url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
     url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
     url(
         r'^ajax/get-schema-version/$',
         'ajax_get_schema_version',
         name='schemanizer_ajax_get_schema_version'),
-    url(
-        r'^schema-version/download-ddl/(?P<schema_version_id>\d+)/$',
-        'schema_version_download_ddl',
-        name='schemanizer_schema_version_download_ddl'),
 
     #
     # database schema
     #
-    url(r'^database-schema/list/$', 'database_schema_list', name='schemanizer_database_schema_list'),
+    # url(r'^database-schema/list/$', 'database_schema_list', name='schemanizer_database_schema_list'),
 
     #
     # environments
     #
-    url(
-        r'^environments/list/$', 'environment_list',
-        name='schemanizer_environment_list'),
-    url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
-    url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
-    url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),
+    # url(
+    #     r'^environments/list/$', 'environment_list',
+    #     name='schemanizer_environment_list'),
+    # url(r'^environments/create/$', 'environment_update', name='schemanizer_environment_create'),
+    # url(r'^environments/update/(?P<environment_id>\d+)/$', 'environment_update', name='schemanizer_environment_update'),
+    # url(r'^environments/del/(?P<environment_id>\d+)/$', 'environment_del', name='schemanizer_environment_del'),
 
     #
     # celery tasks

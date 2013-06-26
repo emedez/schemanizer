@@ -1,0 +1,44 @@
+{% extends 'site_base.html' %}
+
+{% block title %}{{ block.super }} - Users{% endblock %}
+{% block class_users %}active{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        <h2>Users</h2>
+        <p>
+            <a href="{% url 'users_user_add' %}">Add user</a>
+        </p>
+        <table class="table table-striped table-condensed table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Created at</th>
+                    <th>Updated at</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if object_list %}
+                    {% for obj in object_list %}
+                        <tr>
+                            <td>{{ obj.id }}</td>
+                            <td>{{ obj.name }}</td>
+                            <td>{{ obj.email }}</td>
+                            <td>{{ obj.role }}</td>
+                            <td>{{ obj.created_at }}</td>
+                            <td>{{ obj.updated_at }}</td>
+                            <td>
+                                <a class="btn btn-small" href="{% url 'users_user_update' obj.id %}">Update</a>
+                                <a class="btn btn-small btn-warning" href="{% url 'users_user_delete' obj.id %}">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

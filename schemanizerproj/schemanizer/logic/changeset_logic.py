@@ -5,9 +5,12 @@ import pprint
 from django.db import transaction
 from django.utils import timezone
 
-from schemanizer import exceptions, models, utils
+from schemanizer import exceptions, models, utilities
 from schemanizer.logic import mail_logic
 from schemanizer.logic import privileges_logic
+from schemaversions.models import DatabaseSchema
+from users.models import User
+from utils.helpers import get_model_instance
 
 log = logging.getLogger(__name__)
 
@@ -15,8 +18,8 @@ log = logging.getLogger(__name__)
 def soft_delete_changeset(changeset, user):
     """Soft deletes changeset."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
-    user = utils.get_model_instance(user, models.User)
+    changeset = get_model_instance(changeset, models.Changeset)
+    user = get_model_instance(user, User)
 
     privileges_logic.UserPrivileges(user).check_soft_delete_changeset(
         changeset)
@@ -39,7 +42,7 @@ def soft_delete_changeset(changeset, user):
 def delete_changeset(changeset):
     """Deletes changeset."""
 
-    changeset = utils.get_model_instance(changeset, models.Changeset)
+    changeset = get_model_instance(changeset, models.Changeset)
 
     changeset_id = changeset.id
     changeset.delete()
@@ -119,7 +122,7 @@ def update_changeset_yaml(yaml_obj, f, commit):
 
     committer_user = None
     if 'committer' in commit and 'login' in commit['committer']:
-        user_qs = models.User.objects.filter(
+        user_qs = User.objects.filter(
             github_login=commit['committer']['login'])
         if user_qs.exists():
             committer_user = user_qs[0]
@@ -142,7 +145,7 @@ def update_changeset_yaml(yaml_obj, f, commit):
             else:
                 log.warn(u'Ignored changeset field %s.' % (k,))
         changeset_obj = new_changeset_obj
-        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
+        changeset_obj['database_schema'] = DatabaseSchema.objects.get(
             name=changeset_obj['database_schema'])
         changeset_obj['version_control_url'] = blob_url
         log.debug(pprint.pformat(changeset_obj))
@@ -187,7 +190,7 @@ def save_changeset_yaml(yaml_obj, f, commit):
 
     committer_user = None
     if 'committer' in commit and 'login' in commit['committer']:
-        user_qs = models.User.objects.filter(
+        user_qs = User.objects.filter(
             github_login=commit['committer']['login'])
         if user_qs.exists():
             committer_user = user_qs[0]
@@ -208,12 +211,12 @@ def save_changeset_yaml(yaml_obj, f, commit):
             else:
                 log.warn(u'Ignored changeset field %s.' % (k,))
         changeset_obj = new_changeset_obj
-        changeset_obj['database_schema'] = models.DatabaseSchema.objects.get(
+        changeset_obj['database_schema'] = DatabaseSchema.objects.get(
             name=changeset_obj['database_schema'])
         if committer_user:
             changeset_obj['submitted_by'] = committer_user
         else:
-            changeset_obj['submitted_by'] = models.User.objects.get(
+            changeset_obj['submitted_by'] = User.objects.get(
                 name=changeset_obj['submitted_by'])
         changeset_obj['submitted_at'] = timezone.now()
         changeset_obj['repo_filename'] = repo_filename
@@ -249,7 +252,7 @@ def save_changeset_yaml(yaml_obj, f, commit):
 
 
 def changeset_submit(changeset, changeset_details, user):
-    user = utils.get_model_instance(user, models.User)
+    user = get_model_instance(user, User)
 
     if changeset.pk:
         raise Exception('Only new changesets can be submitted.')
@@ -327,7 +330,7 @@ def changeset_update_from_form(**kwargs):
 
 
 def changeset_update(changeset, changeset_details, to_be_deleted_changeset_details, user):
-    user = utils.get_model_instance(user, models.User)
+    user = get_model_instance(user, User)
 
     if privileges_logic.UserPrivileges(user).can_update_changeset(changeset):
         with transaction.commit_on_success():
@@ -374,7 +377,7 @@ def changeset_approve(changeset, user):
     if type(changeset) in (int, long):
         changeset = models.Changeset.objects.get(pk=changeset)
     if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
+        user = User.objects.get(pk=user)
 
     if privileges_logic.UserPrivileges(user).can_approve_changeset(changeset):
         now = timezone.now()
@@ -410,7 +413,7 @@ def changeset_reject(changeset, user):
     if type(changeset) in (int, long):
         changeset = models.Changeset.objects.get(pk=changeset)
     if type(user) in (int, long):
-        user = models.User.objects.get(pk=user)
+        user = User.objects.get(pk=user)
 
     if privileges_logic.UserPrivileges(user).can_reject_changeset(changeset):
         now = timezone.now()

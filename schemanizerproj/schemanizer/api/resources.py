@@ -10,13 +10,17 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
 
-from schemanizer import models, exceptions, utils
+from schemanizer import models, exceptions, utilities
 from schemanizer.api import authorizations
 from schemanizer.logic import changeset_apply_logic
 from schemanizer.logic import changeset_logic
 from schemanizer.logic import changeset_review_logic
 from schemanizer.logic import user_logic
 from schemanizer.logic import server_logic
+from schemaversions.models import DatabaseSchema, SchemaVersion
+from servers.models import Environment, Server
+from users.models import Role, User
+from users.user_functions import add_user, update_user
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ class AuthUserResource(ModelResource):
 
 class RoleResource(ModelResource):
     class Meta:
-        queryset = models.Role.objects.all()
+        queryset = Role.objects.all()
         resource_name = 'role'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -50,7 +54,7 @@ class UserResource(ModelResource):
     role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True)
 
     class Meta:
-        queryset = models.User.objects.all()
+        queryset = User.objects.all()
         resource_name = 'user'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -100,7 +104,7 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = user_logic.create_user(
+            user = add_user(
                 request.user.schemanizer_user, name, email, role_id, password)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -132,7 +136,7 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = user_logic.update_user(
+            user = update_user(
                 request.user.schemanizer_user, user_id, name, email, role_id)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -165,7 +169,7 @@ class UserResource(ModelResource):
 
 class EnvironmentResource(ModelResource):
     class Meta:
-        queryset = models.Environment.objects.all()
+        queryset = Environment.objects.all()
         resource_name = 'environment'
         authentication = BasicAuthentication()
         authorization = authorizations.EnvironmentAuthorization()
@@ -178,7 +182,7 @@ class ServerResource(ModelResource):
         EnvironmentResource, 'environment', null=True, blank=True)
 
     class Meta:
-        queryset = models.Server.objects.all()
+        queryset = Server.objects.all()
         resource_name = 'server'
         authentication = BasicAuthentication()
         authorization = Authorization()
@@ -188,7 +192,7 @@ class ServerResource(ModelResource):
 
 class DatabaseSchemaResource(ModelResource):
     class Meta:
-        queryset = models.DatabaseSchema.objects.all()
+        queryset = DatabaseSchema.objects.all()
         resource_name = 'database_schema'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -205,7 +209,7 @@ class SchemaVersionResource(ModelResource):
         DatabaseSchemaResource, 'database_schema', null=True, blank=True)
 
     class Meta:
-        queryset = models.SchemaVersion.objects.all()
+        queryset = SchemaVersion.objects.all()
         resource_name = 'schema_version'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -353,7 +357,7 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = utils.generate_request_id(request)
+            request_id = utilities.generate_request_id(request)
             post_data = json.loads(request.raw_post_data)
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
@@ -485,7 +489,7 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = utils.generate_request_id(request)
+            request_id = utilities.generate_request_id(request)
             changeset_id = int(kwargs.get('changeset_id'))
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
@@ -547,7 +551,7 @@ class ChangesetResource(ModelResource):
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
             if 'database_schema_id' in changeset_data:
                 database_schema_id = int(changeset_data.pop('database_schema_id'))
-                changeset_data['database_schema'] = models.DatabaseSchema.objects.get(
+                changeset_data['database_schema'] = DatabaseSchema.objects.get(
                     pk=database_schema_id)
             changeset = models.Changeset(**changeset_data)
 
@@ -617,7 +621,7 @@ class ChangesetResource(ModelResource):
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
                 if k == 'database_schema_id':
-                    database_schema = models.DatabaseSchema.objects.get(pk=int(v))
+                    database_schema = DatabaseSchema.objects.get(pk=int(v))
                     changeset.database_schema = database_schema
                 else:
                     setattr(changeset, k, v)
