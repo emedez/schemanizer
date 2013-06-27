@@ -65,7 +65,7 @@ class DatabaseSchema(utils_models.TimeStampedModel):
 class SchemaVersion(utils_models.TimeStampedModel):
     database_schema = models.ForeignKey(DatabaseSchema)
     ddl = models.TextField(blank=True, default='')
-    checksum = models.TextField(blank=True, default='')
+    checksum = models.CharField(max_length=255, blank=True, default='')
     pulled_from = models.ForeignKey(
         'servers.Server', null=True, blank=True, default=None,
         db_column='pulled_from', related_name='+')

@@ -19,7 +19,7 @@
 },
 {
     "pk": 1, 
-    "model": "schemanizer.role", 
+    "model": "users.role", 
     "fields": {
         "created_at": "2013-03-31T12:02:25Z", 
         "name": "admin", 
@@ -28,7 +28,7 @@
 },
 {
     "pk": 2, 
-    "model": "schemanizer.role", 
+    "model": "users.role", 
     "fields": {
         "created_at": "2013-03-31T12:02:31Z", 
         "name": "dba", 
@@ -37,7 +37,7 @@
 },
 {
     "pk": 3, 
-    "model": "schemanizer.role", 
+    "model": "users.role", 
     "fields": {
         "created_at": "2013-03-31T12:02:36Z", 
         "name": "developer", 
@@ -46,7 +46,7 @@
 },
 {
     "pk": 1, 
-    "model": "schemanizer.user", 
+    "model": "users.user", 
     "fields": {
         "name": "admin", 
         "created_at": "2013-04-03T01:02:34Z", 
@@ -60,7 +60,7 @@
 },
 {
     "pk": 1, 
-    "model": "schemanizer.environment", 
+    "model": "servers.environment", 
     "fields": {
         "created_at": "2013-04-26T08:24:40Z", 
         "name": "dev", 
@@ -69,7 +69,7 @@
 },
 {
     "pk": 2, 
-    "model": "schemanizer.environment", 
+    "model": "servers.environment", 
     "fields": {
         "created_at": "2013-04-26T08:24:48Z", 
         "name": "test", 
@@ -78,7 +78,7 @@
 },
 {
     "pk": 3, 
-    "model": "schemanizer.environment", 
+    "model": "servers.environment", 
     "fields": {
         "created_at": "2013-04-26T08:24:53Z", 
         "name": "prod", 

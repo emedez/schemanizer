@@ -24,7 +24,7 @@ class Migration(SchemaMigration):
             ('updated_at', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, auto_now_add=True, null=True, blank=True)),
             ('database_schema', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['schemaversions.DatabaseSchema'])),
             ('ddl', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
-            ('checksum', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('checksum', self.gf('django.db.models.fields.CharField')(default='', max_length=255, blank=True)),
             ('pulled_from', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', db_column='pulled_from', default=None, to=orm['servers.Server'], blank=True, null=True)),
             ('pull_datetime', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True, blank=True)),
         ))
@@ -55,7 +55,7 @@ class Migration(SchemaMigration):
         },
         u'schemaversions.schemaversion': {
             'Meta': {'unique_together': "(('database_schema', 'checksum'),)", 'object_name': 'SchemaVersion', 'db_table': "'schema_versions'"},
-            'checksum': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'checksum': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'created_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
             'database_schema': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['schemaversions.DatabaseSchema']"}),
             'ddl': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),

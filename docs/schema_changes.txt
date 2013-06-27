@@ -211,5 +211,10 @@ CREATE TABLE `server_data` (
 ) DEFAULT CHARSET=utf8
 
 
+----
+
+N.B. checksums -> CharField(max_length=255)
+
+
 
 
