@@ -44,6 +44,9 @@ def can_user_review_changeset(user, changeset=None):
         # Reviews are only allowed on saved changesets.
         return False
 
+    if changeset.review_status not in [Changeset.REVIEW_STATUS_NEEDS]:
+        return False
+
     return True
 
 
