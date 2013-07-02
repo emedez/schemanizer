@@ -420,7 +420,7 @@ CREATE TABLE `environments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
-  `update_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -432,6 +432,32 @@ CREATE TABLE `environments` (
 LOCK TABLES `environments` WRITE;
 /*!40000 ALTER TABLE `environments` DISABLE KEYS */;
 /*!40000 ALTER TABLE `environments` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `events`
+--
+
+DROP TABLE IF EXISTS `events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `events` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `datetime` datetime DEFAULT NULL,
+  `type` varchar(255) DEFAULT NULL,
+  `description` text,
+  `user_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `events`
+--
+
+LOCK TABLES `events` WRITE;
+/*!40000 ALTER TABLE `events` DISABLE KEYS */;
+/*!40000 ALTER TABLE `events` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -595,6 +621,8 @@ CREATE TABLE `schema_versions` (
   `database_schema_id` int(11) DEFAULT NULL,
   `ddl` text,
   `checksum` text,
+  `pulled_from` int(11) DEFAULT NULL,
+  `pull_datetime` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -608,6 +636,35 @@ CREATE TABLE `schema_versions` (
 LOCK TABLES `schema_versions` WRITE;
 /*!40000 ALTER TABLE `schema_versions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `schema_versions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `server_data`
+--
+
+DROP TABLE IF EXISTS `server_data`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `server_data` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `server_id` int(11) DEFAULT NULL,
+  `database_schema_id` int(11) DEFAULT NULL,
+  `schema_exists` tinyint(1) DEFAULT NULL,
+  `schema_version_id` int(11) DEFAULT NULL,
+  `schema_version_diff` text,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `server_data`
+--
+
+LOCK TABLES `server_data` WRITE;
+/*!40000 ALTER TABLE `server_data` DISABLE KEYS */;
+/*!40000 ALTER TABLE `server_data` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -989,4 +1046,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-21 22:42:52
+-- Dump completed on 2013-06-27  2:54:44

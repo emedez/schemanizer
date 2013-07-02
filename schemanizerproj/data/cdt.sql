@@ -189,6 +189,7 @@ DROP TABLE IF EXISTS `changeset_reviews`;
 CREATE TABLE `changeset_reviews` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `changeset_id` int(11) DEFAULT NULL,
+  `schema_version_id` int(11) DEFAULT NULL,
   `results_log` text,
   `success` tinyint(1) DEFAULT NULL,
   `task_id` varchar(36) DEFAULT NULL,
@@ -289,6 +290,7 @@ CREATE TABLE `changesets` (
   `submitted_by` int(11) DEFAULT NULL,
   `is_deleted` tinyint(1) DEFAULT NULL,
   `database_schema_id` int(11) DEFAULT NULL,
+  `review_version` int(11) DEFAULT NULL,
   `before_version` int(11) DEFAULT NULL,
   `after_version` int(11) DEFAULT NULL,
   `repo_filename` text,
@@ -1046,4 +1048,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-06-27  2:54:44
+-- Dump completed on 2013-07-03  2:39:25
