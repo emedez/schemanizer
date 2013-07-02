@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 import sqlparse
 from changesets import models as changesets_models
+from schemaversions import models as schemaversions_models
 from utils import exceptions, mysql_functions
 from . import models, event_handlers
 from schemanizer.logic import privileges_logic
@@ -150,17 +151,36 @@ class ChangesetApply(object):
                     "server '%s'." % (
                         self.server.name,))
 
-            ddl = mysql_functions.dump_schema(**self.connection_options)
-            checksum = mysql_functions.generate_schema_hash(ddl)
-            if not (self.changeset.before_version and
-                    self.changeset.before_version.checksum == checksum):
-                before_version_checksum = None
-                before_version_ddl = ''
-                if self.changeset.before_version:
-                    before_version_checksum = self.changeset.before_version.checksum
-                    before_version_ddl = self.changeset.before_version.ddl
+            host_before_ddl = mysql_functions.dump_schema(
+                **self.connection_options)
+            host_before_checksum = mysql_functions.generate_schema_hash(
+                host_before_ddl)
+            schema_version_before_apply = None
+
+            #
+            # If changeset does not have a before_version yet,
+            # then it is the first time the changeset is being applied,
+            # ensure that db on host has a known schema version.
+            #
+            if not self.changeset.before_version:
+                schema_version_qs = schemaversions_models.SchemaVersion.objects.filter(
+                    database_schema=self.changeset.database_schema,
+                    checksum=host_before_checksum)
+                if not schema_version_qs.exists():
+                    raise exceptions.Error('Schema version on host is unknown.')
+                else:
+                    # Remember this version
+                    schema_version_before_apply = schema_version_qs[0]
+
+            #
+            # If not first time to apply, check that the host schema version
+            # is the same as what the changeset expects.
+            #
+            elif self.changeset.before_version.checksum != host_before_checksum:
+                before_version_checksum = self.changeset.before_version.checksum
+                before_version_ddl = self.changeset.before_version.ddl
                 before_version_ddl_lines = before_version_ddl.splitlines(True)
-                current_ddl_lines = ddl.splitlines(True)
+                current_ddl_lines = host_before_ddl.splitlines(True)
                 delta = [
                     line for line in difflib.context_diff(
                         before_version_ddl_lines, current_ddl_lines,
@@ -169,21 +189,44 @@ class ChangesetApply(object):
                     u"Cannot apply changeset, existing schema on host "
                     u"does not match the expected schema.")
                 raise exceptions.SchemaDoesNotMatchError(
-                    msg, before_version_ddl, ddl, ''.join(delta))
+                    msg, before_version_ddl, host_before_ddl, ''.join(delta))
 
             self.apply_changeset_details()
 
-            ddl = mysql_functions.dump_schema(**self.connection_options)
-            checksum = mysql_functions.generate_schema_hash(ddl)
-            if not (self.changeset.after_version and (
-                    self.changeset.after_version.checksum == checksum)):
-                after_version_checksum = None
-                after_version_ddl = ''
-                if self.changeset.after_version:
-                    after_version_checksum = self.changeset.after_version.checksum
-                    after_version_ddl = self.changeset.after_version.ddl
+            host_after_ddl = mysql_functions.dump_schema(
+                **self.connection_options)
+            host_after_checksum = mysql_functions.generate_schema_hash(
+                host_after_ddl)
+            schema_version_after_apply = None
+
+            #
+            # If changeset is being applied for the first time,
+            # record the schema versions -- before and after it is applied.
+            #
+            if not self.changeset.before_version:
+                schema_version_after_apply, created = (
+                    schemaversions_models.SchemaVersion.objects.get_or_create(
+                        database_schema=self.changeset.database_schema,
+                        checksum=host_after_checksum
+                    ))
+                if created:
+                    schema_version_after_apply.ddl = host_after_ddl
+                    schema_version_after_apply.pulled_from = self.server
+                    schema_version_after_apply.pull_datetime = timezone.now()
+                    schema_version_after_apply.save()
+                self.changeset.before_version = schema_version_before_apply
+                self.changeset.after_version = schema_version_after_apply
+                self.changeset.save()
+
+            #
+            # If not first time to apply, ensure that final schema version on
+            # host is what the changeset expects.
+            #
+            elif self.changeset.after_version.checksum != host_after_checksum:
+                after_version_checksum = self.changeset.after_version.checksum
+                after_version_ddl = self.changeset.after_version.ddl
                 after_version_ddl_lines = after_version_ddl.splitlines(True)
-                current_ddl_lines = ddl.splitlines(True)
+                current_ddl_lines = host_after_ddl.splitlines(True)
                 delta = [
                     line for line in difflib.context_diff(
                         after_version_ddl_lines, current_ddl_lines,
@@ -193,7 +236,7 @@ class ChangesetApply(object):
                     u"schema."
                 )
                 raise exceptions.SchemaDoesNotMatchError(
-                    msg, after_version_ddl, ddl, ''.join(delta))
+                    msg, after_version_ddl, host_after_ddl, ''.join(delta))
 
             changeset_action = changesets_models.ChangesetAction.objects.create(
                 changeset=self.changeset,
@@ -236,6 +279,7 @@ class ChangesetApply(object):
                 event_handlers.on_changeset_apply_failed(
                     changeset_apply, request=self.request)
             except:
+                log.exception('EXCEPTION')
                 pass
 
         except Exception, e:
@@ -253,7 +297,7 @@ class ChangesetApply(object):
                     changeset_action=changeset_action, server=self.server)
                 changeset_apply = models.ChangesetApply.objects.create(
                     changeset=self.changeset, server=self.server,
-                    applied_at=timezone.now(), applied_by=self.user,
+                    applied_at=timezone.now(), applied_by=self.applied_by,
                     results_log=msg,
                     success=False,
                     changeset_action=changeset_action,
@@ -262,4 +306,5 @@ class ChangesetApply(object):
                 event_handlers.on_changeset_apply_failed(
                     changeset_apply, request=self.request)
             except:
+                log.exception('EXCEPTION')
                 pass
