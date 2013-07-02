@@ -2,6 +2,7 @@ from django.conf.urls import patterns, url
 
 urlpatterns = patterns('schemanizer.views',
     url(r'^$', 'home', name='schemanizer_home'),
+    url(r'^readme/$', 'readme', name='schemanizer_readme'),
 
     #
     # changeset

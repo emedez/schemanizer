@@ -1,8 +1,7 @@
+import codecs
 import json
 import logging
-
-#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
-
+import os
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,9 +10,8 @@ from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.template.loader import render_to_string
-
+import markdown
 from changesets.models import Changeset
-
 from schemanizer import forms, utilities
 from schemanizer.logic import changeset_apply_logic
 from schemanizer.logic import privileges_logic
@@ -50,7 +48,19 @@ def home(request, template='schemanizer/home.html'):
         template, locals(), context_instance=RequestContext(request))
 
 
-
+def readme(request, template='schemanizer/readme.html'):
+    user_has_access = False
+    try:
+        readme_path = os.path.abspath(
+            os.path.join(settings.PROJECT_ROOT, '..', 'README.md'))
+        input_file = codecs.open(readme_path, mode="r", encoding="utf-8")
+        text = input_file.read()
+        html = markdown.markdown(text)
+    except Exception, e:
+        log.exception('EXCEPTION')
+        messages.error(request, u'%s' % (e,))
+    return render_to_response(
+        template, locals(), context_instance=RequestContext(request))
 
 
 

@@ -26,4 +26,5 @@ texttable>=0.8.1
 django-bootstrap-pagination>=0.1.10
 factory-boy>=2.0.2
 django-model-utils>=1.4.0
+Markdown>=2.3.1
 
