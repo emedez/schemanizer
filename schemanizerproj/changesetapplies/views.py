@@ -124,6 +124,14 @@ def apply_changeset_to_multiple_hosts(request, changeset_pk,
                     if k.startswith('server_'):
                         server_ids.append(int(v))
 
+                if not server_ids:
+                    raise exceptions.Error('No server was selected.')
+
+                if not changeset.before_version and len(server_ids) > 1:
+                    raise exceptions.Error(
+                        'This changeset is going to be applied for the '
+                        'first time, select a single server only.')
+
                 task_ids = []
                 for server_id in server_ids:
                     result = tasks.apply_changeset.delay(
