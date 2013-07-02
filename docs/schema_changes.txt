@@ -230,3 +230,14 @@ added:
 
 ALTER TABLE `changeset_reviews`
 ADD COLUMN `schema_version_id` INT NULL  AFTER `changeset_id` ;
+
+
+changesets.Changeset model
+added:
+    review_version = models.ForeignKey(
+        'schemaversions.SchemaVersion', db_column='review_version',
+        null=True, default=None, on_delete=models.SET_NULL, related_name='+',
+        help_text='Target schema version when running a changeset review.')
+
+ALTER TABLE `changesets`
+ADD COLUMN `review_version` INT NULL  AFTER `database_schema_id` ;

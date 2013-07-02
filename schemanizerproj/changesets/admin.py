@@ -17,6 +17,9 @@ class ChangesetAdmin(admin.ModelAdmin):
         'review_status', 'reviewed_by', 'reviewed_at',
         'approved_by', 'approved_at',
         'submitted_by', 'submitted_at',
+        'review_version',
+        'before_version',
+        'after_version',
         'repo_filename',
         'created_at', 'updated_at',
     )
