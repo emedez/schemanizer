@@ -25,13 +25,7 @@ class ChangesetDetailApply(utils_models.TimeStampedModel):
         verbose_name_plural = 'changeset detail applies'
 
     def __unicode__(self):
-        ret = u''
-        for k, v in vars(self).iteritems():
-            if not k.startswith('_'):
-                if ret:
-                    ret += u', '
-                ret += u'%s=%s' % (k, v)
-        return ret
+        return u'ChangsetDetailApply [id=%s]' % self.pk
 
 
 class ChangesetApply(models.Model):
@@ -48,6 +42,7 @@ class ChangesetApply(models.Model):
 
     class Meta:
         db_table = 'changeset_applies'
+        verbose_name_plural = 'changeset applies'
 
     def __unicode__(self):
-        return u'<ChangesetApply id=%s>' % (self.pk,)
+        return u'ChangesetApply [id=%s]' % self.pk

@@ -178,23 +178,23 @@ class ChangesetReview(object):
                 #
                 # Update changeset.
                 #
-                if not self.has_errors:
-                    try:
-                        after_version = schemaversions_models.SchemaVersion.objects.get(
-                            database_schema=self.schema_version.database_schema,
-                            checksum=hash_after)
-                        after_version.ddl = structure_after
-                        after_version.save()
-                    except ObjectDoesNotExist:
-                        after_version = schemaversions_models.SchemaVersion.objects.create(
-                            database_schema=self.schema_version.database_schema,
-                            ddl=structure_after,
-                            checksum=hash_after
-                        )
-                        log.debug('Created new schema version, checksum=%s.' % (
-                            hash_after,))
-                else:
-                    after_version = None
+                # if not self.has_errors:
+                #     try:
+                #         after_version = schemaversions_models.SchemaVersion.objects.get(
+                #             database_schema=self.schema_version.database_schema,
+                #             checksum=hash_after)
+                #         after_version.ddl = structure_after
+                #         after_version.save()
+                #     except ObjectDoesNotExist:
+                #         after_version = schemaversions_models.SchemaVersion.objects.create(
+                #             database_schema=self.schema_version.database_schema,
+                #             ddl=structure_after,
+                #             checksum=hash_after
+                #         )
+                #         log.debug('Created new schema version, checksum=%s.' % (
+                #             hash_after,))
+                # else:
+                #     after_version = None
 
                 if self.has_errors:
                     self.changeset.review_status = (
@@ -204,8 +204,10 @@ class ChangesetReview(object):
                         changesets_models.Changeset.REVIEW_STATUS_IN_PROGRESS)
                 self.changeset.reviewed_by = self.reviewed_by
                 self.changeset.reviewed_at = timezone.now()
-                self.changeset.before_version = self.schema_version
-                self.changeset.after_version = after_version
+                #self.changeset.before_version = self.schema_version
+                #self.changeset.after_version = after_version
+                self.changeset.before_version = None
+                self.changeset.after_version = None
                 self.changeset.save()
 
                 if (
