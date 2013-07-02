@@ -13,6 +13,7 @@ from django.utils import timezone
 from dateutil import parser, relativedelta
 import requests
 import yaml
+from changesets.models import Changeset
 
 from schemanizer import exceptions, models
 from schemanizer.logic import changeset_logic
@@ -49,7 +50,7 @@ def process_file(f, commit):
         print msg
         log.debug(msg)
 
-        repo_filename_exists = models.Changeset.objects.filter(
+        repo_filename_exists = Changeset.objects.filter(
             repo_filename=filename).exists()
 
         if not repo_filename_exists and (

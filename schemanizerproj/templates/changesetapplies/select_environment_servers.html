@@ -1,4 +1,4 @@
-<form action="{% url 'schemanizer_apply_changesets_to_multiple_hosts' changeset_id %}" method="post">
+<form action="{% url 'changesetapplies_apply_changesets_to_multiple_hosts' changeset_id %}" method="post">
     {% csrf_token %}
     {% if servers %}
         <p><strong>Select servers:</strong></p>

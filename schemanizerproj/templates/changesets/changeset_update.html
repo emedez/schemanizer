@@ -4,7 +4,7 @@
 {% block title %}{{ block.super }} - Changeset{% endblock %}
 
 {% block contents %}
-    {% if user_has_access %}
+    {% if view.allow_user_access %}
         <form method="post" action="">
             <p><strong>Changeset</strong></p>
             {% crispy changeset_form changeset_form.helper %}

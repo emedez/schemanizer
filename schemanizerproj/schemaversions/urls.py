@@ -26,5 +26,10 @@ urlpatterns = patterns('',
         r'^schema-version/download-ddl/(?P<schema_version_pk>\d+)/$',
         views.SchemaVersionDdlDownload.as_view(),
         name='schemaversions_schema_version_download_ddl'),
+    url(
+        r'^ajax-get-schema-version/$',
+        'schemaversions.views.ajax_get_schema_version',
+        name='schemaversions_ajax_get_schema_version'),
+
 
 )

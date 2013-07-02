@@ -28,7 +28,7 @@
                             <td>{{ changeset.version_control_url }}</td>
                             <td>{{ changeset.submitted_by }}</td>
                             <td>{{ changeset.submitted_at }}</td>
-                            <td><a class="btn btn-small" href="{% url 'schemanizer_changeset_view' changeset.id %}">View</a></td>
+                            <td><a class="btn btn-small" href="{% url 'changesets_changeset_view' changeset.id %}">View</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -40,7 +40,7 @@
 
     <p><strong>Other Tasks</strong></p>
     <ul>
-        <li><a href="{% url 'schemanizer_changeset_submit' %}">Submit changeset</a></li>
+        <li><a href="{% url 'changesets_changeset_submit' %}">Submit changeset</a></li>
         {% comment %}
         {% if can_apply_changesets %}
             <li>

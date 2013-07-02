@@ -9,6 +9,7 @@ import MySQLdb
 
 from schemanizer import exceptions, utilities
 from utilities.exceptions import Error
+from utils.mysql_functions import execute_count_statements
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utilities.execute_count_statements(
+                    execute_count_statements(
                         cursor,
                         'select count(*) from %s where id in (1,2,3,4,5)' % (
                             self.table_name,)),
@@ -96,7 +97,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utilities.execute_count_statements(
+                    execute_count_statements(
                         cursor,
                         """
                         select count(*) from %s where id in (1,2,3,4,5);
@@ -116,7 +117,7 @@ class ExecuteCountStatementsTest(TestCase):
             with conn as cursor:
                 self.assertRaises(
                     Error,
-                    utilities.execute_count_statements,
+                    execute_count_statements,
                     cursor,
                     'select id, name from %s' % (self.table_name,))
         finally:
@@ -130,7 +131,7 @@ class ExecuteCountStatementsTest(TestCase):
             with conn as cursor:
                 self.assertRaises(
                     Error,
-                    utilities.execute_count_statements,
+                    execute_count_statements,
                     cursor,
                     'select id from %s' % (self.table_name,))
         finally:
@@ -144,7 +145,7 @@ class ExecuteCountStatementsTest(TestCase):
             with conn as cursor:
                 self.assertRaises(
                     Error,
-                    utilities.execute_count_statements,
+                    execute_count_statements,
                     cursor,
                     'select id from %s where id=-1' % (self.table_name,))
         finally:
@@ -157,7 +158,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utilities.execute_count_statements(cursor, ''), [])
+                    execute_count_statements(cursor, ''), [])
         finally:
             conn.close()
 
@@ -168,7 +169,7 @@ class ExecuteCountStatementsTest(TestCase):
         try:
             with conn as cursor:
                 self.assertEqual(
-                    utilities.execute_count_statements(
+                    execute_count_statements(
                         cursor,
                         """
                         select count(*) from %s where id in (1, 2, 3);

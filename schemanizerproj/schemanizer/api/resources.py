@@ -9,8 +9,13 @@ from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
+from changesetapplies.models import ChangesetDetailApply
+from changesets.changeset_functions import approve_changeset, reject_changeset, soft_delete_changeset
+from changesets.models import Changeset, ChangesetDetail
+from changesettests.models import TestType, ChangesetTest
+from changesetvalidations.models import ValidationType, ChangesetValidation
 
-from schemanizer import models, exceptions, utilities
+from schemanizer import models, utilities
 from schemanizer.api import authorizations
 from schemanizer.logic import changeset_apply_logic
 from schemanizer.logic import changeset_logic
@@ -275,7 +280,7 @@ class ChangesetResource(ModelResource):
         SchemaVersionResource, 'after_version', null=True, blank=True)
 
     class Meta:
-        queryset = models.Changeset.objects.all()
+        queryset = Changeset.objects.all()
         resource_name = 'changeset'
         authentication = BasicAuthentication()
         list_allowed_methods = ['get']
@@ -553,12 +558,12 @@ class ChangesetResource(ModelResource):
                 database_schema_id = int(changeset_data.pop('database_schema_id'))
                 changeset_data['database_schema'] = DatabaseSchema.objects.get(
                     pk=database_schema_id)
-            changeset = models.Changeset(**changeset_data)
+            changeset = Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
             changeset_details = []
             for changeset_detail_data in changeset_details_data:
-                changeset_detail = models.ChangesetDetail(**changeset_detail_data)
+                changeset_detail = ChangesetDetail(**changeset_detail_data)
                 changeset_details.append(changeset_detail)
 
             changeset = changeset_logic.changeset_submit(
@@ -609,7 +614,7 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             changeset_id = int(kwargs.get('changeset_id'))
-            changeset = models.Changeset.objects.get(pk=changeset_id)
+            changeset = Changeset.objects.get(pk=changeset_id)
 
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
@@ -629,17 +634,17 @@ class ChangesetResource(ModelResource):
             to_be_deleted_changeset_detail_ids = post_data['to_be_deleted_changeset_detail_ids']
             to_be_deleted_changeset_details = []
             for cdid in to_be_deleted_changeset_detail_ids:
-                tbdcd = models.ChangesetDetail.objects.get(pk=int(cdid))
+                tbdcd = ChangesetDetail.objects.get(pk=int(cdid))
                 to_be_deleted_changeset_details.append(tbdcd)
 
             changeset_details_data = post_data['changeset_details']
             changeset_details = []
             for cdd in changeset_details_data:
                 if 'id' in cdd:
-                    changeset_detail = models.ChangesetDetail.objects.get(
+                    changeset_detail = ChangesetDetail.objects.get(
                         pk=int(cdd['id']))
                 else:
-                    changeset_detail = models.ChangesetDetail()
+                    changeset_detail = ChangesetDetail()
                 for k, v in cdd.iteritems():
                     if k not in ('id',):
                         setattr(changeset_detail, k, v)
@@ -665,8 +670,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = changeset_logic.changeset_reject(
-                int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = reject_changeset(int(kwargs['changeset_id']),
+                                         request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -685,8 +690,8 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = changeset_logic.changeset_approve(
-                int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = approve_changeset(int(kwargs['changeset_id']),
+                                          request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -705,7 +710,7 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = changeset_logic.soft_delete_changeset(
+            changeset = soft_delete_changeset(
                 int(kwargs['changeset_id']), request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
@@ -723,7 +728,7 @@ class ChangesetDetailResource(ModelResource):
         ChangesetResource, 'changeset', null=True, blank=True)
 
     class Meta:
-        queryset = models.ChangesetDetail.objects.all()
+        queryset = ChangesetDetail.objects.all()
         resource_name = 'changeset_detail'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -737,7 +742,7 @@ class ChangesetDetailResource(ModelResource):
 
 class TestTypeResource(ModelResource):
     class Meta:
-        queryset = models.TestType.objects.all()
+        queryset = TestType.objects.all()
         resource_name = 'test_type'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -755,7 +760,7 @@ class ChangesetTestResource(ModelResource):
         TestTypeResource, 'test_type', null=True, blank=True)
 
     class Meta:
-        queryset = models.ChangesetTest.objects.all()
+        queryset = ChangesetTest.objects.all()
         resource_name = 'changeset_test'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -769,7 +774,7 @@ class ChangesetTestResource(ModelResource):
 
 class ValidationTypeResource(ModelResource):
     class Meta:
-        queryset = models.ValidationType.objects.all()
+        queryset = ValidationType.objects.all()
         resource_name = 'validation_type'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -787,7 +792,7 @@ class ChangesetValidationResource(ModelResource):
         ValidationTypeResource, 'validation_type', null=True, blank=True)
 
     class Meta:
-        queryset = models.ChangesetValidation.objects.all()
+        queryset = ChangesetValidation.objects.all()
         resource_name = 'changeset_validation'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -807,7 +812,7 @@ class ChangesetDetailApplyResource(ModelResource):
     server = fields.ForeignKey(ServerResource, 'server', null=True, blank=True)
 
     class Meta:
-        queryset = models.ChangesetDetailApply.objects.all()
+        queryset = ChangesetDetailApply.objects.all()
         resource_name = 'changeset_detail_apply'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()

@@ -43,12 +43,12 @@
                                         </ul>
                                     </li>
                                     {% endcomment %}
-                                    <li><a href="{% url 'schemanizer_changeset_list' %}">Changesets</a></li>
+                                    <li><a href="{% url 'changesets_changeset_list' %}">Changesets</a></li>
                                     <li><a href="{% url 'servers_server_list' %}">Servers</a></li>
                                     <li><a href="{% url 'schemaversions_database_schema_list' %}">Database Schemas</a></li>
                                     <li><a href="{% url 'schemaversions_schema_version_list' %}">Schema Versions</a></li>
                                     <li><a href="{% url 'servers_environment_list' %}">Environments</a></li>
-                                    <li><a href="{% url 'schemanizer_changeset_reviews' %}">Changeset Reviews</a></li>
+                                    <li><a href="{% url 'changesetreviews_changeset_reviews' %}">Changeset Reviews</a></li>
                                     <li><a href="{% url 'events_event_list' %}">Events</a></li>
                                     <li><a href="{% url 'servers_server_data_list' %}">Hosts</a></li>
                                 {% endblock %}

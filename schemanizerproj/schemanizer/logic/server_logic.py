@@ -4,7 +4,6 @@ import logging
 from django.conf import settings
 from django.db import transaction
 
-from schemanizer import models, utilities
 from schemanizer.logic import privileges_logic
 from schemaversions.models import DatabaseSchema, SchemaVersion
 from servers.models import Server

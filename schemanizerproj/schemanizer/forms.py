@@ -6,7 +6,6 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
-from schemanizer import models
 from schemaversions.models import DatabaseSchema
 from servers.models import Environment, Server
 
@@ -37,7 +36,7 @@ class SelectSchemaVersionForm(forms.Form):
         super(SelectSchemaVersionForm, self).__init__(*args, **kwargs)
 
         choices = []
-        for sv in database_schema.schema_versions.all().order_by('created_at'):
+        for sv in database_schema.schemaversion_set.all().order_by('created_at'):
             choices.append((
                 sv.id,
                 u'ID: %s, Created at: %s, Updated at: %s' % (
@@ -57,40 +56,6 @@ class AuthenticationForm(BuiltinAuthenticationForm):
         helper = FormHelper()
         helper.form_class = 'form-inline'
         helper.add_input(Submit('submit', 'Login'))
-        self.helper = helper
-
-
-class ChangesetForm(forms.ModelForm):
-    class Meta:
-        model = models.Changeset
-        fields = ('database_schema', 'type', 'classification')
-
-    def __init__(self, *args, **kwargs):
-        super(ChangesetForm, self).__init__(*args, **kwargs)
-
-        self.fields['database_schema'].required = True
-        self.fields['type'].required = True
-        self.fields['classification'].required = True
-
-        helper = FormHelper()
-        helper.form_tag = False
-        self.helper = helper
-
-
-class ChangesetDetailForm(forms.ModelForm):
-    class Meta:
-        model = models.ChangesetDetail
-        exclude = ('before_checksum', 'after_checksum', 'volumetric_values')
-
-    def __init__(self, *args, **kwargs):
-        super(ChangesetDetailForm, self).__init__(*args, **kwargs)
-
-        for fld_name, fld in self.fields.iteritems():
-            if isinstance(fld.widget, forms.Textarea):
-                fld.widget.attrs.update({'rows': '4', 'cols': '80', 'class': 'form-textarea'})
-
-        helper = FormHelper()
-        helper.form_tag = False
         self.helper = helper
 
 

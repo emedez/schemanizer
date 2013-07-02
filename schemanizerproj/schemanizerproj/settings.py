@@ -151,6 +151,12 @@ INSTALLED_APPS = (
     'users',
     'servers',
     'schemaversions',
+    'changesets',
+    'changesetvalidations',
+    'changesettests',
+    'changesetreviews',
+    'changesetapplies',
+    'emails',
     'schemanizer',
 
 )
@@ -220,6 +226,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'emails': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'events': {
             'handlers': ['file'],
             'level': 'DEBUG',
@@ -239,7 +250,32 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True
-        }
+        },
+        'changesets': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesetvalidations': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesettests': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'chnagesetreviews': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesetapplies': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
     },
 }
 

@@ -8,6 +8,10 @@ from django.test.utils import override_settings
 from django.utils import timezone
 
 import MySQLdb
+from changesetapplies.changeset_apply import ChangesetApply
+from changesetapplies.models import ChangesetDetailApply
+from changesetreviews.changeset_review import ChangesetReview
+from changesets.models import Changeset, ChangesetDetail
 
 from schemanizer import models, utilities
 from schemanizer.logic import changeset_apply_logic
@@ -16,7 +20,7 @@ from schemaversions.models import DatabaseSchema, SchemaVersion
 from servers.models import Server
 from utils.mysql import mysql_dump
 from users.models import User
-from utils.mysql_functions import generate_schema_hash
+from utils.mysql_functions import generate_schema_hash, execute_count_statements
 
 log = logging.getLogger(__name__)
 
@@ -28,17 +32,17 @@ class ChangesetApplyTest(TestCase):
 
     def create_approved_changeset(
             self, database_schema, submitted_by, approved_by):
-        changeset = models.Changeset.objects.create(
+        changeset = Changeset.objects.create(
             database_schema=database_schema,
-            type=models.Changeset.DDL_TABLE_CREATE,
-            classification=models.Changeset.CLASSIFICATION_PAINLESS,
+            type=Changeset.DDL_TABLE_CREATE,
+            classification=Changeset.CLASSIFICATION_PAINLESS,
             submitted_by=submitted_by,
             submitted_at=timezone.now(),
             approved_by=approved_by,
             approved_at=timezone.now()
         )
 
-        models.ChangesetDetail.objects.create(
+        ChangesetDetail.objects.create(
             changeset=changeset,
             description='Add people table.',
             apply_sql="""
@@ -51,9 +55,9 @@ class ChangesetApplyTest(TestCase):
             revert_sql='DROP TABLE people',
         )
 
-        models.ChangesetDetail.objects.create(
+        ChangesetDetail.objects.create(
             changeset=changeset,
-            type=models.ChangesetDetail.TYPE_INS,
+            type=ChangesetDetail.TYPE_INS,
             description='Insert people rows.',
             apply_sql="""
                 INSERT INTO people
@@ -125,16 +129,16 @@ class ChangesetApplyTest(TestCase):
     def test_changeset_apply(self):
         """Tests changeset apply."""
 
-        changeset = models.Changeset.objects.create(
+        changeset = Changeset.objects.create(
             database_schema=self.database_schema,
-            type=models.Changeset.DDL_TABLE_CREATE,
-            classification=models.Changeset.CLASSIFICATION_PAINLESS,
+            type=Changeset.DDL_TABLE_CREATE,
+            classification=Changeset.CLASSIFICATION_PAINLESS,
             submitted_by=self.user_dev,
             submitted_at=timezone.now(),
-            review_status=models.Changeset.REVIEW_STATUS_NEEDS
+            review_status=Changeset.REVIEW_STATUS_NEEDS
         )
 
-        changeset_detail0 = models.ChangesetDetail.objects.create(
+        changeset_detail0 = ChangesetDetail.objects.create(
             changeset=changeset,
             description='Add people table.',
             apply_sql="""
@@ -147,7 +151,7 @@ class ChangesetApplyTest(TestCase):
             revert_sql='DROP TABLE people',
         )
 
-        changeset_detail1 = models.ChangesetDetail.objects.create(
+        changeset_detail1 = ChangesetDetail.objects.create(
             changeset=changeset,
             description='Insert people rows.',
             apply_sql="""
@@ -173,14 +177,14 @@ class ChangesetApplyTest(TestCase):
                 """
         )
 
-        changeset_review = changeset_review_logic.ChangesetReview(
+        changeset_review = ChangesetReview(
             changeset, self.initial_schema_version, self.user_dba)
         changeset_review.run()
 
-        changeset = models.Changeset.objects.get(pk=changeset.id)
+        changeset = Changeset.objects.get(pk=changeset.id)
         self.assertEqual(
             changeset.review_status,
-            models.Changeset.REVIEW_STATUS_IN_PROGRESS)
+            Changeset.REVIEW_STATUS_IN_PROGRESS)
 
         # delete and recreate schema to prepare for changeset apply
         utilities.drop_schema_if_exists(
@@ -188,11 +192,11 @@ class ChangesetApplyTest(TestCase):
         utilities.create_schema(
             settings.TEST_DB_NAME, connect_args=self.no_db_connect_args)
 
-        changeset_apply = changeset_apply_logic.ChangesetApply(
-            changeset, self.user_dba, self.server, self.connect_args)
+        changeset_apply = ChangesetApply(changeset, self.user_dba,
+                                         self.server, self.connect_args)
         changeset_apply.run()
 
-        self.assertEqual(models.ChangesetDetailApply.objects.filter(
+        self.assertEqual(ChangesetDetailApply.objects.filter(
             changeset_detail__id__in=[
                 changeset_detail0.id,
                 changeset_detail1.id]).count(),
@@ -209,6 +213,6 @@ class ChangesetApplyTest(TestCase):
             """
         with conn as cursor:
             self.assertEqual(
-                utilities.execute_count_statements(cursor, statements),
+                execute_count_statements(cursor, statements),
                 [2, 3, 5])
         conn.close()

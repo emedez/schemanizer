@@ -10,6 +10,8 @@ from django.test import TestCase, Client, TransactionTestCase
 from django.utils import timezone
 
 from tastypie.test import ResourceTestCase
+from changesetreviews.changeset_review import ChangesetReview
+from changesets.models import Changeset, ChangesetDetail
 
 from schemanizer import exceptions, models, utilities
 from schemanizer.logic import changeset_logic
@@ -22,6 +24,7 @@ from schemaversions.models import DatabaseSchema, SchemaVersion
 from servers.models import Environment, Server
 from users.models import Role, User
 from users.user_functions import add_user
+from utils.exceptions import PrivilegeError
 from utils.mysql_functions import generate_schema_hash
 
 log = logging.getLogger(__name__)
@@ -46,14 +49,14 @@ class ChangesetReviewLogicTest(TransactionTestCase):
 
     def _create_changeset(self, database_schema):
         user = User.objects.get(name='dev')
-        changeset = models.Changeset.objects.create(
+        changeset = Changeset.objects.create(
             database_schema=database_schema,
-            type=models.Changeset.DDL_TABLE_CREATE,
-            classification=models.Changeset.CLASSIFICATION_PAINLESS,
-            review_status=models.Changeset.REVIEW_STATUS_NEEDS,
+            type=Changeset.DDL_TABLE_CREATE,
+            classification=Changeset.CLASSIFICATION_PAINLESS,
+            review_status=Changeset.REVIEW_STATUS_NEEDS,
             submitted_by=user,
             submitted_at=timezone.now())
-        models.ChangesetDetail.objects.create(
+        ChangesetDetail.objects.create(
             changeset=changeset,
             description='create table t2',
             apply_sql="""
@@ -65,7 +68,7 @@ class ChangesetReviewLogicTest(TransactionTestCase):
             revert_sql="""
                 drop table `t2`
                 """)
-        models.ChangesetDetail.objects.create(
+        ChangesetDetail.objects.create(
             changeset=changeset,
             description='test update data',
             apply_sql="""
@@ -134,11 +137,11 @@ CREATE TABLE `t1` (
 
                 changeset = self._create_changeset(database_schema)
 
-                changeset_review = changeset_review_logic.ChangesetReview(
+                changeset_review = ChangesetReview(
                     changeset, schema_version, user)
                 if u == 'dev':
                     self.assertRaises(
-                        exceptions.PrivilegeError, changeset_review.run)
+                        PrivilegeError, changeset_review.run)
                 else:
                     changeset_review.run()
 #                url = reverse('schemanizer_changeset_review', args=[changeset_id])
@@ -456,14 +459,14 @@ class ChangesetViewsTestCase(TestCase):
     def _create_changeset(self):
         user = User.objects.get(name='dev')
         with transaction.commit_on_success():
-            changeset = models.Changeset.objects.create(
+            changeset = Changeset.objects.create(
                 database_schema=self.database_schema,
-                type=models.Changeset.DDL_TABLE_CREATE,
-                classification=models.Changeset.CLASSIFICATION_PAINLESS,
-                review_status=models.Changeset.REVIEW_STATUS_NEEDS,
+                type=Changeset.DDL_TABLE_CREATE,
+                classification=Changeset.CLASSIFICATION_PAINLESS,
+                review_status=Changeset.REVIEW_STATUS_NEEDS,
                 submitted_by=user,
                 submitted_at=timezone.now())
-            models.ChangesetDetail.objects.create(
+            ChangesetDetail.objects.create(
                 changeset=changeset,
                 description='create table_1',
                 apply_sql="""
@@ -522,8 +525,8 @@ class ChangesetViewsTestCase(TestCase):
             # changeset data
             changeset_data = dict(
                 database_schema=self.database_schema.id,
-                type=models.Changeset.DDL_TABLE_CREATE,
-                classification=models.Changeset.CLASSIFICATION_PAINLESS,
+                type=Changeset.DDL_TABLE_CREATE,
+                classification=Changeset.CLASSIFICATION_PAINLESS,
                 version_control_url='123456'
             )
             data.update(changeset_data)
@@ -560,7 +563,7 @@ class ChangesetViewsTestCase(TestCase):
 
             changeset = None
             try:
-                changesets = models.Changeset.objects.filter(
+                changesets = Changeset.objects.filter(
                     version_control_url='123456')
                 self.assertTrue(changesets.exists())
                 if changesets.exists():
@@ -618,31 +621,31 @@ class ChangesetViewsTestCase(TestCase):
                         r, reverse(
                             'schemanizer_changeset_update', args=[changeset_id]))
                 if can_set_review_status_to_in_progress:
-                    changeset = models.Changeset.objects.get(pk=changeset_id)
-                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset = Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = Changeset.REVIEW_STATUS_NEEDS
                     changeset.save()
                     r = c.post(url, data=dict(submit_review=u'Submit'))
                     self.assertRedirects(
                         r, reverse(
                             'schemanizer_changeset_review', args=[changeset_id]))
                 if can_approve:
-                    changeset = models.Changeset.objects.get(pk=changeset_id)
-                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset = Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = Changeset.REVIEW_STATUS_NEEDS
                     changeset.save()
                     r = c.post(url, data=dict(submit_approve=u'Submit'))
-                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                    tmp_changeset = Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
                         tmp_changeset.review_status,
-                        models.Changeset.REVIEW_STATUS_APPROVED)
+                        Changeset.REVIEW_STATUS_APPROVED)
                 if can_reject:
-                    changeset = models.Changeset.objects.get(pk=changeset_id)
-                    changeset.review_status = models.Changeset.REVIEW_STATUS_NEEDS
+                    changeset = Changeset.objects.get(pk=changeset_id)
+                    changeset.review_status = Changeset.REVIEW_STATUS_NEEDS
                     changeset.save()
                     r = c.post(url, data=dict(submit_reject=u'Submit'))
-                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                    tmp_changeset = Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
                         tmp_changeset.review_status,
-                        models.Changeset.REVIEW_STATUS_REJECTED)
+                        Changeset.REVIEW_STATUS_REJECTED)
                 if can_soft_delete:
                     r = c.post(url, data=dict(submit_delete=u'Submit'))
                     self.assertRedirects(
@@ -714,10 +717,10 @@ class ChangesetViewsTestCase(TestCase):
                         'changeset_details-1-changeset': changeset_id,
                         })
                     r = c.post(url, data=data)
-                    tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                    tmp_changeset = Changeset.objects.get(pk=changeset_id)
                     self.assertEqual(
                         tmp_changeset.review_status,
-                        models.Changeset.REVIEW_STATUS_NEEDS)
+                        Changeset.REVIEW_STATUS_NEEDS)
 
             finally:
                 changeset_logic.delete_changeset(changeset_id)
@@ -756,7 +759,7 @@ class ChangesetViewsTestCase(TestCase):
                     user).check_soft_delete_changeset(changeset)
 
                 r = c.post(url, data=dict(confirm_soft_delete='Submit'))
-                tmp_changeset = models.Changeset.objects.get(pk=changeset_id)
+                tmp_changeset = Changeset.objects.get(pk=changeset_id)
                 self.assertTrue(tmp_changeset.is_deleted)
             finally:
                 changeset_logic.delete_changeset(changeset)
@@ -1244,7 +1247,7 @@ class RestApiTest(ResourceTestCase):
 
     def create_changeset(self):
         database_schema = self.create_database_schema()
-        changeset = models.Changeset.objects.create(
+        changeset = Changeset.objects.create(
             database_schema=database_schema, type='DDL:Table:Create',
             classification='painless',
             submitted_by=User.objects.get(name='dev'),

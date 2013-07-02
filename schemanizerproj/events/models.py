@@ -9,7 +9,11 @@ class Event(models.Model):
         'environment_added', 'environment_updated', 'environment_deleted',
         'server_added', 'server_updated', 'server_deleted',
         'schema_version_generated',
-        'schema_check')
+        'schema_check',
+        'changeset_submitted', 'changeset_reviewed',
+        'changeset_approved', 'changeset_rejected',
+        'changeset_updated', 'changeset_soft_deleted',
+        'changeset_applied', 'changeset_apply_failed')
 
     datetime = models.DateTimeField(auto_now_add=True, blank=True)
     type = models.CharField(choices=TYPE, max_length=255)

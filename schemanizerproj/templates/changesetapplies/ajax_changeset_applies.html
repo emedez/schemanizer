@@ -16,7 +16,7 @@
                         {{ task_state.changeset_id|default_if_none:'' }}
                         {% if task_state.changeset_id %}
                             <br />
-                            <a href="{% url 'schemanizer_changeset_view' task_state.changeset_id %}">View changeset</a>
+                            <a href="{% url 'changesets_changeset_view' task_state.changeset_id %}">View changeset</a>
                         {% endif %}
                     </td>
                     <td>

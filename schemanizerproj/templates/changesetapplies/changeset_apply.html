@@ -6,7 +6,7 @@
 {% block contents %}
     {% if user_has_access %}
         <h2>Apply Changeset</h2>
-        <p>Changeset ID: <a href="{% url 'schemanizer_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
+        <p>Changeset ID: <a href="{% url 'changesets_changeset_view' changeset.id %}">{{ changeset.id }}</a></p>
 
         <form>
             <div class="control-group" id="div_id_environment">
@@ -29,7 +29,7 @@
     {{ block.super }}
     <script type="text/javascript">
         $(function() {
-            var select_environment_servers_url = "{% url 'schemanizer_select_environment_servers' %}";
+            var select_environment_servers_url = "{% url 'changesetapplies_select_environment_servers' %}";
             var changeset_id = "{{ changeset.id }}";
 
             function showEnvironmentServers() {

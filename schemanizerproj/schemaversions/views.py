@@ -1,4 +1,5 @@
 import StringIO
+import json
 import logging
 import urllib
 from django.conf import settings
@@ -6,8 +7,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.servers.basehttp import FileWrapper
 from django.core.urlresolvers import reverse_lazy, reverse
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
+from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, FormView, DetailView, View
 from utils import decorators
@@ -16,6 +19,8 @@ from . import (
     models, user_access, forms, schema_functions, event_handlers)
 
 log = logging.getLogger(__name__)
+MSG_USER_NO_ACCESS = u'You do not have access to this page.'
+MSG_NOT_AJAX = u'Request must be a valid XMLHttpRequest.'
 
 
 class DatabaseSchemaList(ListView):
@@ -104,7 +109,8 @@ class SchemaVersion(DetailView):
                 url = reverse('servers_server_data_list')
                 params = urllib.urlencode(
                     dict(database_schema_id=schema_version.database_schema.pk))
-                event_handlers.on_schema_check_performed(request)
+                event_handlers.on_schema_check(
+                    request, schema_version.database_schema)
                 return redirect('%s?%s' % (url, params))
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
@@ -144,3 +150,32 @@ class SchemaVersionDdlDownload(View):
         raise Http404
 
 
+def ajax_get_schema_version(
+        request, template='schemaversions/ajax_get_schema_version.html'):
+    if not request.is_ajax():
+        return HttpResponseForbidden(MSG_NOT_AJAX)
+
+    data = {}
+    try:
+        if not request.user.is_authenticated():
+            raise Exception('Login is required.')
+
+        schema_version_id = request.GET['schema_version_id'].strip()
+        if schema_version_id:
+            schema_version_id = int(schema_version_id)
+            schema_version = models.SchemaVersion.objects.get(
+                pk=schema_version_id)
+            data['schema_version_html'] = render_to_string(
+                template, {'obj': schema_version},
+                context_instance=RequestContext(request))
+        else:
+            data['schema_version_html'] = ''
+
+        data_json = json.dumps(data)
+    except Exception, e:
+        msg = 'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        data = dict(error=msg)
+        data_json = json.dumps(data)
+
+    return HttpResponse(data_json, mimetype='application/json')

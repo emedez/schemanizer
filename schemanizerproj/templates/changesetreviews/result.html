@@ -14,6 +14,14 @@
                     <span class="text-error">REJECTED</span>
                 {% endif %}
             </h3>
+            {% if changeset_review.schema_version %}
+                <p>
+                    Reviewed against schema version:
+                    <a href="{% url 'schemaversions_schema_version' changeset_review.schema_version.pk %}">
+                        {% url 'schemaversions_schema_version' changeset_review.schema_version.pk %}
+                    </a>
+                </p>
+            {% endif %}
             {% if changeset_review.results_log %}
                 <pre>{{ changeset_review.results_log }}</pre>
             {% endif %}
@@ -42,7 +50,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ changeset_validation.id }}</td>
-                                <td><a href="{% url 'schemanizer_changeset_view' changeset_validation.changeset_id %}">{{ changeset_validation.changeset_id }}</a></td>
+                                <td><a href="{% url 'changesets_changeset_view' changeset_validation.changeset_id %}">{{ changeset_validation.changeset_id }}</a></td>
                                 <td>{{ changeset_validation.validation_type }}</td>
                                 <td>{{ changeset_validation.timestamp }}</td>
                                 <td>{{ changeset_validation.result }}</td>
@@ -96,7 +104,7 @@
         {% endif %}
 
         <p>
-            <a href="{% url 'schemanizer_changeset_view' changeset.id %}">
+            <a href="{% url 'changesets_changeset_view' changeset.id %}">
                 View changeset</a>
         </p>
     {% endif %}

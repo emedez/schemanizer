@@ -76,5 +76,5 @@ class SchemaVersion(utils_models.TimeStampedModel):
         unique_together = (('database_schema', 'checksum'),)
 
     def __unicode__(self):
-        return 'database_schema=%s, checksum=%s' % (
-            self.database_schema, self.checksum)
+        return 'SchemaVersion: id=%s, database_schema=%s' % (
+            self.pk, self.database_schema)

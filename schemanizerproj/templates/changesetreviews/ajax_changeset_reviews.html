@@ -13,7 +13,7 @@
                     <td>{{ task_state.tstamp }}</td>
                     <td>
                         {% if task_state.show_changeset_view_url %}
-                            <a href="{% url 'schemanizer_changeset_view' task_state.changeset_id %}">
+                            <a href="{% url 'changesets_changeset_view' task_state.changeset_id %}">
                                 Changeset ID: {{ task_state.changeset_id }}
                             </a>
                         {% else %}

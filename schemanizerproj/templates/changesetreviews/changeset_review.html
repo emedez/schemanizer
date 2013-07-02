@@ -28,7 +28,7 @@
     {{ block.super }}
     <script type="text/javascript">
         $(function() {
-            var ajax_get_schema_version_url = "{% url 'schemanizer_ajax_get_schema_version' %}";
+            var ajax_get_schema_version_url = "{% url 'schemaversions_ajax_get_schema_version' %}";
 
             function viewSchemaVersion() {
                 var schema_version_id = $('#id_schema_version').val();

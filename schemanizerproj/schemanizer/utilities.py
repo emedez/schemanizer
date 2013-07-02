@@ -3,14 +3,10 @@
 import hashlib
 import logging
 import shlex
-import string
 import subprocess
 import time
 
 import MySQLdb
-import sqlparse
-
-from utils.exceptions import Error
 
 log = logging.getLogger(__name__)
 
@@ -132,97 +128,11 @@ def mysql_load(db, query_string, host=None, port=None, user=None, passwd=None):
 
 
 
-def execute_statemets(cursor, statements):
-    """Executes statements."""
-
-    log.debug(u'statements:\n%s' % (statements,))
-
-    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
-    statement_list = None
-    if statements:
-        statement_list = sqlparse.split(statements)
-
-    if not statements:
-        return
-
-    try:
-        for statement in statement_list:
-            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
-
-            if not statement:
-                continue
-
-            log.debug(u'statement: %s' % (statement,))
-            cursor.execute(statement)
-
-            while cursor.nextset() is not None:
-                pass
-
-    finally:
-        while cursor.nextset() is not None:
-            pass
 
 
 
-def execute_count_statements(cursor, statements):
-    """Executes count statement(s)."""
 
-    log.debug('statements:\n%s' % (statements,))
 
-    counts = []
-    if not statements:
-        return counts
-
-    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
-    statement_list = None
-    if statements:
-        statement_list = sqlparse.split(statements)
-
-    if not statements:
-        return counts
-
-    try:
-        for statement in statement_list:
-            count = None
-            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
-
-            if not statement:
-                counts.append(count)
-                continue
-
-            log.debug(u'statement: %s' % (statement,))
-            row_count = cursor.execute(statement)
-
-            if len(cursor.description) > 1:
-                raise Error(
-                    'Statement should return a single value only.')
-
-            if row_count > 1:
-                raise Error(
-                    u'Statement should return a single row only. '
-                    u'Statement was: %s' % (statement,)
-                )
-
-            if not row_count:
-                raise Error(
-                    u'Statement returned an empty set. '
-                    u'Statement was: %s' % (statement,)
-                )
-
-            row = cursor.fetchone()
-            if row is None:
-                raise Error(
-                    u'Statement returned an empty set. '
-                    u'Statement was: %s' % (statement,)
-                )
-
-            counts.append(row[0])
-
-    finally:
-        while cursor.nextset() is not None:
-            pass
-
-    return counts
 
 
 def create_schema(schema_name, cursor=None, connect_args=None):

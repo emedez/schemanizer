@@ -6,33 +6,29 @@ urlpatterns = patterns('schemanizer.views',
     #
     # changeset
     #
-    url(
-        r'^changeset/list/$', 'changeset_list',
-        name='schemanizer_changeset_list'),
-    url(
-        r'^changeset/(?P<id>\d+)/$', 'changeset_view',
-        name='schemanizer_changeset_view'),
-    url(r'^changeset/submit/$', 'changeset_submit', name='schemanizer_changeset_submit'),
-    url(r'^changeset/delete/(?P<id>\d+)/$', 'changeset_soft_delete', name='schemanizer_changeset_soft_delete'),
-    url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
-    url(
-        r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply',
-        name='schemanizer_changeset_apply'),
-    url(
-        r'^changeset/apply-to-multiple-hosts/(?P<changeset_id>\d+)/$',
-        'apply_changeset_to_multiple_hosts',
-        name='schemanizer_apply_changesets_to_multiple_hosts'),
+    # url(
+    #     r'^changeset/(?P<id>\d+)/$', 'changeset_view',
+    #     name='schemanizer_changeset_view'),
+    # url(r'^changeset/delete/(?P<id>\d+)/$', 'changeset_soft_delete', name='schemanizer_changeset_soft_delete'),
+    # url(r'^changeset/update/(?P<id>\d+)/$', 'changeset_update', name='schemanizer_changeset_update'),
+    # url(
+    #     r'^changeset/apply/(?P<changeset_id>\d+)/', 'changeset_apply',
+    #     name='schemanizer_changeset_apply'),
+    # url(
+    #     r'^changeset/apply-to-multiple-hosts/(?P<changeset_id>\d+)/$',
+    #     'apply_changeset_to_multiple_hosts',
+    #     name='schemanizer_apply_changesets_to_multiple_hosts'),
 
-    url(r'^changeset/apply-status/(?P<request_id>.+?)/$', 'changeset_apply_status', name='schemanizer_changeset_apply_status'),
+    # url(r'^changeset/apply-status/(?P<request_id>.+?)/$', 'changeset_apply_status', name='schemanizer_changeset_apply_status'),
     #url(r'^changeset/validate-syntax/(?P<id>\d+)/', 'changeset_validate_syntax', name='schemanizer_changeset_validate_syntax'),
     #url(r'^changeset/validate-syntax-status/(?P<request_id>.+?)/$', 'changeset_validate_syntax_status', name='schemanizer_changeset_validate_syntax_status'),
     #url(r'^changeset/validate-no-update-with-where-clause/(?P<id>\d+)/$', 'changeset_validate_no_update_with_where_clause', name='schemanizer_changeset_validate_no_update_with_where_clause'),
-    url(
-        r'^changeset/view-review-results/(?P<changeset_id>\d+)/',
-        'changeset_view_review_results',
-        name='schemanizer_changeset_view_review_results'),
-    url(r'^changeset/review/(?P<changeset_id>\d+)/', 'changeset_review', name='schemanizer_changeset_review'),
-    url(r'^changeset/review-status/(?P<request_id>.+?)/$', 'changeset_review_status', name='schemanizer_changeset_review_status'),
+    # url(
+    #     r'^changeset/view-review-results/(?P<changeset_id>\d+)/',
+    #     'changeset_view_review_results',
+    #     name='schemanizer_changeset_view_review_results'),
+    # url(r'^changeset/review/(?P<changeset_id>\d+)/', 'changeset_review', name='schemanizer_changeset_review'),
+    # url(r'^changeset/review-status/(?P<request_id>.+?)/$', 'changeset_review_status', name='schemanizer_changeset_review_status'),
 
     #
     # server
@@ -48,11 +44,11 @@ urlpatterns = patterns('schemanizer.views',
     #
     # url(r'^schema-version/create/(?P<server_id>\d+)/$', 'schema_version_create', name='schemanizer_schema_version_create'),
     # url(r'^schema-version/list/', 'schema_version_list', name='schemanizer_schema_version_list'),
-    url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
-    url(
-        r'^ajax/get-schema-version/$',
-        'ajax_get_schema_version',
-        name='schemanizer_ajax_get_schema_version'),
+    # url(r'^schema-version/view/(?P<schema_version_id>\d+)/$', 'schema_version_view', name='schemanizer_schema_version_view'),
+    # url(
+    #     r'^ajax/get-schema-version/$',
+    #     'ajax_get_schema_version',
+    #     name='schemanizer_ajax_get_schema_version'),
 
     #
     # database schema
@@ -72,23 +68,23 @@ urlpatterns = patterns('schemanizer.views',
     #
     # celery tasks
     #
-    url(
-        r'^changeset-reviews/$', 'changeset_reviews',
-        name='schemanizer_changeset_reviews'),
-    url(
-        r'^changeset-applies/', 'changeset_applies',
-        name='schemanizer_changeset_applies'),
+    # url(
+    #     r'^changeset-reviews/$', 'changeset_reviews',
+    #     name='schemanizer_changeset_reviews'),
+    # url(
+    #     r'^changeset-applies/', 'changeset_applies',
+    #     name='schemanizer_changeset_applies'),
 
     #
     # ajax views
     #
-    url(
-        r'^select-environment-servers/$', 'select_environment_servers',
-        name='schemanizer_select_environment_servers'),
-    url(
-        r'^ajax-changeset-applies/', 'ajax_changeset_applies',
-        name='schemanizer_ajax_changeset_applies'),
-    url(
-        r'^ajax-changeset-reviews/', 'ajax_changeset_reviews',
-        name='schemanizer_ajax_changeset_reviews'),
+    # url(
+    #     r'^select-environment-servers/$', 'select_environment_servers',
+    #     name='schemanizer_select_environment_servers'),
+    # url(
+    #     r'^ajax-changeset-applies/', 'ajax_changeset_applies',
+    #     name='schemanizer_ajax_changeset_applies'),
+    # url(
+    #     r'^ajax-changeset-reviews/', 'ajax_changeset_reviews',
+    #     name='schemanizer_ajax_changeset_reviews'),
 )

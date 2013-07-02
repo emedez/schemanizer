@@ -4,7 +4,7 @@ import shlex
 import string
 import subprocess
 import sqlparse
-from . import hash_functions
+from . import hash_functions, exceptions
 
 log = logging.getLogger(__name__)
 
@@ -58,3 +58,89 @@ def normalize_schema_dump(dump):
 def generate_schema_hash(dump):
     """Returns the hash string of a normalized dump."""
     return hash_functions.generate_hash(normalize_schema_dump(dump))
+
+
+def execute_count_statements(cursor, statements):
+    """Executes count statement(s)."""
+
+    counts = []
+    if not statements:
+        return counts
+
+    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
+    statement_list = None
+    if statements:
+        statement_list = sqlparse.split(statements)
+
+    if not statements:
+        return counts
+
+    try:
+        for statement in statement_list:
+            count = None
+            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
+
+            if not statement:
+                counts.append(count)
+                continue
+
+            row_count = cursor.execute(statement)
+
+            if len(cursor.description) > 1:
+                raise exceptions.Error(
+                    'Statement should return a single value only.')
+
+            if row_count > 1:
+                raise exceptions.Error(
+                    u'Statement should return a single row only. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            if not row_count:
+                raise exceptions.Error(
+                    u'Statement returned an empty set. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            row = cursor.fetchone()
+            if row is None:
+                raise exceptions.Error(
+                    u'Statement returned an empty set. '
+                    u'Statement was: %s' % (statement,)
+                )
+
+            counts.append(row[0])
+
+    finally:
+        while cursor.nextset() is not None:
+            pass
+
+    return counts
+
+
+def execute_statements(cursor, statements):
+    """Executes statements."""
+
+    statements = statements.strip(u'%s%s' % (string.whitespace, ';'))
+    statement_list = None
+    if statements:
+        statement_list = sqlparse.split(statements)
+
+    if not statements:
+        return
+
+    try:
+        for statement in statement_list:
+            statement = statement.rstrip(u'%s%s' % (string.whitespace, ';'))
+
+            if not statement:
+                continue
+
+            cursor.execute(statement)
+
+            while cursor.nextset() is not None:
+                pass
+
+    finally:
+        while cursor.nextset() is not None:
+            pass
