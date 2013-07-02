@@ -70,7 +70,7 @@ class Migration(SchemaMigration):
         },
         u'schemaversions.schemaversion': {
             'Meta': {'unique_together': "(('database_schema', 'checksum'),)", 'object_name': 'SchemaVersion', 'db_table': "'schema_versions'"},
-            'checksum': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'checksum': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'created_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
             'database_schema': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['schemaversions.DatabaseSchema']"}),
             'ddl': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
