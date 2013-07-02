@@ -290,16 +290,22 @@ class ChangesetUpdate(TemplateView):
         if not self.can_update_changeset:
             messages.error(self.request, MSG_USER_NO_ACCESS)
 
+        self.changset_form = None
+        self.changeset_detail_formset = None
+
     def get_context_data(self, **kwargs):
         context = super(ChangesetUpdate, self).get_context_data(**kwargs)
-        context['changeset_form'] = forms.ChangesetForm(
-            instance=self.changeset)
-        context['changeset_detail_formset'] = self.ChangesetDetailFormSet(
-            instance=self.changeset)
+        context['changeset_form'] = self.changeset_form
+        context['changeset_detail_formset'] = self.changeset_detail_formset
         return context
 
     def get(self, request, *args, **kwargs):
         self.setup()
+
+        self.changeset_form = forms.ChangesetForm(instance=self.changeset)
+        self.changeset_detail_formset = self.ChangesetDetailFormSet(
+            instance=self.changeset)
+
         return super(ChangesetUpdate, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -307,14 +313,14 @@ class ChangesetUpdate(TemplateView):
 
         try:
             if self.can_update_changeset:
-                changeset_form = forms.ChangesetForm(
+                self.changeset_form = forms.ChangesetForm(
                     request.POST, instance=self.changeset)
-                changeset_detail_formset = self.ChangesetDetailFormSet(
+                self.changeset_detail_formset = self.ChangesetDetailFormSet(
                     request.POST, instance=self.changeset)
-                if changeset_form.is_valid() and changeset_detail_formset.is_valid():
+                if self.changeset_form.is_valid() and self.changeset_detail_formset.is_valid():
                     changeset = changeset_functions.update_changeset(
-                        changeset_form=changeset_form,
-                        changeset_detail_formset=changeset_detail_formset,
+                        changeset_form=self.changeset_form,
+                        changeset_detail_formset=self.changeset_detail_formset,
                         updated_by=self.user, request=request)
                     return redirect(
                         'changesets_changeset_view', changeset.id)
