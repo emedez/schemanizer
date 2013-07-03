@@ -1,0 +1,40 @@
+{% extends 'site_base.html' %}
+
+{% block title %}{{ block.super }} - Changeset Applies{% endblock %}
+
+{% block contents %}
+    <h2>Changeset Apply Jobs</h2>
+
+    <div id="id_task_state_list">
+    </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(function() {
+            var ajax_changeset_applies_url = "{{ ajax_changeset_applies_url }}";
+
+            // check frequency in seconds
+            var check_freq = 2;
+
+            function getChangesetApplies() {
+                $.get(ajax_changeset_applies_url, function(data) {
+                    // console.log(data);
+                    if ('error' in data) {
+                        alert(data['error']);
+                    }
+                    else {
+                        if ('html' in data) {
+                            $('#id_task_state_list').html(data['html']);
+                        }
+                        // sched check again
+                        setTimeout(getChangesetApplies, check_freq * 1000);
+                    }
+                });
+            };
+
+            getChangesetApplies();
+        });
+    </script>
+{% endblock %}

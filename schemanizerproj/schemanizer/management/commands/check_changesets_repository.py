@@ -5,17 +5,16 @@ from optparse import make_option
 import pprint
 import string
 import sys
-
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils import timezone
-
 from dateutil import parser, relativedelta
 import requests
 import yaml
-
-from schemanizer import exceptions, models
-from schemanizer.logic import changeset_logic
+from changesets import models as changesets_models
+from changesets import changeset_functions
+from emails import tasks as emails_tasks
+from utils import exceptions
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +36,6 @@ def requests_get(url, params=None, headers=None):
 
 
 def process_file(f, commit):
-    from schemanizer import tasks
-
     try:
         filename = f['filename']
         status = f['status']
@@ -48,7 +45,7 @@ def process_file(f, commit):
         print msg
         log.debug(msg)
 
-        repo_filename_exists = models.Changeset.objects.filter(
+        repo_filename_exists = changesets_models.Changeset.objects.filter(
             repo_filename=filename).exists()
 
         if not repo_filename_exists and (
@@ -63,7 +60,7 @@ def process_file(f, commit):
                     yaml_obj = yaml.load(content)
                     if not isinstance(yaml_obj, dict):
                         raise exceptions.Error('File format is invalid.')
-                    changeset = changeset_logic.save_changeset_yaml(
+                    changeset = changeset_functions.save_changeset_yaml(
                         yaml_obj, f, commit)
                     if changeset:
                         msg = u'Changeset [id=%s] was submitted.' % (
@@ -76,7 +73,7 @@ def process_file(f, commit):
                     log.exception(msg)
                     if not content:
                         content = ''
-                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                    emails_tasks.send_changeset_submission_through_repo_failed_mail.delay(
                         content, msg, f, commit)
 
                 print
@@ -100,7 +97,7 @@ def process_file(f, commit):
                     yaml_obj = yaml.load(content)
                     if not isinstance(yaml_obj, dict):
                         raise exceptions.Error('File format is invalid.')
-                    changeset = changeset_logic.update_changeset_yaml(
+                    changeset = changeset_functions.update_changeset_yaml(
                         yaml_obj, f, commit)
                     if changeset:
                         msg = u'Changeset [id=%s] was updated.' % (
@@ -115,7 +112,7 @@ def process_file(f, commit):
                     log.exception(msg)
                     if not content:
                         content = ''
-                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                    emails_tasks.send_changeset_submission_through_repo_failed_mail.delay(
                         content, msg, f, commit)
 
                 print

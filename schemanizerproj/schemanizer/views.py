@@ -1,40 +1,26 @@
-import cStringIO as StringIO
+import codecs
 import json
 import logging
-from pprint import pformat
-import urllib
-import warnings
-
-import MySQLdb
-#warnings.filterwarnings('ignore', category=MySQLdb.Warning)
-import sqlparse
-
+import os
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.servers.basehttp import FileWrapper
-from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.forms.models import inlineformset_factory
-from django.http import HttpResponseForbidden, HttpResponse, Http404
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.template.loader import render_to_string
-from django.utils import timezone
-
-from celery import states
-from celery.result import AsyncResult
-from djcelery import humanize as djcelery_humanize
-import djcelery.models as djcelery_models
-import yaml
-
-from schemanizer import exceptions, forms, models, utils
-from schemanizer.logic import changeset_logic
+import markdown
+from changesets.models import Changeset
+from schemanizer import forms, utilities
 from schemanizer.logic import changeset_apply_logic
-from schemanizer.logic import changeset_review_logic
 from schemanizer.logic import privileges_logic
-from schemanizer.logic import user_logic
+from schemaversions.models import DatabaseSchema, SchemaVersion
+from servers.forms import ServerForm
+from servers.models import Environment, Server
+from servers.server_discovery import discover_mysql_servers
+from users.models import Role
+from utils.exceptions import PrivilegeError
 
 log = logging.getLogger(__name__)
 
@@ -50,11 +36,11 @@ def home(request, template='schemanizer/home.html'):
     user_has_access = False
     try:
         user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
-        if user.role.name in (models.Role.ROLE_DBA, models.Role.ROLE_ADMIN):
+        user_has_access = user.role.name in Role.ROLE_LIST
+        if user.role.name in (Role.ROLE_DBA, Role.ROLE_ADMIN):
             show_to_be_reviewed_changesets = True
             can_apply_changesets = True
-            changesets = models.Changeset.objects.get_needs_review()
+            changesets = Changeset.to_be_reviewed_objects.all()
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
@@ -62,581 +48,17 @@ def home(request, template='schemanizer/home.html'):
         template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def confirm_delete_user(
-        request, id, template='schemanizer/confirm_delete_user.html'):
+def readme(request, template='schemanizer/readme.html'):
     user_has_access = False
     try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
-        if user_has_access:
-            id = int(id)
-            to_be_del_user = models.User.objects.get(id=id)
-            if request.method == 'POST':
-                if 'confirm_delete' in request.POST:
-                    user_logic.delete_user(user, to_be_del_user)
-                    messages.success(
-                        request, 'User was deleted, id=%s.' % (id,))
-                    return redirect('schemanizer_users')
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
+        readme_path = os.path.abspath(
+            os.path.join(settings.PROJECT_ROOT, '..', 'README.md'))
+        input_file = codecs.open(readme_path, mode="r", encoding="utf-8")
+        text = input_file.read()
+        html = markdown.markdown(text)
     except Exception, e:
         log.exception('EXCEPTION')
         messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def user_update(request, id, template='schemanizer/update_user.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
-        if user_has_access:
-            id = int(id)
-
-            # to be updated user
-            user2 = models.User.objects.get(id=id)
-
-            initial = dict(
-                name=user2.name, email=user2.email, role=user2.role_id,
-                github_login=user2.github_login)
-            if request.method == 'POST':
-                form = forms.UpdateUserForm(request.POST, initial=initial)
-                if form.is_valid():
-                    name = form.cleaned_data['name']
-                    email = form.cleaned_data['email']
-                    role_id = form.cleaned_data['role']
-                    github_login = form.cleaned_data['github_login']
-                    role = models.Role.objects.get(id=role_id)
-                    schemanizer_user = user_logic.update_user(
-                        user, id, name, email, role, github_login)
-                    messages.success(
-                        request, u'User was updated, id=%s.' % (
-                            schemanizer_user.id,))
-                    return redirect('schemanizer_users')
-            else:
-                form = forms.UpdateUserForm(initial=initial)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def user_create(request, template='schemanizer/user_create.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
-        if user_has_access:
-            initial = dict(role=1)
-            if request.method == 'POST':
-                form = forms.CreateUserForm(request.POST, initial=initial)
-                if form.is_valid():
-                    name = form.cleaned_data['name']
-                    email = form.cleaned_data['email']
-                    role_id = form.cleaned_data['role']
-                    password = form.cleaned_data['password']
-                    github_login = form.cleaned_data['github_login']
-                    role = models.Role.objects.get(id=role_id)
-                    schemanizer_user = user_logic.create_user(
-                        user, name, email, role, password, github_login)
-                    messages.success(
-                        request, u'User was created, id=%s.' % (
-                            schemanizer_user.id,))
-                    return redirect('schemanizer_users')
-            else:
-                form = forms.CreateUserForm(initial=initial)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def users(request, template='schemanizer/users.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (models.Role.ROLE_ADMIN,)
-        if user_has_access:
-            users = models.User.objects.select_related().all()
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_soft_delete(
-        request, id, template='schemanizer/changeset_soft_delete.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        changeset = models.Changeset.objects.get(pk=int(id))
-        user_has_access = (
-            privileges_logic.UserPrivileges(user)
-            .can_soft_delete_changeset(changeset))
-        if user_has_access:
-            if request.method == 'POST':
-                changeset_logic.soft_delete_changeset(changeset, user)
-                messages.success(
-                    request, 'Changeset [id=%s] was soft deleted.' % (id,))
-                return redirect('schemanizer_changeset_list')
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_submit(request, template='schemanizer/changeset_update.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in models.Role.ROLE_LIST
-        if user_has_access:
-            changeset = models.Changeset()
-            ChangesetDetailFormSet = inlineformset_factory(
-                models.Changeset, models.ChangesetDetail,
-                form=forms.ChangesetDetailForm,
-                extra=1, can_delete=False)
-            if request.method == 'POST':
-                changeset_form = forms.ChangesetForm(
-                    request.POST, instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(
-                    request.POST, instance=changeset)
-                if (changeset_form.is_valid() and
-                        changeset_detail_formset.is_valid()):
-                    changeset = (
-                        changeset_logic.process_changeset_form_submission(
-                            changeset_form=changeset_form,
-                            changeset_detail_formset=changeset_detail_formset,
-                            user=user))
-                    messages.success(
-                        request,
-                        u'Changeset [id=%s] was submitted, '
-                        u'review procedure has been started, '
-                        u'when completed, an email will be sent to '
-                        u'interested parties.' % (
-                            changeset.id,))
-                    return redirect(
-                        'schemanizer_changeset_reviews')
-            else:
-                changeset_form = forms.ChangesetForm(instance=changeset)
-                changeset_detail_formset = ChangesetDetailFormSet(instance=changeset)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_update(request, id, template='schemanizer/changeset_update.html'):
-    """Update changeset page."""
-
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-
-        if user_has_access:
-            changeset = models.Changeset.objects.get(pk=int(id))
-            if privileges_logic.UserPrivileges(user).can_update_changeset(
-                    changeset):
-                ChangesetDetailFormSet = inlineformset_factory(
-                    models.Changeset, models.ChangesetDetail,
-                    form=forms.ChangesetDetailForm,
-                    extra=1, can_delete=True)
-                if request.method == 'POST':
-                    changeset_form = forms.ChangesetForm(
-                        request.POST, instance=changeset)
-                    changeset_detail_formset = ChangesetDetailFormSet(
-                        request.POST, instance=changeset)
-                    if changeset_form.is_valid() and changeset_detail_formset.is_valid():
-                        with transaction.commit_on_success():
-                            changeset = changeset_logic.changeset_update_from_form(
-                                changeset_form=changeset_form,
-                                changeset_detail_formset=changeset_detail_formset,
-                                user=user)
-                        messages.success(
-                            request, u'Changeset [id=%s] was updated.' % (
-                                changeset.id,))
-                        return redirect(
-                            'schemanizer_changeset_view', changeset.id)
-                else:
-                    changeset_form = forms.ChangesetForm(instance=changeset)
-                    changeset_detail_formset = ChangesetDetailFormSet(
-                        instance=changeset)
-            else:
-                messages.error(request, MSG_USER_NO_ACCESS)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_view_review_results(
-        request, changeset_id,
-        template='schemanizer/changeset_view_review_results.html'):
-    user_has_access = False
-
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-        if user_has_access:
-            changeset = models.Changeset.objects.get(pk=int(changeset_id))
-            changeset_review = None
-            try:
-                changeset_review = models.ChangesetReview.objects.get(
-                    changeset=changeset)
-            except ObjectDoesNotExist:
-                pass
-            if (
-                    changeset.review_status in [
-                        models.Changeset.REVIEW_STATUS_IN_PROGRESS,
-                        models.Changeset.REVIEW_STATUS_APPROVED]
-                    ):
-                changeset_review_success = True
-            if (
-                    changeset.review_status ==
-                        models.Changeset.REVIEW_STATUS_REJECTED
-                    ):
-                changeset_review_failed = True
-            changeset_validations = models.ChangesetValidation.objects.filter(
-                changeset=changeset).order_by('id')
-            changeset_validation_ids = request.GET.get(
-                'changeset_validation_ids', None)
-            if changeset_validation_ids:
-                changeset_validation_ids = [
-                    int(id) for id in changeset_validation_ids.split(',')]
-                changeset_validations = changeset_validations.filter(
-                    id__in=changeset_validation_ids)
-            changeset_tests = models.ChangesetTest.objects.filter(
-                changeset_detail__changeset=changeset).order_by('id')
-            changeset_test_ids = request.GET.get('changeset_test_ids', None)
-            if changeset_test_ids:
-                changeset_test_ids = [
-                    int(id) for id in changeset_test_ids.split(',')]
-                changeset_tests = changeset_tests.filter(
-                    id__in=changeset_test_ids)
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_view(request, id, template='schemanizer/changeset_view.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-
-        if user_has_access:
-            id = int(id)
-            changeset = models.Changeset.objects.select_related().get(id=id)
-
-            changeset_applies = models.ChangesetApply.objects.filter(
-                changeset=changeset)
-
-            changeset_action_qs = models.ChangesetAction.objects.filter(
-                changeset=changeset)
-            changeset_actions = []
-            for changeset_action in changeset_action_qs:
-                changeset_action_server_map_qs = (
-                    models.ChangesetActionServerMap.objects.filter(
-                        changeset_action=changeset_action))
-                changeset_action_server_map = None
-                if changeset_action_server_map_qs.exists():
-                    changeset_action_server_map = (
-                        changeset_action_server_map_qs[0])
-                type_col = changeset_action.type
-
-                changeset_applies_url = None
-                changeset_apply_qs = models.ChangesetApply.objects.filter(
-                    changeset_action=changeset_action)
-                if changeset_apply_qs.exists():
-                    changeset_apply = changeset_apply_qs[0]
-                    if changeset_apply.task_id:
-                        changeset_applies_url = '%s?%s' % (
-                            reverse('schemanizer_changeset_applies'),
-                            urllib.urlencode(
-                                dict(task_id=changeset_apply.task_id)))
-
-                if (
-                        type_col == models.ChangesetAction.TYPE_APPLIED and
-                        changeset_action_server_map):
-                    server = changeset_action_server_map.server
-                    server_name = server.name
-                    environment_name = None
-                    if server.environment:
-                        environment_name = server.environment.name
-                    type_col = (
-                        u'%s (server: %s, environment: %s)' % (
-                            type_col, server_name, environment_name))
-                elif(
-                        type_col == models.ChangesetAction.TYPE_APPLIED_FAILED and
-                        changeset_action_server_map):
-                    server = changeset_action_server_map.server
-                    server_name = server.name
-                    environment_name = None
-                    if server.environment:
-                        environment_name = server.environment.name
-                    type_col = (
-                        u'%s (server: %s, environment: %s)' % (
-                            type_col, server_name, environment_name))
-
-
-                changeset_actions.append(
-                    dict(
-                        changeset_action=changeset_action,
-                        changeset_action_server_map=
-                        changeset_action_server_map,
-                        type=type_col,
-                        changeset_applies_url=changeset_applies_url))
-
-            if request.method == 'POST':
-                try:
-                    if u'submit_update' in request.POST:
-                        #
-                        # Update changeset
-                        #
-                        return redirect(
-                            'schemanizer_changeset_update', changeset.id)
-
-                    elif u'submit_review' in request.POST:
-                        #
-                        # Set changeset review status to 'in_progress'
-                        #
-                        return redirect(
-                            'schemanizer_changeset_review',
-                            changeset.id)
-
-                    elif u'submit_approve' in request.POST:
-                        #
-                        # Approve changeset.
-                        #
-                        with transaction.commit_on_success():
-                            changeset_logic.changeset_approve(
-                                changeset=changeset, user=user)
-                        messages.success(
-                            request, u'Changeset [id=%s] was approved.' % (
-                                changeset.id,))
-
-                    elif u'submit_reject' in request.POST:
-                        #
-                        # Reject changeset.
-                        #
-                        with transaction.commit_on_success():
-                            changeset_logic.changeset_reject(
-                                changeset=changeset, user=user)
-                        messages.success(
-                            request, u'Changeset [id=%s] was rejected.' % (
-                                changeset.id,))
-
-                    elif u'submit_delete' in request.POST:
-                        #
-                        # Delete changeset.
-                        #
-                        return redirect(reverse(
-                            'schemanizer_changeset_soft_delete',
-                            args=[changeset.id]))
-
-                    elif u'submit_apply' in request.POST:
-                        #
-                        # Apply changeset
-                        #
-                        return redirect(
-                            'schemanizer_changeset_apply', changeset.id)
-
-                    else:
-                        messages.error(request, u'Unknown command.')
-                        log.error(
-                            u'Invalid post.\nrequest.POST=\n%s' % (
-                                pformat(request.POST),))
-
-                except exceptions.PrivilegeError, e:
-                    log.exception('EXCEPTION')
-                    messages.error(request, u'%s' % (e,))
-
-            user_privileges = privileges_logic.UserPrivileges(user)
-            can_update = user_privileges.can_update_changeset(changeset)
-            can_set_review_status_to_in_progress = (
-                privileges_logic.can_user_review_changeset(user, changeset))
-            can_approve = user_privileges.can_approve_changeset(changeset)
-            can_reject = user_privileges.can_reject_changeset(changeset)
-            can_soft_delete = (
-                privileges_logic.UserPrivileges(user)
-                .can_soft_delete_changeset(changeset))
-            can_apply = privileges_logic.can_user_apply_changeset(
-                user, changeset)
-
-            if (
-                    changeset.review_status in [
-                        models.Changeset.REVIEW_STATUS_IN_PROGRESS,
-                        models.Changeset.REVIEW_STATUS_APPROVED,
-                        models.Changeset.REVIEW_STATUS_REJECTED]
-                    ):
-                show_changeset_detail_test_status = True
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_list(request, template='schemanizer/changeset_list.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-        if user_has_access:
-            qs = models.Changeset.objects.get_not_deleted()
-            changesets = []
-            for r in qs:
-                extra=dict(
-                    can_apply=privileges_logic.can_user_apply_changeset(
-                        user, r),
-                    can_review=
-                        privileges_logic.can_user_review_changeset(user, r))
-                changesets.append(dict(r=r, extra=extra))
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-        can_soft_delete = user.role.name in (models.Role.ROLE_ADMIN,)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_apply_old(
-        request, changeset_id, template='schemanizer/changeset_apply.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-        if user_has_access:
-            request_id = utils.generate_request_id(request)
-            changeset = models.Changeset.objects.get(pk=int(changeset_id))
-
-            if not privileges_logic.can_user_apply_changeset(user, changeset):
-                raise exceptions.PrivilegeError(
-                    'User is not allowed to apply changeset.')
-
-            if request.method == 'POST':
-                form = forms.SelectServerForm(request.POST)
-                show_form = True
-                if form.is_valid():
-                    server = models.Server.objects.get(pk=int(
-                        form.cleaned_data['server']))
-                    thread = changeset_apply_logic.start_changeset_apply_thread(
-                        changeset, user, server)
-                    apply_threads[request_id] = thread
-                    poll_thread_status = True
-                    show_form = False
-            else:
-                form = forms.SelectServerForm()
-                show_form = True
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
-def changeset_apply(
-        request, changeset_id, template='schemanizer/changeset_apply.html'):
-    """View for applying changeset."""
-
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-        if user_has_access:
-            request_id = utils.generate_request_id(request)
-            changeset = models.Changeset.objects.get(pk=int(changeset_id))
-
-            environments = models.Environment.objects.all()
-
-            if not privileges_logic.can_user_apply_changeset(user, changeset):
-                raise exceptions.PrivilegeError(
-                    'User is not allowed to apply changeset.')
-
-            # if request.method == 'POST':
-            #     form = forms.SelectServerForm(request.POST)
-            #     show_form = True
-            #     if form.is_valid():
-            #         server = models.Server.objects.get(pk=int(
-            #             form.cleaned_data['server']))
-            #         thread = changeset_apply_logic.start_changeset_apply_thread(
-            #             changeset, user, server)
-            #         apply_threads[request_id] = thread
-            #         poll_thread_status = True
-            #         show_form = False
-            # else:
-            #     form = forms.SelectServerForm()
-            #     show_form = True
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-
     return render_to_response(
         template, locals(), context_instance=RequestContext(request))
 
@@ -699,164 +121,13 @@ def changeset_apply_status(
     return HttpResponse(data_json, mimetype='application/json')
 
 
-@login_required
-def changeset_review(
-        request, changeset_id,
-        template='schemanizer/changeset_review.html'):
-    from schemanizer import tasks
-
-    user_has_access = False
-    try:
-        request_id = utils.generate_request_id(request)
-        changeset = models.Changeset.objects.get(pk=int(changeset_id))
-        user = request.user.schemanizer_user
-        user_has_access = privileges_logic.can_user_review_changeset(
-            user, changeset)
-        schema_version = request.GET.get('schema_version', None)
-        if schema_version:
-            schema_version = models.SchemaVersion.objects.get(
-                pk=int(schema_version))
-
-        if user_has_access:
-            if request.method == 'POST':
-
-                if u'select_schema_version_form_submit' in request.POST:
-                    #
-                    # process select schema version form submission
-                    #
-                    select_schema_version_form = (
-                        forms.SelectSchemaVersionForm(
-                            request.POST,
-                            database_schema=changeset.database_schema))
-                    if select_schema_version_form.is_valid():
-                        schema_version = int(
-                            select_schema_version_form.cleaned_data[
-                                'schema_version'])
-                        # url = reverse(
-                        #     'schemanizer_changeset_review',
-                        #     args=[changeset.id])
-                        # query_string = urllib.urlencode(
-                        #     dict(schema_version=schema_version))
-                        # #
-                        # # redirect to actual changeset syntax validation procedure
-                        # return redirect('%s?%s' % (url, query_string))
-
-                        tasks.review_changeset.delay(
-                            changeset=changeset.pk,
-                            schema_version=schema_version,
-                            user=user.pk)
-                        messages.info(
-                            request,
-                            u'Changeset review has been started, email will '
-                            u'be sent to interested parties when review '
-                            u'procedure is completed.')
-
-                        return redirect('schemanizer_changeset_reviews')
-
-                else:
-                    #
-                    # Invalid POST.
-                    #
-                    messages.error(request, u'Unknown command.')
-
-            else:
-                #
-                # GET
-                #
-
-                if schema_version:
-                    #
-                    # User has selected a schema version already,
-                    # proceed with changeset review.
-                    #
-                    thread = changeset_review_logic.start_changeset_review_thread(
-                        changeset, schema_version, user)
-                    review_threads[request_id] = thread
-                    thread_started = True
-
-                else:
-                    #
-                    # No schema version was selected yet,
-                    # ask one from user
-                    #
-                    select_schema_version_form = forms.SelectSchemaVersionForm(
-                        database_schema=changeset.database_schema)
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
 
 
-def select_environment_servers(
-        request, template='schemanizer/select_environment_servers.html'):
-    """Ajax view for selecting environment servers."""
-
-    if not request.is_ajax():
-        return HttpResponseForbidden(MSG_NOT_AJAX)
-
-    data = {}
-    try:
-        if not request.user.is_authenticated():
-            raise exceptions.Error('Login is required.')
-
-        environment_id = request.GET['environment_id'].strip()
-        changeset_id = request.GET['changeset_id'].strip()
-
-        if environment_id:
-            environment_id = int(environment_id)
-            environment = models.Environment.objects.get(pk=environment_id)
-            servers = models.Server.objects.filter(environment=environment)
-            data['html'] = render_to_string(
-                template, locals(), context_instance=RequestContext(request))
-        else:
-            data['html'] = ''
-
-        data_json = json.dumps(data)
-
-    except Exception, e:
-        msg = 'ERROR %s: %s' % (type(e), e)
-        log.exception(msg)
-        data = dict(error=msg, html='')
-        data_json = json.dumps(data)
-
-    return HttpResponse(data_json, mimetype='application/json')
 
 
-def ajax_get_schema_version(
-        request, template='schemanizer/ajax_get_schema_version.html'):
-    if not request.is_ajax():
-        return HttpResponseForbidden(MSG_NOT_AJAX)
 
-    data = {}
-    try:
-        if not request.user.is_authenticated():
-            raise Exception('Login is required.')
 
-        schema_version_id = request.GET['schema_version_id'].strip()
-        if schema_version_id:
-            schema_version_id = int(schema_version_id)
-            schema_version = models.SchemaVersion.objects.get(
-                pk=schema_version_id)
-            data['schema_version_html'] = render_to_string(
-                template, {'obj': schema_version},
-                context_instance=RequestContext(request))
-        else:
-            data['schema_version_html'] = ''
 
-        data_json = json.dumps(data)
-    except Exception, e:
-        msg = 'ERROR %s: %s' % (type(e), e)
-        log.exception(msg)
-        data = dict(error=msg)
-        data_json = json.dumps(data)
-
-    return HttpResponse(data_json, mimetype='application/json')
 
 
 def changeset_review_status(
@@ -918,12 +189,12 @@ def server_list(request, template='schemanizer/server_list.html'):
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            servers = models.Server.objects.all()
+            servers = Server.objects.all()
 
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
@@ -944,17 +215,17 @@ def server_update(request, id=None, template='schemanizer/server_update.html'):
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
             if id:
-                server = models.Server.objects.get(pk=int(id))
+                server = Server.objects.get(pk=int(id))
             else:
-                server = models.Server()
+                server = Server()
             if request.method == 'POST':
-                form = forms.ServerForm(request.POST, instance=server)
+                form = ServerForm(request.POST, instance=server)
                 if form.is_valid():
                     server = form.save()
                     msg = u'Server [id=%s] was %s.' % (
@@ -963,7 +234,7 @@ def server_update(request, id=None, template='schemanizer/server_update.html'):
                     log.info(msg)
                     return redirect('schemanizer_server_list')
             else:
-                form = forms.ServerForm(instance=server)
+                form = ServerForm(instance=server)
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 
@@ -984,12 +255,12 @@ def server_delete(request, id, template='schemanizer/server_delete.html'):
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            server = models.Server.objects.get(pk=int(id))
+            server = Server.objects.get(pk=int(id))
             if request.method == 'POST':
                 with transaction.commit_on_success():
                     server.delete()
@@ -1011,90 +282,6 @@ def server_delete(request, id, template='schemanizer/server_delete.html'):
 
 
 @login_required
-def schema_version_create(
-        request, server_id,
-        template='schemanizer/schema_version_create.html'):
-    """View for selecting schema to save."""
-
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        role_name = user.role.name
-        user_has_access = (
-            role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
-
-        if user_has_access:
-            server = models.Server.objects.get(pk=int(server_id))
-            conn_opts = {}
-            conn_opts['host'] = server.hostname
-            #if settings.AWS_MYSQL_PORT:
-            #    conn_opts['port'] = settings.AWS_MYSQL_PORT
-            if server.port:
-                conn_opts['port'] = server.port
-            if settings.AWS_MYSQL_USER:
-                conn_opts['user'] = settings.AWS_MYSQL_USER
-            if settings.AWS_MYSQL_PASSWORD:
-                conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
-            conn = MySQLdb.connect(**conn_opts)
-            schema_choices = []
-            with conn as cur:
-                cur.execute('SHOW DATABASES')
-                rows = cur.fetchall()
-                for row in rows:
-                    if row[0] not in ['information_schema', 'mysql']:
-                        schema_choices.append((row[0], row[0]))
-
-            if request.method == 'POST':
-                form = forms.SelectRemoteSchemaForm(request.POST)
-                form.fields['schema'].choices = schema_choices
-
-                if form.is_valid():
-                    schema = form.cleaned_data['schema']
-                    structure = utils.mysql_dump(schema, **conn_opts)
-
-                    #
-                    # Save dump as latest version for the schema
-                    #
-                    database_schema, __ = models.DatabaseSchema.objects.get_or_create(
-                        name=schema)
-                    checksum = utils.schema_hash(structure)
-                    create_schema = True
-                    try:
-                        schema_version = models.SchemaVersion.objects.get(
-                            database_schema=database_schema,
-                            checksum=checksum)
-                        schema_version.ddl=structure
-                        schema_version.save()
-                        msg = u'Schema version for database schema `%s` was updated.' % (
-                            database_schema.name,)
-                    except ObjectDoesNotExist:
-                        models.SchemaVersion.objects.create(
-                            database_schema=database_schema,
-                            ddl=structure,
-                            checksum=utils.schema_hash(structure))
-                        msg = u'New schema version for database schema `%s` was saved.' % (
-                            database_schema.name,)
-                    log.info(msg)
-                    messages.success(request, msg)
-                    return redirect('schemanizer_server_list')
-
-            else:
-                form = forms.SelectRemoteSchemaForm()
-                form.fields['schema'].choices = schema_choices
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-@login_required
 def database_schema_list(
         request, template='schemanizer/database_schema_list.html'):
     user_has_access = False
@@ -1103,12 +290,12 @@ def database_schema_list(
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            database_schemas = models.DatabaseSchema.objects.all()
+            database_schemas = DatabaseSchema.objects.all()
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 
@@ -1128,14 +315,14 @@ def schema_version_list(
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         database_schema = request.GET.get('database_schema', None)
 
         if user_has_access:
-            schema_versions = models.SchemaVersion.objects.all()
+            schema_versions = SchemaVersion.objects.all()
             if database_schema:
                 schema_versions = schema_versions.filter(
                     database_schema_id=int(database_schema))
@@ -1159,12 +346,12 @@ def schema_version_view(
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            r = models.SchemaVersion.objects.get(pk=int(schema_version_id))
+            r = SchemaVersion.objects.get(pk=int(schema_version_id))
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 
@@ -1183,14 +370,14 @@ def environment_list(request, template='schemanizer/environment_list.html'):
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DEVELOPER,
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DEVELOPER,
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            qs = models.Environment.objects.all()
+            qs = Environment.objects.all()
             can_add = can_update = can_delete = role_name in [
-                models.Role.ROLE_DBA, models.Role.ROLE_ADMIN]
+                Role.ROLE_DBA, Role.ROLE_ADMIN]
         else:
             messages.error(request, MSG_USER_NO_ACCESS)
 
@@ -1211,14 +398,14 @@ def environment_update(
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
             if environment_id:
-                r = models.Environment.objects.get(pk=int(environment_id))
+                r = Environment.objects.get(pk=int(environment_id))
             else:
-                r = models.Environment()
+                r = Environment()
             if request.method == 'POST':
                 form = forms.EnvironmentForm(request.POST, instance=r)
                 if form.is_valid():
@@ -1254,11 +441,11 @@ def environment_del(
         role_name = user.role.name
         user_has_access = (
             role_name in [
-                models.Role.ROLE_DBA,
-                models.Role.ROLE_ADMIN])
+                Role.ROLE_DBA,
+                Role.ROLE_ADMIN])
 
         if user_has_access:
-            r = models.Environment.objects.get(pk=int(environment_id))
+            r = Environment.objects.get(pk=int(environment_id))
             if request.method == 'POST':
                 r.delete()
                 messages.success(
@@ -1281,25 +468,25 @@ def server_discover(request, template='schemanizer/server_discover.html'):
     try:
         user = request.user.schemanizer_user
         user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER, models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
+            Role.ROLE_DEVELOPER, Role.ROLE_DBA,
+            Role.ROLE_ADMIN)
         if user_has_access:
             if request.method == 'POST':
                 for k, v in request.POST.iteritems():
                     if k.startswith('server_'):
                         name, hostname, port = v.split(',')
                         with transaction.commit_on_success():
-                            qs = models.Server.objects.filter(
+                            qs = Server.objects.filter(
                                 hostname=hostname, port=port)
                             if not qs.exists():
-                                models.Server.objects.create(
+                                Server.objects.create(
                                     name=name, hostname=hostname, port=port)
                                 messages.info(
                                     request,
                                     u'Server %s was added.' % (hostname,))
                 return redirect('schemanizer_server_list')
             else:
-                mysql_servers = utils.discover_mysql_servers(
+                mysql_servers = discover_mysql_servers(
                     settings.NMAP_HOSTS, settings.NMAP_PORTS)
 
         else:
@@ -1312,304 +499,17 @@ def server_discover(request, template='schemanizer/server_discover.html'):
         template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def schema_version_download_ddl(request, schema_version_id):
-    try:
-        schema_version_id = int(schema_version_id)
-        schema_version = models.SchemaVersion.objects.get(
-            pk=schema_version_id)
-
-        ddl_file = StringIO.StringIO()
-        ddl_file.write(schema_version.ddl)
-
-        response = HttpResponse(
-            FileWrapper(ddl_file), content_type='text/plain')
-        response['Content-Disposition'] = u'attachment; filename=schema_version_%s.sql' % (
-            schema_version.pk,)
-        response['Content-Length'] = ddl_file.tell()
-        ddl_file.seek(0)
-        return response
-    except Exception, e:
-        msg = u'ERROR %s: %s' % (type(e), e)
-        log.exception(msg)
-        messages.error(request, msg)
-    raise Http404
 
 
-def ajax_changeset_applies(
-        request, template='schemanizer/ajax_changeset_applies.html'):
-    """Ajax view for changeset applies."""
-
-    if not request.is_ajax():
-        return HttpResponseForbidden(MSG_NOT_AJAX)
-
-    data = {}
-    try:
-        if not request.user.is_authenticated():
-            raise exceptions.Error('Login is required.')
-
-        request_id = request.GET.get('request_id')
-        task_id = request.GET.get('task_id')
-        task_ids = None
-        if task_id:
-            task_ids = [task_id]
-        else:
-            if request_id and request_id in request.session:
-                task_ids = request.session[request_id]
-        filter_kwargs = dict(name='schemanizer.tasks.apply_changeset')
-        if task_ids:
-            filter_kwargs.update(dict(task_id__in=task_ids))
-        task_states = djcelery_models.TaskState.objects.filter(
-            **filter_kwargs)
-        task_state_list = []
-        for task_state in task_states:
-            ar = AsyncResult(task_state.task_id)
-            result = ar.result
-
-            if result and isinstance(result, dict) and 'message' in result:
-                show_message = True
-            else:
-                show_message = False
-
-            changeset_id = None
-            server = None
-            changeset_detail_applies = []
-            if result:
-                changeset_id = result.get('changeset_id')
-                server_id = result.get('server_id')
-                changeset_detail_apply_ids = result.get(
-                    'changeset_detail_apply_ids')
-                if server_id:
-                    server = models.Server.objects.get(pk=server_id)
-                if changeset_detail_apply_ids:
-                    for id in changeset_detail_apply_ids:
-                        try:
-                            changeset_detail_applies.append(
-                                models.ChangesetDetailApply.objects.get(pk=id))
-                        except:
-                            pass
-
-            task_state_list.append(dict(
-                task_id=task_state.task_id,
-                tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
-                state=task_state.state,
-                result=result,
-                show_message=show_message,
-                changeset_id=changeset_id,
-                server=server,
-                changeset_detail_applies=changeset_detail_applies
-            ))
-
-        data['html'] = render_to_string(
-            template, locals(), context_instance=RequestContext(request))
-
-        data_json = json.dumps(data)
-
-    except Exception, e:
-        msg = 'ERROR %s: %s' % (type(e), e)
-        log.exception(msg)
-        data = dict(error=msg, html='')
-        data_json = json.dumps(data)
-
-    return HttpResponse(data_json, mimetype='application/json')
 
 
-@login_required
-def changeset_applies(request, template='schemanizer/changeset_applies.html'):
-    """View for displaying statuses of changeset applies."""
-
-    request_id = request.GET.get('request_id')
-    task_id = request.GET.get('task_id')
-
-    get_params = {}
-    if request_id:
-        get_params['request_id'] = request_id
-    if task_id:
-        get_params['task_id'] = task_id
-    ajax_changeset_applies_url = '%s?%s' % (
-        reverse('schemanizer_ajax_changeset_applies'),
-        urllib.urlencode(get_params))
-
-    # task_ids = None
-    # if task_id:
-    #     task_ids = [task_id]
-    # else:
-    #     if request_id and request_id in request.session:
-    #         task_ids = request.session[request_id]
-    # filter_kwargs = dict(name='schemanizer.tasks.apply_changeset')
-    # if task_ids:
-    #     filter_kwargs.update(dict(task_id__in=task_ids))
-    # task_states = djcelery_models.TaskState.objects.filter(
-    #     **filter_kwargs)
-    # task_state_list = []
-    # for task_state in task_states:
-    #     ar = AsyncResult(task_state.task_id)
-    #     result = ar.result
-    #
-    #     if result and isinstance(result, dict) and 'message' in result:
-    #         show_message = True
-    #     else:
-    #         show_message = False
-    #
-    #     changeset_id = None
-    #     server = None
-    #     changeset_detail_applies = []
-    #     if result:
-    #         changeset_id = result.get('changeset_id')
-    #         server_id = result.get('server_id')
-    #         changeset_detail_apply_ids = result.get(
-    #             'changeset_detail_apply_ids')
-    #         log.debug('changeset_detail_apply_ids = %s', changeset_detail_apply_ids)
-    #         if server_id:
-    #             server = models.Server.objects.get(pk=server_id)
-    #         if changeset_detail_apply_ids:
-    #             for id in changeset_detail_apply_ids:
-    #                 changeset_detail_applies.append(
-    #                     models.ChangesetDetailApply.objects.get(pk=id))
-    #             log.debug(changeset_detail_applies)
-    #
-    #     task_state_list.append(dict(
-    #         task_id=task_state.task_id,
-    #         tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
-    #         state=task_state.state,
-    #         result=result,
-    #         show_message=show_message,
-    #         changeset_id=changeset_id,
-    #         server=server,
-    #         changeset_detail_applies=changeset_detail_applies
-    #     ))
-
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
 
 
-def ajax_changeset_reviews(
-        request, template='schemanizer/ajax_changeset_reviews.html'):
-    """Ajax view for on-going changeset review jobs."""
-
-    if not request.is_ajax():
-        return HttpResponseForbidden(MSG_NOT_AJAX)
-
-    data = {}
-    try:
-        if not request.user.is_authenticated():
-            raise exceptions.Error('Login is required.')
-
-        task_states = djcelery_models.TaskState.objects.filter(
-            name='schemanizer.tasks.review_changeset',
-            state__in=states.UNREADY_STATES)
-        task_state_list = []
-        for task_state in task_states:
-            ar = AsyncResult(task_state.task_id)
-            result = ar.result
-            if result and isinstance(result, dict) and 'message' in result:
-                show_message = True
-            else:
-                show_message = False
-            kwargs_obj = {}
-            if task_state.kwargs:
-                try:
-                    kwargs_obj = yaml.load(task_state.kwargs)
-                    if 'changeset' in kwargs_obj:
-                        kwargs_obj['changeset'] = long(kwargs_obj['changeset'])
-                except:
-                    pass
-            changeset_id = kwargs_obj.get('changeset')
-            show_changeset_view_url = False
-            if changeset_id:
-                show_changeset_view_url = (
-                    models.Changeset.objects.filter(pk=changeset_id).exists())
-
-            task_state_list.append(dict(
-                task_id=task_state.task_id,
-                tstamp=djcelery_humanize.naturaldate(task_state.tstamp),
-                state=task_state.state,
-                params=task_state.kwargs,
-                #result=task_state.result,
-                result=result,
-                show_message=show_message,
-                changeset_id=changeset_id,
-                show_changeset_view_url=show_changeset_view_url,
-            ))
-
-        data['html'] = render_to_string(
-            template, locals(), context_instance=RequestContext(request))
-
-        data_json = json.dumps(data)
-
-    except Exception, e:
-        msg = 'ERROR %s: %s' % (type(e), e)
-        log.exception(msg)
-        data = dict(error=msg, html='')
-        data_json = json.dumps(data)
-
-    return HttpResponse(data_json, mimetype='application/json')
 
 
-@login_required
-def changeset_reviews(
-        request, template='schemanizer/changeset_reviews.html'):
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
 
 
-@login_required
-def apply_changeset_to_multiple_hosts(
-        request, changeset_id,
-        template='schemanizer/apply_changeset_to_multiple_hosts.html'):
-    """Apply changeset POST handler."""
 
-    from schemanizer import tasks
 
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            models.Role.ROLE_DEVELOPER,
-            models.Role.ROLE_DBA,
-            models.Role.ROLE_ADMIN)
-        if user_has_access:
-            request_id = utils.generate_request_id(request)
-            changeset = models.Changeset.objects.get(pk=int(changeset_id))
 
-            if not privileges_logic.can_user_apply_changeset(user, changeset):
-                raise exceptions.PrivilegeError(
-                    'User is not allowed to apply changeset.')
-
-            if (
-                    changeset.review_status !=
-                    models.Changeset.REVIEW_STATUS_APPROVED):
-                raise exceptions.Error('Cannot apply unapproved changeset.')
-
-            if request.method == 'POST':
-                log.debug(request.POST)
-
-                server_ids = []
-                for k, v in request.POST.iteritems():
-                    if k.startswith('server_'):
-                        server_ids.append(int(v))
-
-                task_ids = []
-                for server_id in server_ids:
-                    result = tasks.apply_changeset.delay(
-                        changeset.id, user.id, server_id)
-                    task_ids.append(result.task_id)
-
-                request_id = utils.generate_request_id(request)
-                request.session[request_id] = task_ids
-
-                redirect_url = reverse('schemanizer_changeset_applies')
-                redirect_url = '%s?request_id=%s' % (redirect_url, request_id)
-                messages.info(request, 'Added new changeset apply task(s).')
-                return redirect(redirect_url)
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
 

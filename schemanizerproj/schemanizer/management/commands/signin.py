@@ -10,8 +10,8 @@ import requests
 from cmd2 import Cmd, make_option, options
 from requests.auth import HTTPBasicAuth
 from texttable import Texttable
+from changesets.models import Changeset, ChangesetDetail
 
-from schemanizer.models import Changeset, ChangesetDetail
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list

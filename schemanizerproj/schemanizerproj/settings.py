@@ -1,6 +1,7 @@
 # Django settings for schemanizerproj project.
 
 import os
+from django.conf import global_settings
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -109,6 +110,9 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
+    'django.core.context_processors.request',)
+
 ROOT_URLCONF = 'schemanizerproj.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
@@ -138,10 +142,21 @@ INSTALLED_APPS = (
     'tastypie',
     'debug_toolbar',
     'djcelery',
+    'bootstrap-pagination',
 
     #=============
     # project apps
     #=============
+    'events',
+    'users',
+    'servers',
+    'schemaversions',
+    'changesets',
+    'changesetvalidations',
+    'changesettests',
+    'changesetreviews',
+    'changesetapplies',
+    'emails',
     'schemanizer',
 
 )
@@ -197,15 +212,70 @@ LOGGING = {
             'propagate': True,
         },
         'schemanizerproj': {
-            'handlers': ['console', 'file'],
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },
         'schemanizer': {
-            'handlers': ['console', 'file'],
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
-        }
+        },
+        'utils': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'emails': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'events': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'users': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'servers': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'schemaversions': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesets': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesetvalidations': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesettests': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'chnagesetreviews': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'changesetapplies': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
     },
 }
 
@@ -248,13 +318,13 @@ AWS_INSTANCE_TYPE = 'm1.small'
 #
 # MySQL connection options for reviewing changesets
 #
-# If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
-# AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used
+# If MYSQL_HOST is None, the EC2 instance host name is used.
+# MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used
 # in changeset apply operations.
-AWS_MYSQL_HOST = None
-AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = 'sandbox'
-AWS_MYSQL_PASSWORD = 'sandbox'
+MYSQL_HOST = None
+MYSQL_PORT = None
+MYSQL_USER = 'sandbox'
+MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.
 AWS_EC2_INSTANCE_START_WAIT = 60
@@ -284,7 +354,7 @@ DEV_NO_EC2_APPLY_CHANGESET = False
 #   https://api.github.com/repos/palominodb/schemanizer/commits
 CHANGESET_REPO_URL = None
 AUTHORIZATION_TOKEN = None
-# directory to look for changesets, for example: /changesets
+# directory to look for changesets (no leading/trailing slash), for example: changesets
 CHANGESET_PATH = None
 # Github requests that return multiple items will be paginated to
 # this number of items (upto maximum of 100)

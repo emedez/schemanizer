@@ -1,0 +1,49 @@
+{% extends 'site_base.html' %}
+
+{% block title %}{{ block.super }} - Detected Host Candidates{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        <h2>Detected Host Candidates</h2>
+        {% if mysql_servers %}
+            <form action="" method="post">
+                {% csrf_token %}
+                <p>
+                    Environment:
+                    <select name="environment">
+                        {% for environment in environments %}
+                            <option value="{{ environment.pk }}">{{ environment.name }}</option>
+                        {% endfor %}
+                    </select>
+                </p>
+                <table class="table table-striped table-condensed table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Name</th>
+                            <th>Hostname</th>
+                            <th>Port</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in mysql_servers %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="server_{{ forloop.counter0 }}" value="{{ i.name }},{{ i.hostname }},{{ i.port }}"/>
+                                </td>
+                                <td>{{ i.name }}</td>
+                                <td>{{ i.hostname }}</td>
+                                <td>{{ i.port }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="form-actions">
+                    <input type="submit" name="submit" value="Add selected items to server list"/>
+                </div>
+            </form>
+        {% else %}
+            <p class="text-info"><em>No servers found!</em></p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

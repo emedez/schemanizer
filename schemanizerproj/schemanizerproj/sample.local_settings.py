@@ -88,13 +88,13 @@ AWS_INSTANCE_TYPE = 'm1.small'
 #
 # MySQL connection options for reviewing changesets
 #
-# If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
-# AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used
+# If MYSQL_HOST is None, the EC2 instance host name is used.
+# MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used
 # in changeset apply operations.
-AWS_MYSQL_HOST = None
-AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = 'sandbox'
-AWS_MYSQL_PASSWORD = 'sandbox'
+MYSQL_HOST = None
+MYSQL_PORT = None
+MYSQL_USER = 'sandbox'
+MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.
 AWS_EC2_INSTANCE_START_WAIT = 60
@@ -120,7 +120,7 @@ CHANGESET_REPO_URL = None
 # for example:
 # $ curl -u username -d '{"scopes":["repo"],"note":"Schemanizer repo access token."}' https:/api.github.com/authorizations
 AUTHORIZATION_TOKEN = None
-# directory to look for changesets, for example: /changesets
+# directory to look for changesets (no leading/trailing slash), for example: changesets
 CHANGESET_PATH = None
 # Github requests that return multiple items will be paginated to
 # this number of items (upto maximum of 100)

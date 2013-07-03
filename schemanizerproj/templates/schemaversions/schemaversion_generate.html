@@ -1,0 +1,12 @@
+{% extends 'site_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ block.super }} - Select Remote Schema{% endblock %}
+
+{% block contents %}
+    {% if view.allow_user_access %}
+        {% if form %}
+            {% crispy form form.helper %}
+        {% endif %}
+    {% endif %}
+{% endblock %}

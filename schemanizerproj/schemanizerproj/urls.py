@@ -34,6 +34,13 @@ urlpatterns = patterns('',
     # url(r'^schemanizerproj/', include('schemanizerproj.foo.urls')),
     url(r'^$', 'schemanizer.views.home', name='home'),
 
+    url(r'^events/', include('events.urls')),
+    url(r'^servers/', include('servers.urls')),
+    url(r'^schema-versions/', include('schemaversions.urls')),
+    url(r'^users/', include('users.urls')),
+    url(r'^changesets/', include('changesets.urls')),
+    url(r'^changesetreviews/', include('changesetreviews.urls')),
+    url(r'^changesetapplies/', include('changesetapplies.urls')),
     url(r'^schemanizer/', include('schemanizer.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

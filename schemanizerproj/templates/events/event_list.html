@@ -1,0 +1,38 @@
+{% extends 'site_base.html' %}
+{% load bootstrap_pagination %}
+
+{% block title %}{{ block.super }} - Events{% endblock %}
+
+{% block contents %}
+    <h2>Events</h2>
+    {% if object_list %}
+
+        <table class="table table-striped table-condensed table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Datetime</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in object_list %}
+                    <tr>
+                        <td>{{ obj.id }}</td>
+                        <td>{{ obj.datetime }}</td>
+                        <td>{{ obj.type }}</td>
+                        <td>{{ obj.description }}</td>
+                        <td>{{ obj.user }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% bootstrap_paginate page_obj range=10 %}
+
+    {% else %}
+        <p class="text-info"><em>No records found.</em></p>
+    {% endif %}
+{% endblock %}
