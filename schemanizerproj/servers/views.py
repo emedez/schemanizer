@@ -156,9 +156,13 @@ class DiscoverMySqlServers(TemplateView):
         context = super(DiscoverMySqlServers, self).get_context_data(**kwargs)
         context['mysql_servers'] = server_discovery.discover_mysql_servers(
             settings.NMAP_HOSTS, settings.NMAP_PORTS)
+        context['environments'] = models.Environment.objects.all()
+        print list(context['environments'])
         return context
 
     def post(self, request, *args, **kwargs):
+        environment = models.Environment.objects.get(
+            pk=int(request.POST['environment']))
         for k, v in request.POST.iteritems():
             if k.startswith('server_'):
                 name, hostname, port = v.split(',')
@@ -166,7 +170,8 @@ class DiscoverMySqlServers(TemplateView):
                     hostname=hostname, port=port)
                 if not servers.exists():
                     server = models.Server.objects.create(
-                        name=name, hostname=hostname, port=port)
+                        name=name, hostname=hostname, port=port,
+                        environment=environment)
                     event_handlers.on_server_added(request, server)
         return redirect('servers_server_list')
 
