@@ -27,9 +27,12 @@ def on_changeset_submit(changeset, request=None):
         messages.success(request, msg)
     log.info(msg)
 
+    schema_version_pk = None
+    if changeset.review_version:
+        schema_version_pk = changeset.review_version.pk
     changesetreviews_tasks.review_changeset.delay(
         changeset_pk=changeset.pk,
-        schema_version_pk=changeset.review_version.pk,
+        schema_version_pk=schema_version_pk,
         reviewed_by_user_pk=user.pk)
 
     if request:

@@ -204,6 +204,7 @@ class ChangesetReview(object):
                 #self.changeset.after_version = after_version
                 self.changeset.before_version = None
                 self.changeset.after_version = None
+                self.changeset.review_version = self.schema_version
                 self.changeset.save()
 
                 if (

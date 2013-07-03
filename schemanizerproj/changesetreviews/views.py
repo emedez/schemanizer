@@ -200,13 +200,18 @@ def changeset_review(
                             request.POST,
                             database_schema=changeset.database_schema))
                     if select_schema_version_form.is_valid():
-                        schema_version = int(
+                        schema_version_pk = int(
                             select_schema_version_form.cleaned_data[
                                 'schema_version'])
+                        schema_version = (
+                            schemaversions_models.SchemaVersion.objects.get(
+                                pk=schema_version_pk))
+                        changeset.review_version = schema_version
+                        changeset.save()
 
                         tasks.review_changeset.delay(
                             changeset_pk=changeset.pk,
-                            schema_version_pk=schema_version,
+                            schema_version_pk=schema_version.pk,
                             reviewed_by_user_pk=user.pk)
                         messages.info(
                             request,

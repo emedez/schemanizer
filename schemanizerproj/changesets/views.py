@@ -302,7 +302,7 @@ class ChangesetUpdate(TemplateView):
     def get(self, request, *args, **kwargs):
         self.setup()
 
-        self.changeset_form = forms.ChangesetForm(instance=self.changeset)
+        self.changeset_form = forms.ChangesetNoReviewVersionForm(instance=self.changeset)
         self.changeset_detail_formset = self.ChangesetDetailFormSet(
             instance=self.changeset)
 
@@ -313,7 +313,7 @@ class ChangesetUpdate(TemplateView):
 
         try:
             if self.can_update_changeset:
-                self.changeset_form = forms.ChangesetForm(
+                self.changeset_form = forms.ChangesetNoReviewVersionForm(
                     request.POST, instance=self.changeset)
                 self.changeset_detail_formset = self.ChangesetDetailFormSet(
                     request.POST, instance=self.changeset)

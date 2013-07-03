@@ -91,7 +91,8 @@ class Changeset(utils_models.TimeStampedModel):
     is_deleted = models.BooleanField(default=False)
     review_version = models.ForeignKey(
         'schemaversions.SchemaVersion', db_column='review_version',
-        null=True, default=None, on_delete=models.SET_NULL, related_name='+',
+        null=True, blank=True,
+        default=None, on_delete=models.SET_NULL, related_name='+',
         help_text='Target schema version when running a changeset review.')
     before_version = models.ForeignKey(
         'schemaversions.SchemaVersion', db_column='before_version', null=True,
@@ -111,23 +112,23 @@ class Changeset(utils_models.TimeStampedModel):
     def __unicode__(self):
         return u'Changeset [id=%s]' % self.pk
 
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        database_schema = None
-        try:
-            database_schema = self.database_schema
-        except:
-            pass
-        review_version = None
-        try:
-            review_version = self.review_version
-        except:
-            pass
-        if database_schema and review_version:
-            if database_schema.pk != review_version.database_schema.pk:
-                raise ValidationError(
-                    'Invalid schema version, it should be related to the '
-                    'selected database schema.')
+    # def clean(self):
+    #     from django.core.exceptions import ValidationError
+    #     database_schema = None
+    #     try:
+    #         database_schema = self.database_schema
+    #     except:
+    #         pass
+    #     review_version = None
+    #     try:
+    #         review_version = self.review_version
+    #     except:
+    #         pass
+    #     if database_schema and review_version:
+    #         if database_schema.pk != review_version.database_schema.pk:
+    #             raise ValidationError(
+    #                 'Invalid schema version, it should be related to the '
+    #                 'selected database schema.')
 
 
 class ChangesetDetail(utils_models.TimeStampedModel):
