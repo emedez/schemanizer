@@ -78,7 +78,8 @@ class SchemaVersionGenerate(FormView):
                 self.server, schema_name, connection_options))
         event_handlers.on_schema_version_generated(
             self.request, schema_version, schema_version_created)
-        return super(SchemaVersionGenerate, self).form_valid(form)
+        return redirect('schemaversions_schema_version', schema_version.pk)
+        #return super(SchemaVersionGenerate, self).form_valid(form)
 
 
 class SchemaVersion(DetailView):

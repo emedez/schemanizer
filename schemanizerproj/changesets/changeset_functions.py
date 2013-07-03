@@ -223,7 +223,7 @@ def save_changeset_yaml(yaml_obj, f, commit):
     log.debug(yaml_obj)
     repo_filename = f['filename']
     blob_url = f['blob_url']
-    
+
     committer_user = None
     if 'committer' in commit and 'login' in commit['committer']:
         user_qs = users_models.User.objects.filter(
