@@ -14,6 +14,7 @@ from dateutil import parser, relativedelta
 import requests
 import yaml
 from changesets.models import Changeset
+from emails.tasks import send_changeset_submission_through_repo_failed_mail
 
 from schemanizer import exceptions, models
 from schemanizer.logic import changeset_logic
@@ -78,7 +79,7 @@ def process_file(f, commit):
                     log.exception(msg)
                     if not content:
                         content = ''
-                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                    send_changeset_submission_through_repo_failed_mail.delay(
                         content, msg, f, commit)
 
                 print
@@ -117,7 +118,7 @@ def process_file(f, commit):
                     log.exception(msg)
                     if not content:
                         content = ''
-                    tasks.send_changeset_submission_through_repo_failed_mail.delay(
+                    send_changeset_submission_through_repo_failed_mail.delay(
                         content, msg, f, commit)
 
                 print

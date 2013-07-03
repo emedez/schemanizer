@@ -4,18 +4,11 @@ import time
 
 from celery import current_task, task
 
-from schemanizer.logic import (
-    mail_logic)
 
 log = logging.getLogger(__name__)
 
 
-@task(ignore_result=True)
-def send_changeset_submission_through_repo_failed_mail(
-        changeset_content, error_message, file_data, commit_data):
-    """Task for sending changeset-submission-through-repo-failed email."""
-    mail_logic.send_changeset_submission_through_repo_failed_mail(
-        changeset_content, error_message, file_data, commit_data)
+
 
 
 

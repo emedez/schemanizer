@@ -63,66 +63,6 @@ def readme(request, template='schemanizer/readme.html'):
         template, locals(), context_instance=RequestContext(request))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@login_required
-def changeset_apply_old(
-        request, changeset_id, template='schemanizer/changeset_apply.html'):
-    user_has_access = False
-    try:
-        user = request.user.schemanizer_user
-        user_has_access = user.role.name in (
-            Role.ROLE_DEVELOPER,
-            Role.ROLE_DBA,
-            Role.ROLE_ADMIN)
-        if user_has_access:
-            request_id = utilities.generate_request_id(request)
-            changeset = Changeset.objects.get(pk=int(changeset_id))
-
-            if not privileges_logic.can_user_apply_changeset(user, changeset):
-                raise PrivilegeError(
-                    'User is not allowed to apply changeset.')
-
-            if request.method == 'POST':
-                form = forms.SelectServerForm(request.POST)
-                show_form = True
-                if form.is_valid():
-                    server = Server.objects.get(pk=int(
-                        form.cleaned_data['server']))
-                    thread = changeset_apply_logic.start_changeset_apply_thread(
-                        changeset, user, server)
-                    apply_threads[request_id] = thread
-                    poll_thread_status = True
-                    show_form = False
-            else:
-                form = forms.SelectServerForm()
-                show_form = True
-
-        else:
-            messages.error(request, MSG_USER_NO_ACCESS)
-    except Exception, e:
-        log.exception('EXCEPTION')
-        messages.error(request, u'%s' % (e,))
-    return render_to_response(
-        template, locals(), context_instance=RequestContext(request))
-
-
-
-
-
 def changeset_apply_status(
         request, request_id,
         template='schemanizer/changeset_apply_status.html',

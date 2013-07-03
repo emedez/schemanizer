@@ -1,10 +1,10 @@
 {% extends 'site_base.html' %}
 
-{% block title %}{{ block.super }} - MySQL Servers{% endblock %}
+{% block title %}{{ block.super }} - Detected Host Candidates{% endblock %}
 
 {% block contents %}
     {% if view.allow_user_access %}
-        <h2>MySQL Servers</h2>
+        <h2>Detected Host Candidates</h2>
         {% if mysql_servers %}
             <form action="." method="post">
                 {% csrf_token %}

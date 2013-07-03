@@ -1,18 +1,14 @@
 import logging
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils import timezone
-from emails import tasks as emails_tasks
-from schemanizer.logic import ec2_logic, mysql_logic, changeset_test_logic
 from users import models as users_models
 from schemaversions import models as schemaversions_models
 from changesets import models as changesets_models
-from changesettests import models as changesettests_models
 from changesetvalidations import models as changesetvalidations_models
 from changesettests import changeset_testing
-from utils import exceptions
+from utils import exceptions, ec2_functions, mysql_functions
 from . import models, event_handlers
 
 
@@ -86,7 +82,7 @@ class ChangesetReview(object):
                 timestamp=timezone.now())
 
             if not self.no_ec2:
-                ec2_instance_starter = ec2_logic.EC2InstanceStarter(
+                ec2_instance_starter = ec2_functions.EC2InstanceStarter(
                     region=settings.AWS_REGION,
                     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -122,7 +118,7 @@ class ChangesetReview(object):
                 if settings.AWS_MYSQL_PASSWORD:
                     connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
 
-                connection_tester = mysql_logic.MySQLServerConnectionTester(
+                connection_tester = mysql_functions.MySQLServerConnectionTester(
                     connection_options=connection_options,
                     connect_pre_delay=settings.AWS_MYSQL_START_WAIT,
                     connect_timeout=settings.AWS_MYSQL_CONNECT_TIMEOUT,
