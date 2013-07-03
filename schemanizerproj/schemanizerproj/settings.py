@@ -354,7 +354,7 @@ DEV_NO_EC2_APPLY_CHANGESET = False
 #   https://api.github.com/repos/palominodb/schemanizer/commits
 CHANGESET_REPO_URL = None
 AUTHORIZATION_TOKEN = None
-# directory to look for changesets, for example: /changesets
+# directory to look for changesets (no leading/trailing slash), for example: changesets
 CHANGESET_PATH = None
 # Github requests that return multiple items will be paginated to
 # this number of items (upto maximum of 100)
