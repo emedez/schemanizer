@@ -1,15 +1,12 @@
 """General changeset logic."""
 import logging
-import pprint
 
 from django.db import transaction
 from django.utils import timezone
-from changesets.event_handlers import on_changeset_submit
-from changesets.models import Changeset, ChangesetDetail, ChangesetAction
+from changesets.models import Changeset, ChangesetAction
 from emails.email_functions import send_mail_changeset_submitted, send_mail_changeset_updated
 
 from schemanizer.logic import privileges_logic
-from schemaversions.models import DatabaseSchema
 from users.models import User
 from utils.exceptions import PrivilegeError
 from utils.helpers import get_model_instance
@@ -39,142 +36,10 @@ def delete_changeset(changeset):
 
 
 
-def update_changeset_yaml(yaml_obj, f, commit):
-    """Updates existing changeset from YAML document."""
-
-    log.debug(yaml_obj)
-    repo_filename = f['filename']
-    blob_url = f['blob_url']
-
-    committer_user = None
-    if 'committer' in commit and 'login' in commit['committer']:
-        user_qs = User.objects.filter(
-            github_login=commit['committer']['login'])
-        if user_qs.exists():
-            committer_user = user_qs[0]
-
-    qs = Changeset.objects.filter(repo_filename=repo_filename)
-    if not qs.exists():
-        log.warn('Changeset does not exists.')
-        return None
-    changeset = qs[0]
-
-    with transaction.commit_on_success():
-        ChangesetDetail.objects.filter(changeset=changeset).delete()
-
-        changeset_obj = yaml_obj['changeset']
-        new_changeset_obj = {}
-        for k, v in changeset_obj.iteritems():
-            if (k in [
-                    'database_schema', 'type', 'classification']):
-                new_changeset_obj[k] = v
-            else:
-                log.warn(u'Ignored changeset field %s.' % (k,))
-        changeset_obj = new_changeset_obj
-        changeset_obj['database_schema'] = DatabaseSchema.objects.get(
-            name=changeset_obj['database_schema'])
-        changeset_obj['version_control_url'] = blob_url
-        log.debug(pprint.pformat(changeset_obj))
-        for k, v in changeset_obj.iteritems():
-            setattr(changeset, k, v)
-        changeset.review_status = Changeset.REVIEW_STATUS_NEEDS
-        changeset.save()
-
-        for changeset_detail_obj in yaml_obj['changeset_details']:
-            changeset_detail_obj['changeset'] = changeset
-            new_changeset_detail_obj = {}
-            for k, v in changeset_detail_obj.iteritems():
-                if (k in
-                        [
-                            'description', 'apply_sql', 'revert_sql',
-                            'apply_verification_sql',
-                            'revert_verification_sql',
-                            'changeset']):
-                    new_changeset_detail_obj[k] = v
-                else:
-                    log.warn(u'Ignored changeset detail field %s.' % (k,))
-            changeset_detail_obj = new_changeset_detail_obj
-            log.debug(pprint.pformat(changeset_detail_obj))
-            ChangesetDetail.objects.create(**changeset_detail_obj)
-
-        ChangesetAction.objects.create(
-            changeset=changeset,
-            type=ChangesetAction.TYPE_CHANGED_WITH_DATA_FROM_GITHUB_REPO,
-            timestamp=timezone.now())
-
-    send_mail_changeset_updated(changeset)
-    log.debug('changeset = %s' % (changeset,))
-    return changeset
 
 
-def save_changeset_yaml(yaml_obj, f, commit):
-    """Saves changeset from YAML document."""
 
-    log.debug(yaml_obj)
-    repo_filename = f['filename']
-    blob_url = f['blob_url']
 
-    committer_user = None
-    if 'committer' in commit and 'login' in commit['committer']:
-        user_qs = User.objects.filter(
-            github_login=commit['committer']['login'])
-        if user_qs.exists():
-            committer_user = user_qs[0]
-
-    if Changeset.objects.filter(repo_filename=repo_filename).exists():
-        log.warn('Changeset is already existing.')
-        return
-
-    with transaction.commit_on_success():
-        changeset_obj = yaml_obj['changeset']
-        new_changeset_obj = {}
-        for k, v in changeset_obj.iteritems():
-            if (
-                    k in [
-                        'database_schema', 'type', 'classification',
-                        'submitted_by']):
-                new_changeset_obj[k] = v
-            else:
-                log.warn(u'Ignored changeset field %s.' % (k,))
-        changeset_obj = new_changeset_obj
-        changeset_obj['database_schema'] = DatabaseSchema.objects.get(
-            name=changeset_obj['database_schema'])
-        if committer_user:
-            changeset_obj['submitted_by'] = committer_user
-        else:
-            changeset_obj['submitted_by'] = User.objects.get(
-                name=changeset_obj['submitted_by'])
-        changeset_obj['submitted_at'] = timezone.now()
-        changeset_obj['repo_filename'] = repo_filename
-        changeset_obj['version_control_url'] = blob_url
-        log.debug(pprint.pformat(changeset_obj))
-        changeset = Changeset.objects.create(**changeset_obj)
-
-        for changeset_detail_obj in yaml_obj['changeset_details']:
-            changeset_detail_obj['changeset'] = changeset
-            new_changeset_detail_obj = {}
-            for k, v in changeset_detail_obj.iteritems():
-                if (k in
-                        [
-                            'description', 'apply_sql', 'revert_sql',
-                            'apply_verification_sql',
-                            'revert_verification_sql',
-                            'changeset']):
-                    new_changeset_detail_obj[k] = v
-                else:
-                    log.warn(u'Ignored changeset detail field %s.' % (k,))
-            changeset_detail_obj = new_changeset_detail_obj
-            log.debug(pprint.pformat(changeset_detail_obj))
-            ChangesetDetail.objects.create(**changeset_detail_obj)
-
-        ChangesetAction.objects.create(
-            changeset=changeset,
-            type=ChangesetAction.TYPE_CREATED_WITH_DATA_FROM_GITHUB_REPO,
-            timestamp=timezone.now())
-
-    on_changeset_submit(changeset)
-
-    return changeset
 
 
 def changeset_submit(changeset, changeset_details, user):

@@ -10,16 +10,14 @@ log = logging.getLogger(__name__)
 
 def on_changeset_submit(changeset, request=None):
     """Queues tasks for changeset submit event."""
-    user = None
-    if request:
-        user = request.user.schemanizer_user
+    user = changeset.submitted_by
 
     msg = 'Changeset [id=%s] was submitted.' % changeset.pk
     events_models.Event.objects.create(
         datetime=timezone.now(),
         type=events_models.Event.TYPE.changeset_submitted,
         description=msg,
-        user=request.user.schemanizer_user)
+        user=user)
 
     emails_tasks.send_mail_changeset_submitted.delay(changeset.pk)
 
