@@ -23,10 +23,10 @@ def apply_changeset(changeset, applied_by, server, message_callback=None,
             'User is not allowed to apply changeset.')
 
     connection_options = {}
-    if settings.AWS_MYSQL_USER:
-        connection_options['user'] = settings.AWS_MYSQL_USER
-    if settings.AWS_MYSQL_PASSWORD:
-        connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
+    if settings.MYSQL_USER:
+        connection_options['user'] = settings.MYSQL_USER
+    if settings.MYSQL_PASSWORD:
+        connection_options['passwd'] = settings.MYSQL_PASSWORD
 
     changeset_apply_obj = ChangesetApply(changeset, applied_by, server,
                                          connection_options, message_callback,

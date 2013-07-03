@@ -111,12 +111,12 @@ class ChangesetReview(object):
                 connection_options = {}
                 if host:
                     connection_options['host'] = host
-                if settings.AWS_MYSQL_PORT:
-                    connection_options['port'] = settings.AWS_MYSQL_PORT
-                if settings.AWS_MYSQL_USER:
-                    connection_options['user'] = settings.AWS_MYSQL_USER
-                if settings.AWS_MYSQL_PASSWORD:
-                    connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
+                if settings.MYSQL_PORT:
+                    connection_options['port'] = settings.MYSQL_PORT
+                if settings.MYSQL_USER:
+                    connection_options['user'] = settings.MYSQL_USER
+                if settings.MYSQL_PASSWORD:
+                    connection_options['passwd'] = settings.MYSQL_PASSWORD
 
                 connection_tester = mysql_functions.MySQLServerConnectionTester(
                     connection_options=connection_options,

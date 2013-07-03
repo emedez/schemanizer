@@ -318,13 +318,13 @@ AWS_INSTANCE_TYPE = 'm1.small'
 #
 # MySQL connection options for reviewing changesets
 #
-# If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
-# AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used
+# If MYSQL_HOST is None, the EC2 instance host name is used.
+# MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used
 # in changeset apply operations.
-AWS_MYSQL_HOST = None
-AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = 'sandbox'
-AWS_MYSQL_PASSWORD = 'sandbox'
+MYSQL_HOST = None
+MYSQL_PORT = None
+MYSQL_USER = 'sandbox'
+MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.
 AWS_EC2_INSTANCE_START_WAIT = 60

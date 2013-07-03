@@ -59,8 +59,8 @@ class SchemaVersionGenerate(FormView):
         self.server = servers_models.Server.objects.get(
             pk=int(self.kwargs['server_pk']))
         connection_options = {
-            'user': settings.AWS_MYSQL_USER,
-            'passwd': settings.AWS_MYSQL_PASSWORD
+            'user': settings.MYSQL_USER,
+            'passwd': settings.MYSQL_PASSWORD
         }
         form.fields['schema'].choices = [
             (schema, schema)
@@ -70,8 +70,8 @@ class SchemaVersionGenerate(FormView):
     def form_valid(self, form):
         schema_name = form.cleaned_data['schema']
         connection_options = {
-            'user': settings.AWS_MYSQL_USER,
-            'passwd': settings.AWS_MYSQL_PASSWORD
+            'user': settings.MYSQL_USER,
+            'passwd': settings.MYSQL_PASSWORD
         }
         schema_version, schema_version_created = (
             schema_functions.generate_schema_version(
@@ -103,8 +103,8 @@ class SchemaVersion(DetailView):
                 schema_version.database_schema.generate_server_data(
                     servers=servers_models.Server.objects.all(),
                     connection_options={
-                        'user': settings.AWS_MYSQL_USER,
-                        'passwd': settings.AWS_MYSQL_PASSWORD
+                        'user': settings.MYSQL_USER,
+                        'passwd': settings.MYSQL_PASSWORD
                     })
                 url = reverse('servers_server_data_list')
                 params = urllib.urlencode(

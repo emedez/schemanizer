@@ -86,10 +86,10 @@ def start_changeset_apply_thread(changeset, user, server):
             'User is not allowed to apply changeset.')
 
     connection_options = {}
-    if settings.AWS_MYSQL_USER:
-        connection_options['user'] = settings.AWS_MYSQL_USER
-    if settings.AWS_MYSQL_PASSWORD:
-        connection_options['passwd'] = settings.AWS_MYSQL_PASSWORD
+    if settings.MYSQL_USER:
+        connection_options['user'] = settings.MYSQL_USER
+    if settings.MYSQL_PASSWORD:
+        connection_options['passwd'] = settings.MYSQL_PASSWORD
 
     thread = ChangesetApplyThread(changeset, user, server, connection_options)
     thread.start()

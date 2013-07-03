@@ -16,10 +16,10 @@ def save_schema_dump(server, database_schema_name, user):
     conn_opts['host'] = server.hostname
     if server.port:
         conn_opts['port'] = server.port
-    if settings.AWS_MYSQL_USER:
-        conn_opts['user'] = settings.AWS_MYSQL_USER
-    if settings.AWS_MYSQL_PASSWORD:
-        conn_opts['passwd'] = settings.AWS_MYSQL_PASSWORD
+    if settings.MYSQL_USER:
+        conn_opts['user'] = settings.MYSQL_USER
+    if settings.MYSQL_PASSWORD:
+        conn_opts['passwd'] = settings.MYSQL_PASSWORD
 
     structure = mysql_functions.dump_schema(database_schema_name, **conn_opts)
 
