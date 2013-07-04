@@ -528,6 +528,7 @@ Options:
 ```
 
 The following is an example of a changeset YAML file content:
+
 ```
 changeset:
     database_schema: schemanizer_test_1
