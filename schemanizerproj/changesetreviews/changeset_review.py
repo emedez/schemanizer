@@ -231,7 +231,8 @@ class ChangesetReview(object):
                     changeset=self.changeset,
                     schema_version=self.schema_version,
                     results_log='',
-                    success=not self.has_errors)
+                    success=not self.has_errors,
+                    task_id=self.task_id)
 
                 log.info('Changeset was reviewed, id=%s.' % (
                     self.changeset.pk,))
@@ -244,7 +245,8 @@ class ChangesetReview(object):
             models.ChangesetReview.objects.create(
                 changeset=self.changeset,
                 schema_version=self.schema_version,
-                results_log=msg, success=False)
+                results_log=msg, success=False,
+                task_id=self.task_id)
 
         finally:
             if ec2_instance_starter:

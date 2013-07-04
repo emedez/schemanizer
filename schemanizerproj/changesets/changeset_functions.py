@@ -14,13 +14,26 @@ log = logging.getLogger(__name__)
 
 def submit_changeset(
         from_form=True, changeset_form=None, changeset_detail_formset=None,
-        submitted_by=None, request=None):
-    changeset = changeset_form.save(commit=False)
-    changeset.submitted_by = submitted_by
-    changeset.submitted_at = timezone.now()
-    changeset.save()
-    changeset_form.save_m2m()
-    changeset_detail_formset.save()
+        submitted_by=None, request=None,
+        changeset=None, changeset_detail_list=None):
+
+    if from_form:
+        changeset = changeset_form.save(commit=False)
+        changeset.submitted_by = submitted_by
+        changeset.submitted_at = timezone.now()
+        changeset.save()
+        changeset_form.save_m2m()
+        changeset_detail_formset.save()
+    else:
+        assert changeset is not None
+        changeset.submitted_by = submitted_by
+        changeset.submitted_at = timezone.now()
+        changeset.save()
+
+        if changeset_detail_list:
+            for changeset_detail in changeset_detail_list:
+                changeset_detail.changeset = changeset
+                changeset_detail.save()
 
     models.ChangesetAction.objects.create(
         changeset=changeset,
@@ -66,22 +79,54 @@ def approve_changeset(changeset, approved_by, request=None):
 
 def update_changeset(
         from_form=True, changeset_form=None, changeset_detail_formset=None,
-        updated_by=None, request=None):
+        updated_by=None, request=None,
+        changeset=None, changeset_detail_list=None,
+        to_be_deleted_changeset_detail_list=None):
 
     if not updated_by and request:
         updated_by = request.user.schemanizer_user
 
-    changeset = changeset_form.save(commit=False)
+    if from_form:
+        changeset = changeset_form.save(commit=False)
+
     if privileges_logic.UserPrivileges(updated_by).can_update_changeset(changeset):
-        #
-        # Update changeset
-        #
-        changeset.review_status = changeset.REVIEW_STATUS_NEEDS
-        changeset.save()
-        changeset_form.save_m2m()
-        #
-        # Save changeset details
-        changeset_detail_formset.save()
+        if from_form:
+            #
+            # Update changeset
+            #
+            changeset.review_status = changeset.REVIEW_STATUS_NEEDS
+            changeset.save()
+            changeset_form.save_m2m()
+            #
+            # Save changeset details
+            changeset_detail_formset.save()
+        else:
+            if to_be_deleted_changeset_detail_list:
+                for tbdc in to_be_deleted_changeset_detail_list:
+                    if (
+                            tbdc.pk and tbdc.changeset and
+                            tbdc.changeset.id == changeset.id):
+                        tbdc.delete()
+                    else:
+                        raise exceptions.Error(
+                            'to_be_deleted_changeset_details contain and '
+                            'invalid changeset detail.')
+
+            changeset.review_status = changeset.REVIEW_STATUS_NEEDS
+            changeset.save()
+
+            for cd in changeset_detail_list:
+                if cd.pk:
+                    if cd.changeset.id == changeset.id:
+                        cd.save()
+                    else:
+                        raise exceptions.Error(
+                            'One of the changeset details have '
+                            'invalid changeset value.')
+                else:
+                    cd.changeset = changeset
+                    cd.save()
+
         #
         # Create entry on changeset actions
         models.ChangesetAction.objects.create(

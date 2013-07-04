@@ -171,6 +171,7 @@ $ curl -u admin:admin http://localhost:8000/api/v1/user/
             "auth_user": "/api/v1/auth_user/1/",
             "created_at": "2013-04-03T17:02:34",
             "email": "admin@example.com",
+            "github_login": null,
             "id": 1,
             "name": "admin",
             "resource_uri": "/api/v1/user/1/",
@@ -181,6 +182,7 @@ $ curl -u admin:admin http://localhost:8000/api/v1/user/
             "auth_user": "/api/v1/auth_user/2/",
             "created_at": "2013-04-29T19:11:10",
             "email": "dba@example.com",
+            "github_login": "test",
             "id": 2,
             "name": "dba",
             "resource_uri": "/api/v1/user/2/",
@@ -207,6 +209,7 @@ $ curl -u admin:admin http://localhost:8000/api/v1/user/1/
     "auth_user": "/api/v1/auth_user/1/",
     "created_at": "2013-04-03T17:02:34",
     "email": "admin@example.com",
+    "github_login": null,
     "id": 1,
     "name": "admin",
     "resource_uri": "/api/v1/user/1/",
@@ -239,6 +242,7 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"name": "dev2", "ema
     "auth_user": "/api/v1/auth_user/8/",
     "created_at": "2013-05-09T01:50:08.416342",
     "email": "dev2@example.com",
+    "github_login": null,
     "id": 8,
     "name": "dev2",
     "resource_uri": "/api/v1/user/7/",
@@ -272,6 +276,7 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"name": "dev_2", "em
     "auth_user": "/api/v1/auth_user/9/",
     "created_at": "2013-05-09T01:56:18",
     "email": "dev_2@example.com",
+    "github_login": null,
     "id": 8,
     "name": "dev_2",
     "resource_uri": "/api/v1/user/8/",
@@ -770,9 +775,11 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
             "created_at": "2013-04-30T23:23:00",
             "database_schema": "/api/v1/database_schema/5/",
             "id": 4,
-            "is_deleted": 0,
+            "is_deleted": false,
+            "repo_filename": "changesets/0703a01.yaml",
             "resource_uri": "/api/v1/changeset/4/",
             "review_status": "approved",
+            "review_version": "/api/v1/schema_version/1/",
             "reviewed_at": "2013-05-03T00:19:19",
             "reviewed_by": "/api/v1/user/2/",
             "submitted_at": "2013-04-30T23:23:00",
@@ -814,9 +821,10 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
             "created_at": "2013-05-10T00:21:41",
             "database_schema": "/api/v1/database_schema/5/",
             "id": 9,
-            "is_deleted": 0,
+            "is_deleted": false,
             "resource_uri": "/api/v1/changeset/9/",
             "review_status": "needs",
+            "review_version": "/api/v1/schema_version/1/",
             "reviewed_at": null,
             "reviewed_by": null,
             "submitted_at": "2013-05-10T00:21:41",
@@ -851,9 +859,11 @@ $ curl -H 'Content-Type: application/json' -u admin:admin http://localhost:8000/
     "created_at": "2013-04-30T23:23:00",
     "database_schema": "/api/v1/database_schema/5/",
     "id": 4,
-    "is_deleted": 0,
+    "is_deleted": false,
+    "repo_filename": "",
     "resource_uri": "/api/v1/changeset/4/",
     "review_status": "approved",
+    "review_version": "/api/v1/schema_version/1/",
     "reviewed_at": "2013-05-03T00:19:19",
     "reviewed_by": "/api/v1/user/2/",
     "submitted_at": "2013-04-30T23:23:00",
@@ -879,7 +889,7 @@ POST data should be a JSON string in the following form:
         'database_schema_id': 1,
         'type': 'DDL:Table:Create',
         'classification': 'painless',
-        'version_control_url': ''
+        'review_version_id': ''
     },
     'changeset_details': [
         {
@@ -894,7 +904,7 @@ POST data should be a JSON string in the following form:
 
 Sample usage and output:
 ```
-$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"database_schema_id": 1, "type": "DDL:Table:Create", "classification": "painless", "version_control_url": ""}, "changeset_details": [{"type": "add", "description": "create a table", "apply_sql": "create table t1 (id int primary key auto_increment)", "revert_sql": "drop table t1"}]}' -u dev:dev http://localhost:8000/api/v1/changeset/submit/
+$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"database_schema_id": 1, "type": "DDL:Table:Create", "classification": "painless", "review_version_id": "1"}, "changeset_details": [{"type": "add", "description": "create a table", "apply_sql": "create table t1 (id int primary key auto_increment)", "revert_sql": "drop table t1"}]}' -u dev:dev http://localhost:8000/api/v1/changeset/submit/
 
 {
     "after_version": null,
@@ -905,9 +915,11 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
     "created_at": "2013-05-10T00:21:41.454048",
     "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
-    "is_deleted": 0,
+    "is_deleted": false,
+    "repo_filename": "",
     "resource_uri": "/api/v1/changeset/9/",
     "review_status": "needs",
+    "review_version": "/api/v1/schema_version/1/",
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41.452454",
@@ -980,9 +992,10 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
     "created_at": "2013-05-10T00:21:41",
     "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
-    "is_deleted": 0,
+    "is_deleted": false,
     "resource_uri": "/api/v1/changeset/9/",
     "review_status": "approved",
+    "review_version": "/api/v1/schema_version/1/",
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
@@ -1014,9 +1027,11 @@ $ curl -H 'Content-Type: application/json' -X POST -u dba:dba http://localhost:8
     "created_at": "2013-05-10T00:21:41",
     "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
-    "is_deleted": 1,
+    "is_deleted": true,
+    "repo_filename": "",
     "resource_uri": "/api/v1/changeset/9/",
     "review_status": "needs",
+    "review_version": "/api/v1/schema_version/1/",
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
@@ -1039,14 +1054,14 @@ POST data should be a JSON object in the form:
 ```
 {
     'changeset': {
-        'database_schema_id': 5,
+        'database_schema_id': 11,
         'type': 'DDL:Table:Drop',
         'classification': 'impacting',
-        'version_control_url': 'https://'
+        'review_version_id': 1
     },
     'changeset_details': [
         {
-            'id': 10,
+            'id': 8,
             'type': 'add',
             'description': 'ccreate a table',
             'apply_sql': 'ccreate table t1...',
@@ -1059,14 +1074,14 @@ POST data should be a JSON object in the form:
             'revert_sql': 'create table t2...'
         }
     ],
-    'to_be_deleted_changeset_detail_ids': [11, 12]
+    'to_be_deleted_changeset_detail_ids': [11]
 }
 ```
 Note: changeset_details with no IDs will be inserted while those without IDs will be updated.
 
 Sample usage and output:
 ```
-$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"database_schema_id": 5, "type": "DDL:Table:Drop", "classification": "impacting", "version_control_url": "https://"}, "changeset_details": [{"id": 10, "type": "add", "description": "ccreate a table", "apply_sql": "ccreate table t1...", "revert_sql": "ddrop table t1"}, {"type": "drop", "description": "drop a table", "apply_sql": "drop table t2", "revert_sql": "create table t2..."}], "to_be_deleted_changeset_detail_ids": [11, 12]}' -u dba:dba http://localhost:8000/api/v1/changeset/update/9/
+$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"database_schema_id": 11, "type": "DDL:Table:Drop", "classification": "impacting", "review_version_id": 1}, "changeset_details": [{"id": 8, "type": "add", "description": "ccreate a table", "apply_sql": "ccreate table t1...", "revert_sql": "ddrop table t1"}, {"type": "drop", "description": "drop a table", "apply_sql": "drop table t2", "revert_sql": "create table t2..."}], "to_be_deleted_changeset_detail_ids": [11]}' -u dba:dba http://localhost:8000/api/v1/changeset/update/9/
 
 {
     "after_version": null,
@@ -1077,9 +1092,11 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset": {"datab
     "created_at": "2013-05-10T00:21:41",
     "database_schema": "/api/v1/database_schema/5/",
     "id": 9,
-    "is_deleted": 0,
+    "is_deleted": false,
+    "repo_filename": "",
     "resource_uri": "/api/v1/changeset/9/",
     "review_status": "needs",
+    "review_version": "/api/v1/schema_version/1/",
     "reviewed_at": null,
     "reviewed_by": null,
     "submitted_at": "2013-05-10T00:21:41",
@@ -1113,8 +1130,7 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -X POST --data '{"schema_version_id": 11}' -u dba:dba http://localhost:8000/api/v1/changeset/review/11/
 
 {
-    "request_id": "69c6d6be71ac7c4bf908b4d7f986d4004dabbd97",
-    "thread_started": true
+    "task_id": "1e7cb249-a3af-4d6c-a6f0-c939525d2014"
 }
 ```
 
@@ -1122,32 +1138,24 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"schema_version_id":
 
 API:
 ```
-GET /api/v1/changeset/review_status/<request_id>/
+GET /api/v1/changeset/review_status/<task_id>/
 ```
-request_id - ID of the request that started the review thread.
+task_id - Changeset review task ID
 
 Sample usage and output:
 ```
-$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/review_status/69c6d6be71ac7c4bf908b4d7f986d4004dabbd97/
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/review_status/f613e459-73f0-475b-a161-22b3bdede60f/
 
 {
-    {
-    "thread_changeset_test_ids": [
-        27
+    "changeset_test_ids": [
+        10
     ],
-    "thread_changeset_validation_ids": [
-        23
+    "changeset_validation_ids": [
+        11
     ],
-    "thread_errors": [],
-    "thread_is_alive": false,
-    "thread_messages": [
-        [
-            "info",
-            "Review thread ended."
-        ]
-    ],
-    "thread_review_results_url": "http://localhost:8000/schemanizer/changeset/view-review-results/11/?changeset_validation_ids=23&changeset_test_ids=27"
+    "review_results_url": "http://localhost:8000/changesetreviews/result/1/"
 }
+
 ```
 
 
@@ -1170,12 +1178,12 @@ Use the Changeset Apply Status API to check the status/result of changeset apply
 
 Sample usage and output:
 ```
-$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset_id": 11, "server_id": 1}' -u dba:dba http://localhost:8000/api/v1/changeset/apply/
+$ curl -H 'Content-Type: application/json' -X POST --data '{"changeset_id": 1, "server_id": 1}' -u dba:dba http://localhost:8000/api/v1/changeset/apply/
 
 {
-    "request_id": "ae54b91bc38d0256a48c95b18b7103b06a83313a",
-    "thread_started": true
+    "task_id": "1e7cb249-a3af-4d6c-a6f0-c939525d2014"
 }
+
 ```
 
 
@@ -1183,32 +1191,28 @@ $ curl -H 'Content-Type: application/json' -X POST --data '{"changeset_id": 11, 
 
 API:
 ```
-GET /api/v1/changeset/apply_status/<request_id>/
+GET /api/v1/changeset/apply_status/<task_id>/
 ```
-request_id - ID of the request that started the apply thread.
+task_id - Changeset apply task ID.
 
 Sample usage and output:
 ```
-$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/apply_status/ae54b91bc38d0256a48c95b18b7103b06a83313a/
+$ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset/apply_status/4f04a70c-d60a-4761-9fe0-647e6eb7d381/
 
 {
-    "thread_changeset_detail_apply_ids": [
-        15
-    ],
-    "thread_is_alive": false,
-    "thread_messages": [
-        [
-            "info",
-            "Changeset apply thread started."
-        ],
-        [
-            "info",
-            "create table t3 (\r\n  id int primary key auto_increment\r\n)"
-        ],
-        [
-            "info",
-            "Changeset apply thread ended."
-        ]
+    "apply_results_url": "http://localhost:8000/changesetapplies/changeset-applies/?task_id=4f04a70c-d60a-4761-9fe0-647e6eb7d381",
+    "changeset_detail_apply_ids": [15],
+    "messages": [
+        {
+            "extra": null,
+            "message": "ERROR <class 'utils.exceptions.Error'>: Schema version on host is unknown.",
+            "message_type": "error"
+        },
+        {
+            "extra": null,
+            "message": "Changeset apply job completed.",
+            "message_type": "info"
+        }
     ]
 }
 ```
@@ -1250,33 +1254,18 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
     },
     "objects": [
         {
-            "after_checksum": "",
-            "apply_sql": "ccreate table t1...",
-            "before_checksum": "",
-            "changeset": "/api/v1/changeset/9/",
+            "after_checksum": "a71b849f6fad54a3ee877187b7e8360e",
+            "apply_sql": "create table t01 (id int primary key auto_increment) engine=InnoDB default charset=utf8",
             "apply_verification_sql": "",
-            "created_at": "2013-05-10T00:21:41",
-            "description": "ccreate a table",
-            "id": 10,
-            "resource_uri": "/api/v1/changeset_detail/10/",
-            "revert_sql": "ddrop table t1",
-            "type": "add",
-            "updated_at": "2013-05-10T01:24:15",
-            "volumetric_values": ""
-        },
-        {
-            "after_checksum": "",
-            "apply_sql": "drop table t2",
-            "before_checksum": "",
-            "changeset": "/api/v1/changeset/9/",
-            "apply_verification_sql": "",
-            "created_at": "2013-05-10T01:24:15",
-            "description": "drop a table",
-            "id": 13,
-            "resource_uri": "/api/v1/changeset_detail/13/",
-            "revert_sql": "create table t2...",
-            "type": "drop",
-            "updated_at": "2013-05-10T01:24:15",
+            "before_checksum": "00000000000000000000000000000000",
+            "changeset": "/api/v1/changeset/1/",
+            "created_at": "2013-07-03T19:04:07",
+            "description": "create table t01",
+            "id": 1,
+            "resource_uri": "/api/v1/changeset_detail/1/",
+            "revert_sql": "drop table t01",
+            "revert_verification_sql": "",
+            "updated_at": "2013-07-04T20:47:11",
             "volumetric_values": ""
         }
     ]
@@ -1296,18 +1285,18 @@ Sample usage and output:
 $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/v1/changeset_detail/10/
 
 {
-    "after_checksum": "",
-    "apply_sql": "ccreate table t1...",
-    "before_checksum": "",
-    "changeset": "/api/v1/changeset/9/",
+    "after_checksum": "a71b849f6fad54a3ee877187b7e8360e",
+    "apply_sql": "create table t01 (id int primary key auto_increment) engine=InnoDB default charset=utf8",
     "apply_verification_sql": "",
-    "created_at": "2013-05-10T00:21:41",
-    "description": "ccreate a table",
-    "id": 10,
-    "resource_uri": "/api/v1/changeset_detail/10/",
-    "revert_sql": "ddrop table t1",
-    "type": "add",
-    "updated_at": "2013-05-10T01:24:15",
+    "before_checksum": "00000000000000000000000000000000",
+    "changeset": "/api/v1/changeset/1/",
+    "created_at": "2013-07-03T19:04:07",
+    "description": "create table t01",
+    "id": 1,
+    "resource_uri": "/api/v1/changeset_detail/1/",
+    "revert_sql": "drop table t01",
+    "revert_verification_sql": "",
+    "updated_at": "2013-07-04T20:47:11",
     "volumetric_values": ""
 }
 ```

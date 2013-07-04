@@ -70,7 +70,7 @@ def on_changeset_updated(changeset, request=None):
         messages.success(request, msg)
     log.info(msg)
 
-    emails_tasks.send_mail_changeset_updated(changeset.pk)
+    emails_tasks.send_mail_changeset_updated.delay(changeset.pk)
 
 
 def on_changeset_rejected(changeset, request=None):

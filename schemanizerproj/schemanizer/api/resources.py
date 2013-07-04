@@ -1,32 +1,34 @@
 import json
 import logging
+from celery.result import AsyncResult
 from django.conf.urls import url
 from django.contrib.auth.models import User as AuthUser
+from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
+from djcelery import models as djcelery_models
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
-from changesetapplies.models import ChangesetDetailApply
-from changesets.changeset_functions import approve_changeset, reject_changeset, soft_delete_changeset
-from changesets.models import Changeset, ChangesetDetail
-from changesettests.models import TestType, ChangesetTest
-from changesetvalidations.models import ValidationType, ChangesetValidation
-from schemanizer.api import authorizations
-from schemanizer.logic import changeset_apply_logic
-from schemanizer.logic import changeset_logic
-from schemanizer.logic import changeset_review_logic
-from schemanizer.logic import user_logic
-from schemanizer.logic import server_logic
-from schemaversions.models import DatabaseSchema, SchemaVersion
-from servers.models import Environment, Server
-from users.models import Role, User
-from users.user_functions import add_user, update_user
-from utils import helpers
+from changesetapplies import (
+    models as changesetapplies_models,
+    tasks as changesetapplies_tasks)
+from changesets import changeset_functions
+from changesets import models as changesets_models
+from changesetreviews import (
+    models as changesetreviews_models,
+    tasks as changesetreviews_tasks)
+from changesettests import models as changesettests_models
+from changesetvalidations import models as changesetvalidations_models
+from schemaversions import (
+    models as schemaversions_models,
+    schema_functions)
+from servers import models as servers_models
+from users import models as users_models
+from users import user_functions
+from . import authorizations
 
 log = logging.getLogger(__name__)
-
-review_threads = {}
-apply_threads = {}
 
 
 class AuthUserResource(ModelResource):
@@ -42,7 +44,7 @@ class AuthUserResource(ModelResource):
 
 class RoleResource(ModelResource):
     class Meta:
-        queryset = Role.objects.all()
+        queryset = users_models.Role.objects.all()
         resource_name = 'role'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -55,7 +57,7 @@ class UserResource(ModelResource):
     role = fields.ForeignKey(RoleResource, 'role', null=True, blank=True)
 
     class Meta:
-        queryset = User.objects.all()
+        queryset = users_models.User.objects.all()
         resource_name = 'user'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -105,8 +107,10 @@ class UserResource(ModelResource):
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
             password = raw_post_data['password']
-            user = add_user(
-                request.user.schemanizer_user, name, email, role_id, password)
+            user = user_functions.add_user(
+                name, email, role_id, password,
+                perform_checks=True,
+                check_user=request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -137,8 +141,10 @@ class UserResource(ModelResource):
             name = raw_post_data['name']
             email = raw_post_data['email']
             role_id = int(raw_post_data['role_id'])
-            user = update_user(
-                request.user.schemanizer_user, user_id, name, email, role_id)
+            user = user_functions.update_user(
+                user_id, name, email, role_id,
+                perform_checks=True,
+                check_user=request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -157,7 +163,10 @@ class UserResource(ModelResource):
         data = {}
         try:
             user_id = int(kwargs.get('user_id'))
-            user_logic.delete_user(request.user.schemanizer_user, user_id)
+            user = users_models.User.objects.get(pk=user_id)
+            user_functions.delete_user(
+                user, perform_checks=True,
+                check_user=request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -170,7 +179,7 @@ class UserResource(ModelResource):
 
 class EnvironmentResource(ModelResource):
     class Meta:
-        queryset = Environment.objects.all()
+        queryset = servers_models.Environment.objects.all()
         resource_name = 'environment'
         authentication = BasicAuthentication()
         authorization = authorizations.EnvironmentAuthorization()
@@ -183,7 +192,7 @@ class ServerResource(ModelResource):
         EnvironmentResource, 'environment', null=True, blank=True)
 
     class Meta:
-        queryset = Server.objects.all()
+        queryset = servers_models.Server.objects.all()
         resource_name = 'server'
         authentication = BasicAuthentication()
         authorization = Authorization()
@@ -193,7 +202,7 @@ class ServerResource(ModelResource):
 
 class DatabaseSchemaResource(ModelResource):
     class Meta:
-        queryset = DatabaseSchema.objects.all()
+        queryset = schemaversions_models.DatabaseSchema.objects.all()
         resource_name = 'database_schema'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -208,9 +217,11 @@ class DatabaseSchemaResource(ModelResource):
 class SchemaVersionResource(ModelResource):
     database_schema = fields.ForeignKey(
         DatabaseSchemaResource, 'database_schema', null=True, blank=True)
+    pulled_from = fields.ForeignKey(
+        ServerResource, 'pulled_from', null=True, blank=True)
 
     class Meta:
-        queryset = SchemaVersion.objects.all()
+        queryset = schemaversions_models.SchemaVersion.objects.all()
         resource_name = 'schema_version'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -249,8 +260,13 @@ class SchemaVersionResource(ModelResource):
             server_id = int(raw_post_data['server_id'])
             database_schema_name = raw_post_data['database_schema_name']
 
-            schema_version = server_logic.save_schema_dump(
-                server_id, database_schema_name, request.user.schemanizer_user)
+            server = servers_models.Server.objects.get(pk=server_id)
+
+            schema_version = (
+                schema_functions.save_schema_dump(
+                    server, database_schema_name,
+                    perform_checks=True,
+                    check_user=request.user.schemanizer_user))
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -274,9 +290,11 @@ class ChangesetResource(ModelResource):
         SchemaVersionResource, 'before_version', null=True, blank=True)
     after_version = fields.ForeignKey(
         SchemaVersionResource, 'after_version', null=True, blank=True)
+    review_version = fields.ForeignKey(
+        SchemaVersionResource, 'review_version', null=True, blank=True)
 
     class Meta:
-        queryset = Changeset.objects.all()
+        queryset = changesets_models.Changeset.objects.all()
         resource_name = 'changeset'
         authentication = BasicAuthentication()
         list_allowed_methods = ['get']
@@ -325,7 +343,7 @@ class ChangesetResource(ModelResource):
                 name='api_changeset_review',
             ),
             url(
-                r'^(?P<resource_name>%s)/review_status/(?P<request_id>.+?)/$' % (
+                r'^(?P<resource_name>%s)/review_status/(?P<task_id>.+?)/$' % (
                     self._meta.resource_name,),
                 self.wrap_view('changeset_review_status'),
                 name='api_changeset_review_status',
@@ -336,7 +354,7 @@ class ChangesetResource(ModelResource):
                 name='api_changeset_apply',
             ),
             url(
-                r'^(?P<resource_name>%s)/apply_status/(?P<request_id>.+?)/$' % (
+                r'^(?P<resource_name>%s)/apply_status/(?P<task_id>.+?)/$' % (
                     self._meta.resource_name,),
                 self.wrap_view('changeset_apply_status'),
                 name='api_changeset_apply_status',
@@ -358,19 +376,13 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = helpers.generate_request_id(request)
             post_data = json.loads(request.raw_post_data)
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
 
-            thread = changeset_apply_logic.start_changeset_apply_thread(
-                changeset_id, request.user.schemanizer_user, server_id)
-            apply_threads[request_id] = thread
-
-            data.update(dict(
-                thread_started=True,
-                request_id=request_id
-            ))
+            async_result = changesetapplies_tasks.apply_changeset.delay(
+                changeset_id, request.user.schemanizer_user.pk, server_id)
+            data['task_id'] = async_result.id
 
         except Exception, e:
             log.exception('EXCEPTION')
@@ -387,31 +399,29 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = kwargs['request_id']
-            thread = apply_threads.get(request_id, None)
+            task_id = kwargs['task_id']
+            task_states = djcelery_models.TaskState.objects.filter(task_id=task_id)
+            messages = []
+            changeset_detail_apply_ids = []
 
-            if not thread:
-                #
-                # There was no running thread associated with the request_id,
-                # It is either request ID is invalid or thread had completed
-                # already and was removed from the dictionary.
-                #
-                data['error_message'] = 'Invalid request ID.'
+            if task_states.exists():
+                task_state = task_states[0]
+                async_result = AsyncResult(task_state.task_id)
+                result = async_result.result
 
-            else:
-                thread_is_alive = thread.is_alive()
-                data['thread_is_alive'] = thread_is_alive
-                if thread.has_errors:
-                    data['thread_has_errors'] = thread.has_errors
-                data['thread_messages'] = thread.messages
-                data['thread_changeset_detail_apply_ids'] = (
-                    thread.changeset_detail_apply_ids)
+                if result:
+                    messages = result.get('messages', [])
+                    changeset_detail_apply_ids = result.get(
+                        'changeset_detail_apply_ids', [])
 
-                if not thread_is_alive:
-                    #
-                    # Remove dead threads from dictionary
-                    #
-                    apply_threads.pop(request_id, None)
+            data['messages'] = messages
+            data['changeset_detail_apply_ids'] = changeset_detail_apply_ids
+            site = Site.objects.get_current()
+            apply_results_url = 'http://%s%s?task_id=%s' % (
+                site.domain,
+                reverse('changesetapplies_changeset_applies'),
+                task_id)
+            data['apply_results_url'] = apply_results_url
 
         except Exception, e:
             log.exception('EXCEPTION')
@@ -421,47 +431,37 @@ class ChangesetResource(ModelResource):
         return self.create_response(request, bundle)
 
     def changeset_review_status(self, request, **kwargs):
-        """Checks review thread status."""
+        """Checks review status."""
 
         self.method_check(request, allowed=['get'])
         self.is_authenticated(request)
 
         data = {}
         try:
-            request_id = kwargs['request_id']
-            thread = review_threads.get(request_id, None)
+            task_id = kwargs['task_id']
+            changeset_review_qs = (
+                changesetreviews_models.ChangesetReview.objects.filter(
+                    task_id=task_id))
+            data['changeset_test_ids'] = []
+            data['changeset_validation_ids'] = []
+            if changeset_review_qs.exists():
+                changeset_review_obj = changeset_review_qs[0]
+                changeset = changeset_review_obj.changeset
+                changeset_tests = changesettests_models.ChangesetTest.objects.filter(
+                    changeset_detail__changeset=changeset)
+                changeset_validations = changesetvalidations_models.ChangesetValidation.objects.filter(
+                    changeset=changeset)
+                if changeset_tests:
+                    data['changeset_test_ids'] = [obj.pk for obj in changeset_tests]
+                if changeset_validations:
+                    data['changeset_validation_ids'] = [obj.pk for obj in changeset_validations]
 
-            if not thread:
-                #
-                # There was no running thread associated with the request_id,
-                # It is either request ID is invalid or thread had completed
-                # already and was removed from the dictionary.
-                #
-                data['error_message'] = 'Invalid request ID.'
-
-            else:
-                thread_is_alive = thread.is_alive()
-                data['thread_is_alive'] = thread_is_alive
-                data['thread_errors'] = thread.errors
-                if thread.messages:
-                    data['thread_messages'] = thread.messages[-1:]
-                else:
-                    data['thread_messages'] = []
-                if thread.changeset_validations:
-                    data['thread_changeset_validation_ids'] = (
-                        thread.changeset_validation_ids)
-                if thread.changeset_tests:
-                    data['thread_changeset_test_ids'] = thread.changeset_test_ids
-
-                if not thread_is_alive:
-                    #
-                    # Remove dead threads from dictionary
-                    #
-                    review_threads.pop(request_id, None)
-
-                    if thread.review_results_url:
-                        data['thread_review_results_url'] = (
-                            thread.review_results_url)
+                site = Site.objects.get_current()
+                review_results_url = 'http://%s%s' % (
+                    site.domain,
+                    reverse(
+                        'changesetreviews_result', args=[changeset.id]))
+                data['review_results_url'] = review_results_url
 
         except Exception, e:
             log.exception('EXCEPTION')
@@ -479,10 +479,8 @@ class ChangesetResource(ModelResource):
         }
 
         Successful call would have the following keys in the return value:
-            thread_started
-                - set to True
-            request_id
-                - ID of the request that started the review thread
+            task_id
+                - Changeset review task ID
         """
 
         self.method_check(request, allowed=['post'])
@@ -490,21 +488,16 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = helpers.generate_request_id(request)
             changeset_id = int(kwargs.get('changeset_id'))
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
 
-            thread = changeset_review_logic.start_changeset_review_thread(
-                changeset_id, schema_version_id,
-                request.user.schemanizer_user
+            async_result = changesetreviews_tasks.review_changeset.delay(
+                changeset_pk=changeset_id,
+                schema_version_pk=schema_version_id,
+                reviewed_by_user_pk=request.user.schemanizer_user.pk
             )
-
-            review_threads[request_id] = thread
-            data.update(dict(
-                thread_started=True,
-                request_id=request_id
-            ))
+            data['task_id'] = async_result.id
 
         except Exception, e:
             log.exception('EXCEPTION')
@@ -522,7 +515,7 @@ class ChangesetResource(ModelResource):
                 'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
-                'version_control_url': ''
+                'review_version_id': 1,
             },
             'changeset_details': [
                 {
@@ -545,25 +538,39 @@ class ChangesetResource(ModelResource):
             raw_post_data = json.loads(request.raw_post_data)
             allowed_fields = (
                 'database_schema_id', 'type', 'classification',
-                'version_control_url')
+                'review_version_id',)
             changeset_data = raw_post_data['changeset']
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
             if 'database_schema_id' in changeset_data:
                 database_schema_id = int(changeset_data.pop('database_schema_id'))
-                changeset_data['database_schema'] = DatabaseSchema.objects.get(
-                    pk=database_schema_id)
-            changeset = Changeset(**changeset_data)
+                changeset_data['database_schema'] = (
+                    schemaversions_models.DatabaseSchema.objects.get(
+                        pk=database_schema_id))
+            if 'review_version_id' in changeset_data:
+                review_version_id = int(changeset_data.pop('review_version_id'))
+                changeset_data['review_version'] = (
+                    schemaversions_models.SchemaVersion.objects.get(
+                        pk=review_version_id))
+            changeset = changesets_models.Changeset(**changeset_data)
 
             changeset_details_data = raw_post_data['changeset_details']
             changeset_details = []
             for changeset_detail_data in changeset_details_data:
-                changeset_detail = ChangesetDetail(**changeset_detail_data)
+                changeset_detail = changesets_models.ChangesetDetail()
+                for k, v in changeset_detail_data.iteritems():
+                    setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = changeset_logic.changeset_submit(
-                changeset, changeset_details, request.user.schemanizer_user)
+            changeset = changeset_functions.submit_changeset(
+                from_form=False,
+                changeset=changeset,
+                changeset_detail_list=changeset_details,
+                submitted_by=request.user.schemanizer_user,
+                request=request
+            )
+
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -583,7 +590,7 @@ class ChangesetResource(ModelResource):
                 'database_schema_id': 1,
                 'type': 'DDL:Table:Create',
                 'classification': 'painless',
-                'version_control_url': ''
+                'review_version_id': 1
             },
             'changeset_details': [
                 {
@@ -610,19 +617,22 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             changeset_id = int(kwargs.get('changeset_id'))
-            changeset = Changeset.objects.get(pk=changeset_id)
+            changeset = changesets_models.Changeset.objects.get(
+                pk=changeset_id)
 
             post_data = json.loads(request.raw_post_data)
             changeset_data = post_data['changeset']
 
             allowed_fields = (
                 'database_schema_id', 'type', 'classification',
-                'version_control_url')
+                'review_version_id')
             for k, v in changeset_data.iteritems():
                 if k not in allowed_fields:
                     raise Exception('Changeset has invalid field \'%s\'.' % (k,))
                 if k == 'database_schema_id':
-                    database_schema = DatabaseSchema.objects.get(pk=int(v))
+                    database_schema = (
+                        schemaversions_models.DatabaseSchema.objects.get(
+                            pk=int(v)))
                     changeset.database_schema = database_schema
                 else:
                     setattr(changeset, k, v)
@@ -630,25 +640,32 @@ class ChangesetResource(ModelResource):
             to_be_deleted_changeset_detail_ids = post_data['to_be_deleted_changeset_detail_ids']
             to_be_deleted_changeset_details = []
             for cdid in to_be_deleted_changeset_detail_ids:
-                tbdcd = ChangesetDetail.objects.get(pk=int(cdid))
+                tbdcd = changesets_models.ChangesetDetail.objects.get(
+                    pk=int(cdid))
                 to_be_deleted_changeset_details.append(tbdcd)
 
             changeset_details_data = post_data['changeset_details']
             changeset_details = []
             for cdd in changeset_details_data:
                 if 'id' in cdd:
-                    changeset_detail = ChangesetDetail.objects.get(
+                    changeset_detail = changesets_models.ChangesetDetail.objects.get(
                         pk=int(cdd['id']))
                 else:
-                    changeset_detail = ChangesetDetail()
+                    changeset_detail = changesets_models.ChangesetDetail()
                 for k, v in cdd.iteritems():
                     if k not in ('id',):
                         setattr(changeset_detail, k, v)
                 changeset_details.append(changeset_detail)
 
-            changeset = changeset_logic.changeset_update(
-                changeset, changeset_details,
-                to_be_deleted_changeset_details, request.user.schemanizer_user)
+            # changeset = changeset_logic.changeset_update(
+            #     changeset, changeset_details,
+            #     to_be_deleted_changeset_details, request.user.schemanizer_user)
+            changeset = changeset_functions.update_changeset(
+                from_form=False, changeset=changeset,
+                changeset_detail_list=changeset_details,
+                to_be_deleted_changeset_detail_list=to_be_deleted_changeset_details,
+                updated_by=request.user.schemanizer_user,
+                request=request)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -666,8 +683,11 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = reject_changeset(int(kwargs['changeset_id']),
-                                         request.user.schemanizer_user)
+            changeset = changesets_models.Changeset.objects.get(
+                pk=int(kwargs['changeset_id']))
+            changeset = changeset_functions.reject_changeset(
+                changeset,
+                request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -686,8 +706,11 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = approve_changeset(int(kwargs['changeset_id']),
-                                          request.user.schemanizer_user)
+            changeset = changesets_models.Changeset.objects.get(
+                pk=int(kwargs['changeset_id']))
+            changeset = changeset_functions.approve_changeset(
+                changeset,
+                request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -706,8 +729,11 @@ class ChangesetResource(ModelResource):
         changeset = None
         data = {}
         try:
-            changeset = soft_delete_changeset(
-                int(kwargs['changeset_id']), request.user.schemanizer_user)
+            changeset = changesets_models.Changeset.objects.get(
+                pk=int(kwargs['changeset_id'])
+            )
+            changeset = changeset_functions.soft_delete_changeset(
+                changeset, request.user.schemanizer_user)
         except Exception, e:
             log.exception('EXCEPTION')
             data['error_message'] = '%s' % (e,)
@@ -724,7 +750,7 @@ class ChangesetDetailResource(ModelResource):
         ChangesetResource, 'changeset', null=True, blank=True)
 
     class Meta:
-        queryset = ChangesetDetail.objects.all()
+        queryset = changesets_models.ChangesetDetail.objects.all()
         resource_name = 'changeset_detail'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -738,7 +764,7 @@ class ChangesetDetailResource(ModelResource):
 
 class TestTypeResource(ModelResource):
     class Meta:
-        queryset = TestType.objects.all()
+        queryset = changesettests_models.TestType.objects.all()
         resource_name = 'test_type'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -756,7 +782,7 @@ class ChangesetTestResource(ModelResource):
         TestTypeResource, 'test_type', null=True, blank=True)
 
     class Meta:
-        queryset = ChangesetTest.objects.all()
+        queryset = changesettests_models.ChangesetTest.objects.all()
         resource_name = 'changeset_test'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -770,7 +796,7 @@ class ChangesetTestResource(ModelResource):
 
 class ValidationTypeResource(ModelResource):
     class Meta:
-        queryset = ValidationType.objects.all()
+        queryset = changesetvalidations_models.ValidationType.objects.all()
         resource_name = 'validation_type'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -788,7 +814,7 @@ class ChangesetValidationResource(ModelResource):
         ValidationTypeResource, 'validation_type', null=True, blank=True)
 
     class Meta:
-        queryset = ChangesetValidation.objects.all()
+        queryset = changesetvalidations_models.ChangesetValidation.objects.all()
         resource_name = 'changeset_validation'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
@@ -808,7 +834,7 @@ class ChangesetDetailApplyResource(ModelResource):
     server = fields.ForeignKey(ServerResource, 'server', null=True, blank=True)
 
     class Meta:
-        queryset = ChangesetDetailApply.objects.all()
+        queryset = changesetapplies_models.ChangesetDetailApply.objects.all()
         resource_name = 'changeset_detail_apply'
         authentication = BasicAuthentication()
         authorization = ReadOnlyAuthorization()
