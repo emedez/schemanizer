@@ -93,7 +93,14 @@ AWS_INSTANCE_TYPE = 'm1.small'
 # in changeset apply operations.
 MYSQL_HOST = None
 MYSQL_PORT = None
-MYSQL_USER = 'sandbox'
+MYSQL_USER = 'sandbox'      # This user needs a RELOAD and PROCESS privileges
+                            # during the changeset review/apply process.
+                            # To grant privileges, run the following in
+                            # MySQL console using a user that can grant
+                            # privileges to other users:
+                            #
+                            # GRANT RELOAD,PROCESS ON . TO 'sandbox'@'%';
+                            #
 MYSQL_PASSWORD = 'sandbox'
 
 # Number of seconds to wait for EC2 instance to start before accessing it.

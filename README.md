@@ -119,13 +119,17 @@ Note:
 Setup
 -----
 
-
 ### Settings
 
 Copy (schemanizer_root)/schemanizerproj/schemanizerproj/sample.local_settings.py to (schemanizer_root)/schemanizerproj/schemanizerproj/local_settings.py and edit the contents of the new file.  Provided correct values for each setting. You can also use local_settings.py to override the default settings that are included in (schemanizer_root)/schemanizerproj/schemanizerproj/settings.py.
 
 
 #### Database Settings
+
+Create an empty database, run the following in MySQL console:
+```
+CREATE SCHEMA dbname;
+```
 
 To use a particular database, specifiy the connection details in the 'default' key of DATABASES.
 ```
@@ -209,13 +213,18 @@ AWS_INSTANCE_TYPE = 'm1.small'
 
 #### MySQL Server Settings for Changeset Operations
 
-MySQL host and port. If AWS_MYSQL_HOST is None, the EC2 instance host name is used.
-AWS_MYSQL_PORT, AWS_MYSQL_USER and AWS_MYSQL_PASSWORD are also used in changeset apply operations.
+MySQL host and port. If MYSQL_HOST is None, the EC2 instance host name is used.
+MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used in changeset apply operations.
 ```
-AWS_MYSQL_HOST = None
-AWS_MYSQL_PORT = None
-AWS_MYSQL_USER = 'sandbox'
-AWS_MYSQL_PASSWORD = 'sandbox'
+MYSQL_HOST = None
+MYSQL_PORT = None
+MYSQL_USER = 'sandbox'
+MYSQL_PASSWORD = 'sandbox'
+```
+The user specified on MYSQL_USER needs a RELOAD and PROCESS privileges during the changeset review/apply process.
+To grant privileges, run the following in MySQL console using a user that can grant privileges to other users.
+```
+GRANT RELOAD,PROCESS ON . TO 'sandbox'@'%';
 ```
 
 When an EC2 instance is launched, it needs some time before it can be utilized.
@@ -458,12 +467,38 @@ The workflow for the changesets are the following:
 6. Only approved changesets can be applied.
 
 
+
+
 Custom django-admin Commands
 ============================
 
+### schema_check
+
+Checks the schema of all known databases on each server and compares versions (stored vs actual).
+If version is unknown, a schema difference is saved otherwise it the known schema version is associated to the server.
+
+```
+Usage: python manage.py schema_check [options]
+
+Options:
+  -v VERBOSITY, --verbosity=VERBOSITY
+                        Verbosity level; 0=minimal output, 1=normal output,
+                        2=verbose output, 3=very verbose output
+  --settings=SETTINGS   The Python path to a settings module, e.g.
+                        "myproject.settings.main". If this isn't provided, the
+                        DJANGO_SETTINGS_MODULE environment variable will be
+                        used.
+  --pythonpath=PYTHONPATH
+                        A directory to add to the Python path, e.g.
+                        "/home/djangoprojects/myproject".
+  --traceback           Print traceback on exception
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+```
+
 ### check_changesets_repository
 
-Processes changesets stored in commits in a Github repository.
+Processes changesets stored as YAML document in commits in a Github repository.
 Files with status equal to 'added' are treated as changeset submission.
 File with status equal to 'modified', but has never been processed, is also treated as changeset submission, otherwise it updates existing changeset.
 
@@ -491,6 +526,29 @@ Options:
   --version             show program's version number and exit
   -h, --help            show this help message and exit
 ```
+
+The following is an example of a changeset YAML file content:
+```
+changeset:
+    database_schema: schemanizer_test_1
+    type: 'DDL:Table:Create'
+    classification: painless
+    submitted_by: dev
+
+changeset_details:
+    - description: create table a01
+      apply_sql: "create table a01 (id int) engine=InnoDB default charset=utf8"
+      revert_sql: "drop table a01"
+      apply_verification_sql:
+      revert_verification_sql:
+
+    - description: create table b01
+      apply_sql: "create table b01 (id int) engine=InnoDB default charset=utf8"
+      revert_sql: "drop table b01"
+      apply_verification_sql:
+      revert_verification_sql:
+```
+
 
 Dumping and Restoring Data
 ==========================
