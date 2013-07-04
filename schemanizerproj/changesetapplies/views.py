@@ -13,9 +13,8 @@ from djcelery import models as djcelery_models, humanize as djcelery_humanize
 from changesets import models as changesets_models
 from servers import models as servers_models
 from users import models as users_models
-from utils import exceptions
+from utils import exceptions, helpers
 from . import tasks, models
-from schemanizer import utilities
 from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ def changeset_apply(request, changeset_pk,
             users_models.Role.NAME.dba,
             users_models.Role.NAME.admin)
         if user_has_access:
-            request_id = utilities.generate_request_id(request)
+            request_id = helpers.generate_request_id(request)
             changeset = changesets_models.Changeset.objects.get(pk=int(changeset_pk))
 
             environments = servers_models.Environment.objects.all()
@@ -104,7 +103,7 @@ def apply_changeset_to_multiple_hosts(request, changeset_pk,
             users_models.Role.NAME.dba,
             users_models.Role.NAME.admin)
         if user_has_access:
-            request_id = utilities.generate_request_id(request)
+            request_id = helpers.generate_request_id(request)
             changeset = changesets_models.Changeset.objects.get(pk=int(changeset_pk))
 
             if not privileges_logic.can_user_apply_changeset(user, changeset):
@@ -138,7 +137,7 @@ def apply_changeset_to_multiple_hosts(request, changeset_pk,
                         changeset.id, user.id, server_id)
                     task_ids.append(result.task_id)
 
-                request_id = utilities.generate_request_id(request)
+                request_id = helpers.generate_request_id(request)
                 request.session[request_id] = task_ids
 
                 redirect_url = reverse('changesetapplies_changeset_applies')

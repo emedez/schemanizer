@@ -1,10 +1,8 @@
 """Utility functions."""
 
-import hashlib
 import logging
 import shlex
 import subprocess
-import time
 
 import MySQLdb
 
@@ -50,20 +48,7 @@ def execute(conn, query, args=None):
         cur.close()
 
 
-def generate_request_id(request):
-    """Create a unique ID for the request."""
 
-    s = hashlib.sha1()
-    s.update(str(time.time()))
-    s.update(request.META['REMOTE_ADDR'])
-    s.update(request.META['SERVER_NAME'])
-    s.update(request.get_full_path())
-    h = s.hexdigest()
-    #l = long(h, 16)
-
-    # shorten ID
-    #tag = struct.pack('d', l).encode('base64').replace('\n', '').strip('=')
-    return h
 
 
 def dump_structure(conn, schema=None):

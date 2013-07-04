@@ -18,9 +18,9 @@ from changesettests import models as changesettests_models
 from changesetvalidations import models as changesetvalidations_models
 from schemaversions import models as schemaversions_models
 from users import models as users_models
-from utils import exceptions, decorators
+from utils import decorators, exceptions, helpers
 from . import models, tasks
-from schemanizer import utilities, forms
+from schemanizer import forms
 from schemanizer.logic import privileges_logic
 
 log = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ def changeset_review(
         template='changesetreviews/changeset_review.html'):
     user_has_access = False
     try:
-        request_id = utilities.generate_request_id(request)
+        request_id = helpers.generate_request_id(request)
         changeset = changesets_models.Changeset.objects.get(pk=int(changeset_id))
         user = request.user.schemanizer_user
         user_has_access = privileges_logic.can_user_review_changeset(

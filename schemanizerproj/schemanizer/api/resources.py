@@ -1,10 +1,7 @@
 import json
 import logging
-from pprint import pprint as pp
-
 from django.conf.urls import url
 from django.contrib.auth.models import User as AuthUser
-
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
@@ -14,8 +11,6 @@ from changesets.changeset_functions import approve_changeset, reject_changeset, 
 from changesets.models import Changeset, ChangesetDetail
 from changesettests.models import TestType, ChangesetTest
 from changesetvalidations.models import ValidationType, ChangesetValidation
-
-from schemanizer import models, utilities
 from schemanizer.api import authorizations
 from schemanizer.logic import changeset_apply_logic
 from schemanizer.logic import changeset_logic
@@ -26,6 +21,7 @@ from schemaversions.models import DatabaseSchema, SchemaVersion
 from servers.models import Environment, Server
 from users.models import Role, User
 from users.user_functions import add_user, update_user
+from utils import helpers
 
 log = logging.getLogger(__name__)
 
@@ -362,7 +358,7 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = utilities.generate_request_id(request)
+            request_id = helpers.generate_request_id(request)
             post_data = json.loads(request.raw_post_data)
             changeset_id = int(post_data['changeset_id'])
             server_id = int(post_data['server_id'])
@@ -494,7 +490,7 @@ class ChangesetResource(ModelResource):
 
         data = {}
         try:
-            request_id = utilities.generate_request_id(request)
+            request_id = helpers.generate_request_id(request)
             changeset_id = int(kwargs.get('changeset_id'))
             post_data = json.loads(request.raw_post_data)
             schema_version_id = int(post_data['schema_version_id'])
