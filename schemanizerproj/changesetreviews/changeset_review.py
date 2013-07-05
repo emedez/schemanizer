@@ -1,4 +1,6 @@
 import logging
+import pprint
+import time
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -8,7 +10,7 @@ from schemaversions import models as schemaversions_models
 from changesets import models as changesets_models
 from changesetvalidations import models as changesetvalidations_models
 from changesettests import changeset_testing
-from utils import exceptions, ec2_functions, mysql_functions
+from utils import exceptions, ec2_functions, mysql_functions, helpers
 from . import models, event_handlers
 
 
@@ -69,6 +71,7 @@ class ChangesetReview(object):
     def run_impl(self):
         """Starts changeset review."""
 
+        log.debug('NEW')
         ec2_instance_starter = None
         try:
             # Delete existing changeset review data.
@@ -105,30 +108,100 @@ class ChangesetReview(object):
                     ec2_instance_starter.instance.state == 'running'):
                 if not self.no_ec2:
                     host = ec2_instance_starter.instance.public_dns_name
+
+                    if settings.AWS_MYSQL_START_WAIT:
+                        # For hosts that were dynamically started such as
+                        # EC2 instances, this is to give time for MySQL
+                        # server to start, before attempting to connect
+                        # to it.
+                        self.store_message(
+                            'Waiting for %s second(s) to give time for '
+                            'MySQL server to start.' % (
+                                settings.AWS_MYSQL_START_WAIT,))
+                        time.sleep(settings.AWS_MYSQL_START_WAIT)
+
+                elif settings.MYSQL_HOST:
+                    host = settings.MYSQL_HOST
                 else:
                     host = None
+
+                mysql_user = 'sandbox_%s' % helpers.random_string(4)
+                mysql_password = 'sandbox_%s' % helpers.random_string(4)
+
+                mysql_running = False
+                start_time = time.time()
+
+                msg = 'Waiting for MySQL server to start...'
+                log.info(msg)
+                self.store_message(msg)
+
+                tries = 0
+                while True:
+                    try:
+                        tries += 1
+
+                        msg = 'Checking MySQL server status (tries=%s)...' % tries
+                        self.store_message(msg)
+                        log.info(msg)
+
+                        mysql_running = mysql_functions.is_mysql_server_running(
+                            host, settings.AWS_SSH_USER, settings.AWS_SSH_KEY_FILE
+                        )
+                    except Exception, e:
+                        msg = 'ERROR %s: %s' % (type(e), e)
+                        self.store_message(msg, 'error')
+                        log.exception(msg)
+
+                    if mysql_running:
+                        break
+                    if time.time() - start_time > settings.AWS_MYSQL_CONNECT_TIMEOUT:
+                        msg = 'Gave up waiting for MySQL server to start.'
+                        log.info(msg)
+                        self.store_message(msg)
+                        break
+                    time.sleep(1)
+
+                if not mysql_running:
+                    raise exceptions.Error(
+                        'MySQL server has not started within the time limit.')
+
+                msg = 'MySQL server has started, creating user \'%s\'...' % mysql_user
+                log.info(msg)
+                self.store_message(msg)
+
+                mysql_functions.create_mysql_user(
+                    mysql_user, mysql_password, host, settings.AWS_SSH_USER,
+                    settings.AWS_SSH_KEY_FILE)
+
+                msg = 'User \'%s\' was created, testing connection...' % mysql_user
+                log.info(msg)
+                self.store_message(msg)
 
                 connection_options = {}
                 if host:
                     connection_options['host'] = host
                 if settings.MYSQL_PORT:
                     connection_options['port'] = settings.MYSQL_PORT
-                if settings.MYSQL_USER:
-                    connection_options['user'] = settings.MYSQL_USER
-                if settings.MYSQL_PASSWORD:
-                    connection_options['passwd'] = settings.MYSQL_PASSWORD
+                # if settings.MYSQL_USER:
+                #     connection_options['user'] = settings.MYSQL_USER
+                connection_options['user'] = mysql_user
+                # if settings.MYSQL_PASSWORD:
+                #     connection_options['passwd'] = settings.MYSQL_PASSWORD
+                connection_options['passwd'] = mysql_password
+                log.debug(
+                    'connection_options = %s',
+                    pprint.pformat(connection_options))
+                pprint.pformat(connection_options)
 
                 connection_tester = mysql_functions.MySQLServerConnectionTester(
                     connection_options=connection_options,
-                    connect_pre_delay=settings.AWS_MYSQL_START_WAIT,
+                    #connect_pre_delay=settings.AWS_MYSQL_START_WAIT,
                     connect_timeout=settings.AWS_MYSQL_CONNECT_TIMEOUT,
                     message_callback=self.message_callback
                 )
                 conn = connection_tester.run()
                 if not conn:
                     raise exceptions.Error('Unable to connect to MySQL server.')
-
-                now = timezone.now()
 
                 test_results = changeset_testing.run_tests(
                     changeset=self.changeset,

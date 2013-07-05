@@ -1,6 +1,12 @@
 import difflib
 import hashlib
+import random
+import string
 import time
+
+
+def random_string(size=8):
+    return ''.join(random.choice(string.letters + string.digits) for x in range(size))
 
 
 def get_model_instance(obj, model_class):
