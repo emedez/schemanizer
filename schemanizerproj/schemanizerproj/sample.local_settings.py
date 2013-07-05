@@ -85,6 +85,20 @@ AWS_SECURITY_GROUPS = ['quicklaunch-1']
 #   cg1.4xlarge
 #   cc2.8xlarge
 AWS_INSTANCE_TYPE = 'm1.small'
+
+# AWS_SSH_KEY_FILE and AWS_SSH_USER are used to connect to an EC2 instance
+# via SSH to check the status of MySQL server and to create
+# a MySQL user with the required privileges.
+AWS_SSH_KEY_FILE = None     # Full path to the key file to be used when
+                            # connecting to an  EC2 instance via SSH,
+                            # this is the private key file downloaded from
+                            # the AWS console.
+                            #
+AWS_SSH_USER = 'root'       # username to be used when connecting to
+                            # an EC2 instance via ssh.
+                            # This user should be able to connect
+                            # to the MySQL server locally without a password.
+
 #
 # MySQL connection options for reviewing changesets
 #

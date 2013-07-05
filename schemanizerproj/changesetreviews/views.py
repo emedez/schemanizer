@@ -135,11 +135,11 @@ class AjaxChangesetReviews(View):
                 if task_state.kwargs:
                     try:
                         kwargs_obj = yaml.load(task_state.kwargs)
-                        if 'changeset' in kwargs_obj:
-                            kwargs_obj['changeset'] = long(kwargs_obj['changeset'])
+                        if 'changeset_pk' in kwargs_obj:
+                            kwargs_obj['changeset_pk'] = long(kwargs_obj['changeset_pk'])
                     except:
                         pass
-                changeset_id = kwargs_obj.get('changeset')
+                changeset_id = kwargs_obj.get('changeset_pk')
                 show_changeset_view_url = False
                 if changeset_id:
                     show_changeset_view_url = (

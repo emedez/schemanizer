@@ -8,10 +8,10 @@ Requirements
 Aside from the Python packages listed on requirements.txt,
 the web application depends on the following to be installed on the system:
 
-Python 2.6 or later
-Mercurial
-RabbitMQ
-nmap 5.21 or later
+* Python 2.6 or later
+* Mercurial
+* RabbitMQ
+* nmap 5.21 or later
 
 
 ### Installing Mercurial
@@ -212,6 +212,21 @@ AWS_INSTANCE_TYPE = 'm1.small'
 
 
 #### MySQL Server Settings for Changeset Operations
+
+AWS_SSH_KEY_FILE and AWS_SSH_USER are used to connect to an EC2 instance
+via SSH to check the status of MySQL server and to create
+a MySQL user with the required privileges.
+```
+AWS_SSH_KEY_FILE = None     # Full path to the key file to be used when
+                            # connecting to an  EC2 instance via SSH,
+                            # this is the private key file downloaded from
+                            # the AWS console.
+                            #
+AWS_SSH_USER = 'root'       # username to be used when connecting to
+                            # an EC2 instance via ssh.
+                            # This user should be able to connect
+                            # to the MySQL server locally without a password.
+```
 
 MySQL host and port. If MYSQL_HOST is None, the EC2 instance host name is used.
 MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used in changeset apply operations.

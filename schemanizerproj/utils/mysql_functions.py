@@ -5,6 +5,7 @@ import string
 import subprocess
 import time
 import MySQLdb
+import paramiko
 import sqlparse
 from . import hash_functions, exceptions
 
@@ -229,3 +230,84 @@ class MySQLServerConnectionTester(object):
                 break
             time.sleep(0.1)
         return conn
+
+
+def is_mysql_server_running(hostname, username, key_filename=None):
+    """Checks if mysql server is running on specified hostname.
+
+    This is done by connecting to the remote host's SSH server using the
+    given username, and execute 'service mysql status', so the provided
+    user should have the privilege to execute the command.
+    """
+
+    params = {
+        'hostname': hostname,
+        'username': username
+    }
+    if key_filename:
+        params['pkey'] = paramiko.RSAKey.from_private_key_file(key_filename)
+    c = paramiko.SSHClient()
+    c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    c.connect(**params)
+
+    try:
+        stdin, stdout, stderr = c.exec_command('service mysql status')
+        stdout_string = stdout.read()
+        stderr_string = stderr.read()
+        log.debug('stdout_string = %s', stdout_string)
+        log.debug('stderr_string = %s', stderr_string)
+        mysql_running = any([
+            # CentOS/Percona
+            stdout_string.lower().startswith('mysql running'),
+            # Ubuntu
+            stdout_string.lower().startswith('mysql start/running')
+        ])
+    finally:
+        c.close()
+
+    return mysql_running
+
+
+def create_mysql_user(
+        mysql_user, mysql_password, hostname, username, key_filename=None):
+    """Creates MySQL user on the specified host.
+
+    This is done by connecting to remote host's SSH server and execute
+    a MySQL statement.
+    """
+
+    params = {
+        'hostname': hostname,
+        'username': username
+    }
+    if key_filename:
+        params['pkey'] = paramiko.RSAKey.from_private_key_file(key_filename)
+    c = paramiko.SSHClient()
+    c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    c.connect(**params)
+
+    try:
+        sql = "CREATE USER '%s'@'%%' IDENTIFIED BY '%s'" % (
+            mysql_user, mysql_password)
+        cmd = 'mysql -Bse "%s"' % sql
+        log.debug('cmd = %s', cmd)
+        stdin, stdout, stderr = c.exec_command(cmd)
+        stdout_string = stdout.read()
+        stderr_string = stderr.read()
+        log.debug('stdout_string = %s', stdout_string)
+        log.debug('stderr_string = %s', stderr_string)
+        if stderr_string:
+            raise exceptions.Error(stderr_string)
+
+        sql = "GRANT ALL ON *.* TO '%s'@'%%'" % mysql_user
+        cmd = 'mysql -Bse "%s"' % sql
+        log.debug('cmd = %s', cmd)
+        stdin, stdout, stderr = c.exec_command(cmd)
+        stdout_string = stdout.read()
+        stderr_string = stderr.read()
+        log.debug('stdout_string = %s', stdout_string)
+        log.debug('stderr_string = %s', stderr_string)
+        if stderr_string:
+            raise exceptions.Error(stderr_string)
+    finally:
+        c.close()
