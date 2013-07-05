@@ -6,6 +6,7 @@ from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from changesetreviews import models as changesetreviews_models
+from servers import models as servers_models
 from users import models as users_models
 from users.models import User, Role
 
@@ -32,6 +33,33 @@ def send_mail(
         connection=connection, attachments=attachments, headers=headers,
         cc=cc)
     msg.send()
+
+
+def send_mail_unknown_schema(server_data_list):
+    # recipients
+    to = list(
+        users_models.User.objects.values_list('email', flat=True)
+        .filter(role__name=users_models.Role.NAME.dba))
+
+    subject = 'Unknown schema versions'
+    lines = [
+        u'The following is a list of hosts that have unknown schema versions:',
+        u''
+    ]
+
+    for server_data in server_data_list:
+        lines.append(u'Host: %s' % server_data.server.hostname)
+        if server_data.schema_exists:
+            lines.append(u'Database schema: %s' % server_data.database_schema.name)
+        else:
+            lines.append(
+                u'Database schema: %s (does not exist on host)' %
+                server_data.database_schema.name)
+        lines.append(u'Schema version diff:')
+        lines.append(server_data.schema_version_diff)
+        lines.append(u'')
+
+    send_mail(subject=subject, body=u'\n'.join(lines), to=to)
 
 
 def send_mail_changeset_submitted(changeset):
