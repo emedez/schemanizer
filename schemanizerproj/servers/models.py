@@ -49,6 +49,7 @@ class Server(utils_models.TimeStampedModel):
     def get_schema_list(self, connection_options=None):
         if connection_options is None:
             connection_options = {}
+        connection_options = connection_options.copy()
         connection_options.update({'host': self.hostname})
         if self.port:
             connection_options['port'] = self.port
@@ -65,6 +66,7 @@ class Server(utils_models.TimeStampedModel):
     def dump_schema(self, schema_name, connection_options=None):
         if connection_options is None:
             connection_options = {}
+        connection_options = connection_options.copy()
         connection_options.update({'host': self.hostname})
         if self.port:
             connection_options['port'] = self.port

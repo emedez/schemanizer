@@ -27,7 +27,10 @@ class DatabaseSchema(utils_models.TimeStampedModel):
         for server in servers:
             schema_exists = server.schema_exists(
                 self.name, connection_options)
-            schema_dump = server.dump_schema(self.name, connection_options)
+            if schema_exists:
+                schema_dump = server.dump_schema(self.name, connection_options)
+            else:
+                schema_dump = ''
             schema_hash = mysql_functions.generate_schema_hash(schema_dump)
             schema_version = None
             try:
