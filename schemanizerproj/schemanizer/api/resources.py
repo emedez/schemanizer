@@ -404,11 +404,13 @@ class ChangesetResource(ModelResource):
         try:
             task_id = kwargs['task_id']
             task_states = djcelery_models.TaskState.objects.filter(task_id=task_id)
+
             messages = []
             changeset_detail_apply_ids = []
 
             if task_states.exists():
                 task_state = task_states[0]
+                data['task_active'] = task_state.state in states.UNREADY_STATES
                 async_result = AsyncResult(task_state.task_id)
                 result = async_result.result
 
