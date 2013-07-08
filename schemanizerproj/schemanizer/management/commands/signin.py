@@ -127,6 +127,7 @@ class SchemanizerCLI(Cmd):
         changeset_type = ''
         changeset_classification = ''
         changeset = {}
+        review_version_id = None
         changeset_details = []
         
         type_choices = []
@@ -164,13 +165,23 @@ class SchemanizerCLI(Cmd):
                     break
             if not found:
                 print 'Invalid Choice.'
-        
+
+        review_version_id = self.pseudo_raw_input('Review Version ID: ')
+        if review_version_id:
+            review_version_id = int(review_version_id)
+        else:
+            review_version_id = None
+
         changeset.update({
             'database_schema_id': schema_id,
             'type': changeset_type,
             'classification': changeset_classification,
         })
-        
+        if review_version_id:
+            changeset.update({
+                'review_version_id': review_version_id
+            })
+
         while True:
             enter_detail = self.pseudo_raw_input('Add Detail(Y/N): ')
             if enter_detail.upper() != 'Y':
