@@ -889,7 +889,7 @@ POST data should be a JSON string in the following form:
         'database_schema_id': 1,
         'type': 'DDL:Table:Create',
         'classification': 'painless',
-        'review_version_id': ''
+        'review_version_id': 1
     },
     'changeset_details': [
         {
@@ -1153,7 +1153,12 @@ $ curl -H 'Content-Type: application/json' -u dba:dba http://localhost:8000/api/
     "changeset_validation_ids": [
         11
     ],
-    "review_results_url": "http://localhost:8000/changesetreviews/result/1/"
+    "review_results_url": "http://localhost:8000/changesetreviews/result/1/",
+    "task_active": true,
+    "message": {
+        "message_type": "info",
+        "message": "message"
+    }
 }
 
 ```

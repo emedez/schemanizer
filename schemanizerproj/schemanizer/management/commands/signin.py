@@ -1,5 +1,6 @@
 import getpass
 import json
+import logging
 import time
 
 from django.contrib.auth import authenticate
@@ -10,7 +11,10 @@ import requests
 from cmd2 import Cmd, make_option, options
 from requests.auth import HTTPBasicAuth
 from texttable import Texttable
-from changesets.models import Changeset, ChangesetDetail
+
+from changesets import models as changesets_models
+
+log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -122,16 +126,24 @@ class SchemanizerCLI(Cmd):
         
     def do_create_changeset(self, arg, opts=None):
         '''Create a new changeset'''
+
+        #
+        # database_schema_id
+        #
         schema_id = self.pseudo_raw_input('Enter Schema ID: ')
         schema_id = int(schema_id)
+
         changeset_type = ''
         changeset_classification = ''
-        changeset_version_control_url = ''
         changeset = {}
+        review_version_id = None
         changeset_details = []
-        
+
+        #
+        # type
+        #
         type_choices = []
-        for i,choice in enumerate(Changeset.TYPE_CHOICES):
+        for i,choice in enumerate(changesets_models.Changeset.TYPE_CHOICES):
             type_choices.append((i+1, choice[0]))
         found = False
         while not found:
@@ -147,9 +159,13 @@ class SchemanizerCLI(Cmd):
                     break
             if not found:
                 print 'Invalid Choice.'
-        
+
+        #
+        # classification
+        #
         classification_choices = []
-        for i,choice in enumerate(Changeset.CLASSIFICATION_CHOICES):
+        for i,choice in enumerate(
+                changesets_models.Changeset.CLASSIFICATION_CHOICES):
             classification_choices.append((i+1, choice[0]))
         found = False
         while not found:
@@ -165,60 +181,63 @@ class SchemanizerCLI(Cmd):
                     break
             if not found:
                 print 'Invalid Choice.'
-        
-        changeset_version_control_url = self.pseudo_raw_input('Enter Version Control URL: ')
+
+        #
+        # review_version_id
+        #
+        review_version_id = self.pseudo_raw_input('Review Version ID: ')
+        if review_version_id:
+            review_version_id = int(review_version_id)
+        else:
+            review_version_id = None
+
         changeset.update({
             'database_schema_id': schema_id,
             'type': changeset_type,
             'classification': changeset_classification,
-            'version_control_url': changeset_version_control_url,
         })
-        
+        if review_version_id:
+            changeset.update({
+                'review_version_id': review_version_id
+            })
+
+        #
+        # ChangesetDetail
+        #
+
         while True:
             enter_detail = self.pseudo_raw_input('Add Detail(Y/N): ')
             if enter_detail.upper() != 'Y':
                 break
                 
-            detail_type = ''
             description = ''
             apply_sql = ''
             revert_sql = ''
-            
-            type_choices = []
-            for i,choice in enumerate(ChangesetDetail.TYPE_CHOICES):
-                type_choices.append((i+1, choice[0]))
-            found = False
-            while not found:
-                print 'Type Choices:'
-                for choice in type_choices:
-                    print '\t%d - %s' % (choice[0], choice[1])
-                type_int = self.pseudo_raw_input('Choose Type(enter corresponding number): ')
-                type_int = int(type_int)
-                for choice in type_choices:
-                    if type_int == choice[0]:
-                        detail_type = choice[1]
-                        found = True
-                        break
-                if not found:
-                    print 'Invalid Choice.'
-            
+
             description = self.pseudo_raw_input('Enter Description: ')
             apply_sql = self.pseudo_raw_input('Enter Apply SQL: ')
             revert_sql = self.pseudo_raw_input('Enter Revert SQL: ')
+            apply_verification_sql = self.pseudo_raw_input(
+                'Enter Apply Verification SQL: ')
+            revert_verification_sql = self.pseudo_raw_input(
+                'Enter Revert Verification SQL: ')
             changeset_details.append({
-                'type': detail_type,
                 'description': description,
                 'apply_sql': apply_sql,
                 'revert_sql': revert_sql,
+                'apply_verification_sql': apply_verification_sql,
+                'revert_verification_sql': revert_verification_sql
             })
             
         post = {
             'changeset': changeset,
             'changeset_details': changeset_details
         }
-        r = requests.post('http://%s/api/v1/changeset/submit/' % (self.site),
-                            data=json.dumps(post),
-                            auth=self.api_auth)
+        r = requests.post(
+            'http://%s/api/v1/changeset/submit/' % (self.site),
+            data=json.dumps(post),
+            auth=self.api_auth)
+
         if r.status_code == 200:
             print 'Adding changeset successful'
         else:
@@ -272,41 +291,67 @@ class SchemanizerCLI(Cmd):
                                 data=json.dumps(post),
                                 auth=self.api_auth)
             response = r.json()
-            request_id = response.get('request_id')
-            thread_started = response.get('thread_started')
-            if thread_started:
-                thread_is_alive = True
-                while thread_is_alive:
-                    r = requests.get('http://%s/api/v1/changeset/review_status/%s/' % (self.site, request_id),
-                                    auth=self.api_auth)
+            # request_id = response.get('request_id')
+            # thread_started = response.get('thread_started')
+            task_id = response.get('task_id')
+            # if thread_started:
+            if task_id:
+                # thread_is_alive = True
+                task_active = True
+                # while thread_is_alive:
+                # while task_active:
+                max_tries = 12
+                tries = 0
+                while True:
+                    tries += 1
+                    r = requests.get(
+                        'http://%s/api/v1/changeset/review_status/%s/' % (
+                            self.site, task_id),
+                        auth=self.api_auth)
                     response = r.json()
-                    thread_is_alive = response.get('thread_is_alive')
-                    thread_messages = response.get('thread_messages', [])
-                    for message in thread_messages:
-                        print message[1]
+                    # print response
+                    task_active = response.get('task_active')
+                    message = response.get('message')
+                    # thread_messages = response.get('thread_messages', [])
+                    # for message in thread_messages:
+                    #     print message[1]
+                    if message:
+                        print message
+                    if task_active is None:
+                        if tries >= max_tries:
+                            break
+                    else:
+                        if not task_active:
+                            break
                     time.sleep(10)
-                thread_changeset_test_ids = response.get('thread_changeset_test_ids', [])
-                thread_changeset_validation_ids = response.get('thread_changeset_validation_ids', [])
+
+                changeset_test_ids = response.get('changeset_test_ids', [])
+                changeset_validation_ids = response.get(
+                    'changeset_validation_ids', [])
                 print
                 print 'Validation Result Log:'
-                for i,val_id in enumerate(thread_changeset_validation_ids):
-                    r = requests.get('http://%s/api/v1/changeset_validation/%d/' % (self.site, val_id),
-                                    auth=self.api_auth)
+                for i,val_id in enumerate(changeset_validation_ids):
+                    r = requests.get(
+                        'http://%s/api/v1/changeset_validation/%d/' % (
+                            self.site, val_id),
+                        auth=self.api_auth)
                     response = r.json()
                     log = response.get('result')
                     print '%d. %s' % (i+1, log)
                 print
                 print 'Test Result Log:'
-                for i,test_id in enumerate(thread_changeset_test_ids):
-                    r = requests.get('http://%s/api/v1/changeset_test/%d/' % (self.site, test_id),
-                                    auth=self.api_auth)
+                for i,test_id in enumerate(changeset_test_ids):
+                    r = requests.get(
+                        'http://%s/api/v1/changeset_test/%d/' % (
+                            self.site, test_id),
+                        auth=self.api_auth)
                     response = r.json()
                     log = response.get('results_log')
                     print '%d. %s' % (i+1, log)
                 print
                 print '*** Changeset check successful.'
             else:
-                raise Exception, '*** Changeset check failed: Unable to start review thread.'
+                raise Exception, '*** Changeset check failed: Unable to start changeset review.'
         else:
             raise Exception, '*** Invalid syntax: review_changeset requires 1 argument(id).'
             

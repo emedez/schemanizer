@@ -1,15 +1,18 @@
 import json
 import logging
+from celery import states
 from celery.result import AsyncResult
 from django.conf.urls import url
 from django.contrib.auth.models import User as AuthUser
 from django.contrib.sites.models import Site
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from djcelery import models as djcelery_models
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization, ReadOnlyAuthorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields
+import time
 from changesetapplies import (
     models as changesetapplies_models,
     tasks as changesetapplies_tasks)
@@ -439,6 +442,31 @@ class ChangesetResource(ModelResource):
         data = {}
         try:
             task_id = kwargs['task_id']
+            log.debug('task_id = %s', task_id)
+
+            task_state = None
+            max_tries = 3
+            tries = 0
+            while True:
+                tries += 1
+                log.debug('tries = %s', tries)
+                try:
+                    task_state = djcelery_models.TaskState.objects.get(
+                        task_id=task_id)
+                    break
+                except:
+                    if tries >= max_tries:
+                        log.exception('EXCEPTION')
+                        raise
+                    else:
+                        time.sleep(3)
+
+            data['task_active'] = task_state.state in states.UNREADY_STATES
+            ar = AsyncResult(task_id)
+            result = ar.result
+            if result and isinstance(result, dict) and 'message' in result:
+                data['message'] = result['message']
+
             changeset_review_qs = (
                 changesetreviews_models.ChangesetReview.objects.filter(
                     task_id=task_id))
@@ -447,6 +475,7 @@ class ChangesetResource(ModelResource):
             if changeset_review_qs.exists():
                 changeset_review_obj = changeset_review_qs[0]
                 changeset = changeset_review_obj.changeset
+                log.debug('changeset = %s', changeset)
                 changeset_tests = changesettests_models.ChangesetTest.objects.filter(
                     changeset_detail__changeset=changeset)
                 changeset_validations = changesetvalidations_models.ChangesetValidation.objects.filter(
