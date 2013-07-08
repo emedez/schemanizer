@@ -20,7 +20,8 @@ def apply_changeset(changeset, applied_by, server, message_callback=None,
 
     if not privileges_logic.can_user_apply_changeset(applied_by, changeset):
         raise exceptions.PrivilegeError(
-            'User is not allowed to apply changeset.')
+            'User %s is not allowed to apply changeset %s.' % (
+                applied_by.name, changeset.pk))
 
     connection_options = {}
     if settings.MYSQL_USER:

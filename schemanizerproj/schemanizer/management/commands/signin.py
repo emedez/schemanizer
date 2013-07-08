@@ -404,24 +404,47 @@ class SchemanizerCLI(Cmd):
                                 data=json.dumps(post),
                                 auth=self.api_auth)
             response = r.json()
-            request_id = response.get('request_id')
-            thread_started = response.get('thread_started')
-            if thread_started:
-                thread_is_alive = True
-                while thread_is_alive:
-                    r = requests.get('http://%s/api/v1/changeset/apply_status/%s/' % (self.site, request_id),
-                                    auth=self.api_auth)
+            # request_id = response.get('request_id')
+            task_id = response.get('task_id')
+            # thread_started = response.get('thread_started')
+            # if thread_started:
+            if task_id:
+                # thread_is_alive = True
+                task_active = True
+                # while thread_is_alive:
+                max_tries = 12
+                tries = 0
+                while True:
+                    tries += 1
+                    r = requests.get(
+                        'http://%s/api/v1/changeset/apply_status/%s/' % (
+                            self.site, task_id),
+                            auth=self.api_auth)
                     response = r.json()
-                    thread_is_alive = response.get('thread_is_alive')
-                    thread_messages = response.get('thread_messages', [])
-                    for message in thread_messages:
-                        print message[1]
+                    # thread_is_alive = response.get('thread_is_alive')
+                    task_active = response.get('task_active')
+                    messages = response.get('messages', [])
+
+                    if messages:
+                        message = messages[-1]
+                        print message['message']
+
+                    if task_active is None:
+                        if tries >= max_tries:
+                            break
+                    else:
+                        if not task_active:
+                            break
                     time.sleep(10)
-                thread_changeset_detail_apply_ids = response.get('thread_changeset_detail_apply_ids', [])
+
+                changeset_detail_apply_ids = response.get(
+                    'changeset_detail_apply_ids', [])
                 print 'Apply Changeset Result Log:'
-                for i,apply_id in enumerate(thread_changeset_detail_apply_ids):
-                    r = requests.get('http://%s/api/v1/changeset_detail_apply/%d/' % (self.site, apply_id),
-                                    auth=self.api_auth)
+                for i,apply_id in enumerate(changeset_detail_apply_ids):
+                    r = requests.get(
+                        'http://%s/api/v1/changeset_detail_apply/%d/' % (
+                            self.site, apply_id),
+                            auth=self.api_auth)
                     response = r.json()
                     log = response.get('results_log')
                     print '%d. %s' % (i+1, log)
