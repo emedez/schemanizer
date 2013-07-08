@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from utils import models as utils_models, mysql_functions, helpers
@@ -23,7 +24,10 @@ class DatabaseSchema(utils_models.TimeStampedModel):
 
     def generate_server_data(self, servers, connection_options=None):
         if connection_options is None:
-            connection_options = {}
+            connection_options = {
+                'user': settings.MYSQL_USER,
+                'passwd': settings.MYSQL_PASSWORD
+            }
         for server in servers:
             schema_exists = server.schema_exists(
                 self.name, connection_options)
