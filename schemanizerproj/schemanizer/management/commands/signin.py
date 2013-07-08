@@ -126,7 +126,6 @@ class SchemanizerCLI(Cmd):
         schema_id = int(schema_id)
         changeset_type = ''
         changeset_classification = ''
-        changeset_version_control_url = ''
         changeset = {}
         changeset_details = []
         
@@ -166,12 +165,10 @@ class SchemanizerCLI(Cmd):
             if not found:
                 print 'Invalid Choice.'
         
-        changeset_version_control_url = self.pseudo_raw_input('Enter Version Control URL: ')
         changeset.update({
             'database_schema_id': schema_id,
             'type': changeset_type,
             'classification': changeset_classification,
-            'version_control_url': changeset_version_control_url,
         })
         
         while True:
