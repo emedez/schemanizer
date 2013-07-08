@@ -1,5 +1,6 @@
 import getpass
 import json
+import logging
 import time
 
 from django.contrib.auth import authenticate
@@ -12,6 +13,8 @@ from requests.auth import HTTPBasicAuth
 from texttable import Texttable
 
 from changesets import models as changesets_models
+
+log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -288,41 +291,67 @@ class SchemanizerCLI(Cmd):
                                 data=json.dumps(post),
                                 auth=self.api_auth)
             response = r.json()
-            request_id = response.get('request_id')
-            thread_started = response.get('thread_started')
-            if thread_started:
-                thread_is_alive = True
-                while thread_is_alive:
-                    r = requests.get('http://%s/api/v1/changeset/review_status/%s/' % (self.site, request_id),
-                                    auth=self.api_auth)
+            # request_id = response.get('request_id')
+            # thread_started = response.get('thread_started')
+            task_id = response.get('task_id')
+            # if thread_started:
+            if task_id:
+                # thread_is_alive = True
+                task_active = True
+                # while thread_is_alive:
+                # while task_active:
+                max_tries = 12
+                tries = 0
+                while True:
+                    tries += 1
+                    r = requests.get(
+                        'http://%s/api/v1/changeset/review_status/%s/' % (
+                            self.site, task_id),
+                        auth=self.api_auth)
                     response = r.json()
-                    thread_is_alive = response.get('thread_is_alive')
-                    thread_messages = response.get('thread_messages', [])
-                    for message in thread_messages:
-                        print message[1]
+                    # print response
+                    task_active = response.get('task_active')
+                    message = response.get('message')
+                    # thread_messages = response.get('thread_messages', [])
+                    # for message in thread_messages:
+                    #     print message[1]
+                    if message:
+                        print message
+                    if task_active is None:
+                        if tries >= max_tries:
+                            break
+                    else:
+                        if not task_active:
+                            break
                     time.sleep(10)
-                thread_changeset_test_ids = response.get('thread_changeset_test_ids', [])
-                thread_changeset_validation_ids = response.get('thread_changeset_validation_ids', [])
+
+                changeset_test_ids = response.get('changeset_test_ids', [])
+                changeset_validation_ids = response.get(
+                    'changeset_validation_ids', [])
                 print
                 print 'Validation Result Log:'
-                for i,val_id in enumerate(thread_changeset_validation_ids):
-                    r = requests.get('http://%s/api/v1/changeset_validation/%d/' % (self.site, val_id),
-                                    auth=self.api_auth)
+                for i,val_id in enumerate(changeset_validation_ids):
+                    r = requests.get(
+                        'http://%s/api/v1/changeset_validation/%d/' % (
+                            self.site, val_id),
+                        auth=self.api_auth)
                     response = r.json()
                     log = response.get('result')
                     print '%d. %s' % (i+1, log)
                 print
                 print 'Test Result Log:'
-                for i,test_id in enumerate(thread_changeset_test_ids):
-                    r = requests.get('http://%s/api/v1/changeset_test/%d/' % (self.site, test_id),
-                                    auth=self.api_auth)
+                for i,test_id in enumerate(changeset_test_ids):
+                    r = requests.get(
+                        'http://%s/api/v1/changeset_test/%d/' % (
+                            self.site, test_id),
+                        auth=self.api_auth)
                     response = r.json()
                     log = response.get('results_log')
                     print '%d. %s' % (i+1, log)
                 print
                 print '*** Changeset check successful.'
             else:
-                raise Exception, '*** Changeset check failed: Unable to start review thread.'
+                raise Exception, '*** Changeset check failed: Unable to start changeset review.'
         else:
             raise Exception, '*** Invalid syntax: review_changeset requires 1 argument(id).'
             
