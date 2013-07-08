@@ -11,7 +11,6 @@ the web application depends on the following to be installed on the system:
 * Python 2.6 or later
 * Mercurial
 * RabbitMQ
-* nmap 5.21 or later
 
 
 ### Installing Mercurial
@@ -311,11 +310,10 @@ SITE_DOMAIN = '127.0.0.1:8000'
 
 #### MySQL Server Discover Settings
 
-Schemanizer utilizes nmap to perform MySQL server discovery.
-Specify hosts and ports to scan using nmap.
+Specify hosts and ports to scan.
 ```
-NMAP_HOSTS = '192.168.43.0/24'
-NMAP_PORTS = '3300-3310'
+DISCOVER_HOSTS = '192.168.43.0/24'
+DISCOVER_PORTS = '3300-3310'
 ```
 
 
@@ -453,8 +451,8 @@ Discover servers link will scan hosts in a local area network for
 MySQL server installations.
 This feature depends on the following Django settings:
 
-NMAP_HOSTS - hosts to scan, for example: '192.168.1.103/24'
-NMAP_PORTS - ports to scan, for example: '3300-3310'
+DISCOVER_HOSTS - hosts to scan, for example: '192.168.1.103/24'
+DISCOVER_PORTS - ports to scan, for example: '3300-3310'
 
 
 ### Database Schemas and Schema Versions
