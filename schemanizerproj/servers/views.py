@@ -155,7 +155,7 @@ class DiscoverMySqlServers(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(DiscoverMySqlServers, self).get_context_data(**kwargs)
         context['mysql_servers'] = server_discovery.discover_mysql_servers(
-            settings.NMAP_HOSTS, settings.NMAP_PORTS)
+            settings.DISCOVER_HOSTS, settings.DISCOVER_PORTS)
         context['environments'] = models.Environment.objects.all()
         print list(context['environments'])
         return context
