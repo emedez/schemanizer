@@ -10,7 +10,8 @@ import requests
 from cmd2 import Cmd, make_option, options
 from requests.auth import HTTPBasicAuth
 from texttable import Texttable
-from changesets.models import Changeset, ChangesetDetail
+
+from changesets import models as changesets_models
 
 
 class Command(BaseCommand):
@@ -122,16 +123,24 @@ class SchemanizerCLI(Cmd):
         
     def do_create_changeset(self, arg, opts=None):
         '''Create a new changeset'''
+
+        #
+        # database_schema_id
+        #
         schema_id = self.pseudo_raw_input('Enter Schema ID: ')
         schema_id = int(schema_id)
+
         changeset_type = ''
         changeset_classification = ''
         changeset = {}
         review_version_id = None
         changeset_details = []
-        
+
+        #
+        # type
+        #
         type_choices = []
-        for i,choice in enumerate(Changeset.TYPE_CHOICES):
+        for i,choice in enumerate(changesets_models.Changeset.TYPE_CHOICES):
             type_choices.append((i+1, choice[0]))
         found = False
         while not found:
@@ -147,9 +156,13 @@ class SchemanizerCLI(Cmd):
                     break
             if not found:
                 print 'Invalid Choice.'
-        
+
+        #
+        # classification
+        #
         classification_choices = []
-        for i,choice in enumerate(Changeset.CLASSIFICATION_CHOICES):
+        for i,choice in enumerate(
+                changesets_models.Changeset.CLASSIFICATION_CHOICES):
             classification_choices.append((i+1, choice[0]))
         found = False
         while not found:
@@ -166,6 +179,9 @@ class SchemanizerCLI(Cmd):
             if not found:
                 print 'Invalid Choice.'
 
+        #
+        # review_version_id
+        #
         review_version_id = self.pseudo_raw_input('Review Version ID: ')
         if review_version_id:
             review_version_id = int(review_version_id)
@@ -182,39 +198,23 @@ class SchemanizerCLI(Cmd):
                 'review_version_id': review_version_id
             })
 
+        #
+        # ChangesetDetail
+        #
+
         while True:
             enter_detail = self.pseudo_raw_input('Add Detail(Y/N): ')
             if enter_detail.upper() != 'Y':
                 break
                 
-            detail_type = ''
             description = ''
             apply_sql = ''
             revert_sql = ''
-            
-            type_choices = []
-            for i,choice in enumerate(ChangesetDetail.TYPE_CHOICES):
-                type_choices.append((i+1, choice[0]))
-            found = False
-            while not found:
-                print 'Type Choices:'
-                for choice in type_choices:
-                    print '\t%d - %s' % (choice[0], choice[1])
-                type_int = self.pseudo_raw_input('Choose Type(enter corresponding number): ')
-                type_int = int(type_int)
-                for choice in type_choices:
-                    if type_int == choice[0]:
-                        detail_type = choice[1]
-                        found = True
-                        break
-                if not found:
-                    print 'Invalid Choice.'
-            
+
             description = self.pseudo_raw_input('Enter Description: ')
             apply_sql = self.pseudo_raw_input('Enter Apply SQL: ')
             revert_sql = self.pseudo_raw_input('Enter Revert SQL: ')
             changeset_details.append({
-                'type': detail_type,
                 'description': description,
                 'apply_sql': apply_sql,
                 'revert_sql': revert_sql,
@@ -224,9 +224,11 @@ class SchemanizerCLI(Cmd):
             'changeset': changeset,
             'changeset_details': changeset_details
         }
-        r = requests.post('http://%s/api/v1/changeset/submit/' % (self.site),
-                            data=json.dumps(post),
-                            auth=self.api_auth)
+        r = requests.post(
+            'http://%s/api/v1/changeset/submit/' % (self.site),
+            data=json.dumps(post),
+            auth=self.api_auth)
+
         if r.status_code == 200:
             print 'Adding changeset successful'
         else:

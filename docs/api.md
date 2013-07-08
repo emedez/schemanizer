@@ -889,7 +889,7 @@ POST data should be a JSON string in the following form:
         'database_schema_id': 1,
         'type': 'DDL:Table:Create',
         'classification': 'painless',
-        'review_version_id': ''
+        'review_version_id': 1
     },
     'changeset_details': [
         {
