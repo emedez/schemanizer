@@ -214,10 +214,16 @@ class SchemanizerCLI(Cmd):
             description = self.pseudo_raw_input('Enter Description: ')
             apply_sql = self.pseudo_raw_input('Enter Apply SQL: ')
             revert_sql = self.pseudo_raw_input('Enter Revert SQL: ')
+            apply_verification_sql = self.pseudo_raw_input(
+                'Enter Apply Verification SQL: ')
+            revert_verification_sql = self.pseudo_raw_input(
+                'Enter Revert Verification SQL: ')
             changeset_details.append({
                 'description': description,
                 'apply_sql': apply_sql,
                 'revert_sql': revert_sql,
+                'apply_verification_sql': apply_verification_sql,
+                'revert_verification_sql': revert_verification_sql
             })
             
         post = {
