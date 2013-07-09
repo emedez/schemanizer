@@ -49,10 +49,10 @@
             $('#add_blank_changeset_detail_form_button').click(function(event) {
                 event.preventDefault();
                 var templateHtml = $('#changeset_detail_empty_form_container tbody').html().trim();
-                var totalForms = Number($('#id_changeset_details-TOTAL_FORMS').val());
+                var totalForms = Number($('#id_changesetdetail_set-TOTAL_FORMS').val());
                 var html = templateHtml.replace(/__prefix__/g, totalForms.toString());
                 $('#changeset_detail_formset_container').append($(html));
-                $('#id_changeset_details-TOTAL_FORMS').val(totalForms + 1);
+                $('#id_changesetdetail_set-TOTAL_FORMS').val(totalForms + 1);
             });
         });
     </script>
