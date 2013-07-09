@@ -98,7 +98,7 @@ class ChangesetTestSyntaxTestCase(TestCase):
         )
 
         self.assertTrue(changeset_tests.exists())
-
+        self.assertFalse(changeset_test_syntax.has_errors)
 
     def test_syntax_test_changeset_with_errors_on_apply_sql(self):
         self.create_test_db()
