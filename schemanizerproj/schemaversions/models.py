@@ -38,8 +38,9 @@ class DatabaseSchema(utils_models.TimeStampedModel):
             schema_hash = mysql_functions.generate_schema_hash(schema_dump)
             schema_version = None
             try:
-                schema_version = SchemaVersion.objects.get(
-                    database_schema=self, checksum=schema_hash)
+                if schema_exists:
+                    schema_version = SchemaVersion.objects.get(
+                        database_schema=self, checksum=schema_hash)
             except ObjectDoesNotExist:
                 pass
             schema_version_diff = ''
