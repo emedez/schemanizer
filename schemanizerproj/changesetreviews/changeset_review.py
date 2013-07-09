@@ -338,7 +338,8 @@ class ChangesetReview(object):
 
 def review_changeset(
         changeset, schema_version=None, reviewed_by=None,
-        message_callback=None, request=None, task_id=None):
+        message_callback=None, request=None, task_id=None,
+        unit_testing=False):
     """Reviews changeset."""
     database_schema = changeset.database_schema
 
@@ -369,6 +370,7 @@ def review_changeset(
         task_id=task_id)
     changeset_review.run()
 
-    event_handlers.on_changeset_reviewed(changeset)
+    if not unit_testing:
+        event_handlers.on_changeset_reviewed(changeset)
 
     return changeset_review
