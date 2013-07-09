@@ -78,9 +78,12 @@ class ChangesetApply(object):
         if self.message_callback:
             self.message_callback(message, message_type, extra)
 
-    def apply_changeset_detail(self, changeset_detail, cursor):
+    def apply_changeset_detail(self, changeset_detail):
         has_errors = False
         results_logs = []
+
+        conn = MySQLdb.connect(**self.connection_options)
+        cursor = conn.cursor()
 
         try:
             log.debug(
@@ -99,6 +102,9 @@ class ChangesetApply(object):
                 try:
                     if query:
                         cursor.execute(query)
+                        while cursor.nextset() is not None:
+                            pass
+                        cursor.execute('commit')
                 except Exception, e:
                     msg = 'ERROR %s: %s' % (type(e), e)
                     log.exception(msg)
@@ -111,6 +117,9 @@ class ChangesetApply(object):
                         pass
 
         finally:
+            cursor.close()
+            conn.close()
+
             results_log = '\n'.join(results_logs)
             changeset_detail_apply = (
                 models.ChangesetDetailApply.objects.create(
@@ -124,23 +133,16 @@ class ChangesetApply(object):
             changeset_detail_apply=changeset_detail_apply)
 
     def apply_changeset_details(self):
-        conn = MySQLdb.connect(**self.connection_options)
-        cursor = conn.cursor()
-        try:
-            for changeset_detail in (
-                    self.changeset.changesetdetail_set.all().order_by('id')):
-                ret = self.apply_changeset_detail(
-                    changeset_detail, cursor)
-                if ret['has_errors']:
-                    self.has_errors = True
-                self.changeset_detail_applies.append(
-                    ret['changeset_detail_apply'])
-                self.changeset_detail_apply_ids.append(
-                    ret['changeset_detail_apply'].id)
-        finally:
-            cursor.execute('FLUSH TABLES')
-            cursor.close()
-            conn.close()
+        for changeset_detail in (
+                self.changeset.changesetdetail_set.all().order_by('id')):
+            ret = self.apply_changeset_detail(
+                changeset_detail)
+            if ret['has_errors']:
+                self.has_errors = True
+            self.changeset_detail_applies.append(
+                ret['changeset_detail_apply'])
+            self.changeset_detail_apply_ids.append(
+                ret['changeset_detail_apply'].id)
 
     def run(self):
         try:
@@ -309,3 +311,46 @@ class ChangesetApply(object):
             except:
                 log.exception('EXCEPTION')
                 pass
+
+
+# TODO: remove this method when no longer needed
+def test_apply(changeset_pk, server_pk):
+    from servers import models as servers_models
+    changeset = changesets_models.Changeset.objects.get(pk=changeset_pk)
+    server = servers_models.Server.objects.get(pk=server_pk)
+
+    connection_options = {
+        'db': 'schemanizer_test_1',
+        'host': server.hostname,
+        'user': settings.MYSQL_USER,
+        'passwd': settings.MYSQL_PASSWORD
+    }
+    if server.port:
+        connection_options['port'] = server.port
+
+    for changeset_detail in changeset.changesetdetail_set.all().order_by('id'):
+        print 'connecting to mysql'
+        conn = MySQLdb.connect(**connection_options)
+        cursor = conn.cursor()
+        try:
+            queries = sqlparse.split(changeset_detail.apply_sql)
+            for query in queries:
+                query = query.rstrip(string.whitespace + ';')
+                try:
+                    if query:
+                        print 'executing %s' % query
+                        cursor.execute(query)
+                        print 'done'
+                        while cursor.nextset() is not None:
+                            pass
+                        cursor.execute('commit')
+                except Exception, e:
+                    msg = 'ERROR %s: %s' % (type(e), e)
+                    print msg
+                finally:
+                    while cursor.nextset() is not None:
+                        pass
+        finally:
+            cursor.close()
+            conn.close()
+            print 'disconnected from mysql'
