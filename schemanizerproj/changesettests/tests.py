@@ -98,3 +98,55 @@ class ChangesetTestSyntaxTestCase(TestCase):
         )
 
         self.assertTrue(changeset_tests.exists())
+
+
+    def test_syntax_test_changeset_with_errors_on_apply_sql(self):
+        self.create_test_db()
+
+        server_test = servers_models.Server.objects.create(
+            name='test',
+            hostname=settings.TEST_DB_HOST if settings.TEST_DB_HOST else 'localhost',
+            environment=servers_models.Environment.objects.get(name='test'))
+
+        conn_opts = self.get_test_db_connection_options()
+        schema_version, created = schema_functions.generate_schema_version(
+            server_test, settings.TEST_DB_NAME,
+            connection_options=conn_opts
+        )
+
+        changeset = changesets_models.Changeset.objects.create(
+            database_schema=schema_version.database_schema,
+            type=changesets_models.Changeset.DDL_TABLE_CREATE,
+            classification=changesets_models.Changeset.CLASSIFICATION_PAINLESS
+        )
+
+        changeset_detail = changesets_models.ChangesetDetail.objects.create(
+            changeset=changeset,
+            description='create table t01',
+            apply_sql='createee table t01 (id int)',
+            revert_sql='drop table t01'
+        )
+
+        test_conn_opts = {}
+        if settings.MYSQL_HOST:
+            test_conn_opts['host'] = settings.MYSQL_HOST
+        if settings.MYSQL_PORT:
+            test_conn_opts['port'] = settings.MYSQL_PORT
+        if settings.MYSQL_USER:
+            test_conn_opts['user'] = settings.MYSQL_USER
+        if settings.MYSQL_PASSWORD:
+            test_conn_opts['passwd'] = settings.MYSQL_PASSWORD
+
+        changeset_test_syntax = changeset_testing.ChangesetTestSyntax(
+            changeset=changeset,
+            schema_version=schema_version,
+            connection_options=test_conn_opts
+        )
+        changeset_test_syntax.run_test()
+
+        changeset_tests = models.ChangesetTest.objects.filter(
+            changeset_detail=changeset_detail
+        )
+
+        self.assertTrue(changeset_tests.exists())
+        self.assertTrue(changeset_test_syntax.has_errors)
