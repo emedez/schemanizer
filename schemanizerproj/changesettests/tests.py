@@ -154,3 +154,31 @@ class ChangesetTestSyntaxTestCase(TestCase):
 
         self.assertTrue(changeset_tests.exists())
         self.assertTrue(changeset_test_syntax.has_errors)
+
+    def test_syntax_test_changeset_with_errors_on_apply_verification_sql(self):
+        changeset = changesets_models.Changeset.objects.create(
+            database_schema=self.schema_version.database_schema,
+            type=changesets_models.Changeset.DDL_TABLE_CREATE,
+            classification=changesets_models.Changeset.CLASSIFICATION_PAINLESS
+        )
+        changeset_detail = changesets_models.ChangesetDetail.objects.create(
+            changeset=changeset,
+            description='create table t01',
+            apply_sql='create table t01 (id int)',
+            revert_sql='ddrop table t01',
+            apply_verification_sql='sselect'
+        )
+
+        changeset_test_syntax = changeset_testing.ChangesetTestSyntax(
+            changeset=changeset,
+            schema_version=self.schema_version,
+            connection_options=self.get_syntax_test_connection_coptions()
+        )
+        changeset_test_syntax.run_test()
+
+        changeset_tests = models.ChangesetTest.objects.filter(
+            changeset_detail=changeset_detail
+        )
+
+        self.assertTrue(changeset_tests.exists())
+        self.assertTrue(changeset_test_syntax.has_errors)
