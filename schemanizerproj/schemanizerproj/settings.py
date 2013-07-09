@@ -147,6 +147,7 @@ INSTALLED_APPS = (
     #=============
     # project apps
     #=============
+    'utils',
     'events',
     'users',
     'servers',
