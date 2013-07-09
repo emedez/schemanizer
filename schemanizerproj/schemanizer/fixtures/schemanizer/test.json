@@ -1,0 +1,290 @@
+[
+{
+    "pk": 1, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "admin", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": true, 
+        "is_staff": true, 
+        "last_login": "2013-07-09T13:32:25Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$HULgxPPYRyEq$kg2YEKgOCTCUNNOUiImrV1psDAmSuyF3tPNxLQh6VO4=", 
+        "email": "admin@example.com", 
+        "date_joined": "2013-04-03T00:57:35Z"
+    }
+},
+{
+    "pk": 2, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "dba01", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": false, 
+        "is_staff": false, 
+        "last_login": "2013-07-09T13:33:01Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$MlziacFNBz9q$7sd8rBCmXdY2BOmTqBsmvU1JtMxz8rfpwceFwwrwp2o=", 
+        "email": "dba01@example.com", 
+        "date_joined": "2013-07-09T13:33:01Z"
+    }
+},
+{
+    "pk": 3, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "dba02", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": false, 
+        "is_staff": false, 
+        "last_login": "2013-07-09T13:33:19Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$h07OESnwGbJK$xJ704a0qkCz79rsJ2RRMq52JetxgR4ut/KfPi8PciIA=", 
+        "email": "dba02@example.com", 
+        "date_joined": "2013-07-09T13:33:19Z"
+    }
+},
+{
+    "pk": 4, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "dev01", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": false, 
+        "is_staff": false, 
+        "last_login": "2013-07-09T13:33:52Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$qB47Ds6LNYAN$mUWGP0ewXyzmr3PcNlTKaq70N+uts114yK3NhtCAPmc=", 
+        "email": "dev01@example.com", 
+        "date_joined": "2013-07-09T13:33:52Z"
+    }
+},
+{
+    "pk": 5, 
+    "model": "auth.user", 
+    "fields": {
+        "username": "dev02", 
+        "first_name": "", 
+        "last_name": "", 
+        "is_active": true, 
+        "is_superuser": false, 
+        "is_staff": false, 
+        "last_login": "2013-07-09T13:34:09Z", 
+        "groups": [], 
+        "user_permissions": [], 
+        "password": "pbkdf2_sha256$10000$IBye1hBEZCBF$hkjknwy75chVhIlwH3+4hhmYNTV2NKlD1ZdMwOp+wfc=", 
+        "email": "dev02@example.com", 
+        "date_joined": "2013-07-09T13:34:09Z"
+    }
+},
+{
+    "pk": 1, 
+    "model": "sites.site", 
+    "fields": {
+        "domain": "localhost:8000", 
+        "name": "Schemanizer"
+    }
+},
+{
+    "pk": 1, 
+    "model": "events.event", 
+    "fields": {
+        "user": 1, 
+        "type": "user_added", 
+        "description": "Added user: id=2, name=dba01", 
+        "datetime": "2013-07-09T13:33:01Z"
+    }
+},
+{
+    "pk": 2, 
+    "model": "events.event", 
+    "fields": {
+        "user": 1, 
+        "type": "user_added", 
+        "description": "Added user: id=3, name=dba02", 
+        "datetime": "2013-07-09T13:33:20Z"
+    }
+},
+{
+    "pk": 3, 
+    "model": "events.event", 
+    "fields": {
+        "user": 1, 
+        "type": "user_added", 
+        "description": "Added user: id=4, name=dev01", 
+        "datetime": "2013-07-09T13:33:52Z"
+    }
+},
+{
+    "pk": 4, 
+    "model": "events.event", 
+    "fields": {
+        "user": 1, 
+        "type": "user_added", 
+        "description": "Added user: id=5, name=dev02", 
+        "datetime": "2013-07-09T13:34:09Z"
+    }
+},
+{
+    "pk": 1, 
+    "model": "users.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:25Z", 
+        "updated_at": "2013-03-31T12:02:25Z", 
+        "name": "admin"
+    }
+},
+{
+    "pk": 2, 
+    "model": "users.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:31Z", 
+        "updated_at": "2013-03-31T12:02:31Z", 
+        "name": "dba"
+    }
+},
+{
+    "pk": 3, 
+    "model": "users.role", 
+    "fields": {
+        "created_at": "2013-03-31T12:02:36Z", 
+        "updated_at": "2013-03-31T12:02:36Z", 
+        "name": "developer"
+    }
+},
+{
+    "pk": 1, 
+    "model": "users.user", 
+    "fields": {
+        "github_login": null, 
+        "name": "admin", 
+        "created_at": "2013-04-03T01:02:34Z", 
+        "updated_at": "2013-04-28T09:18:19Z", 
+        "role": 1, 
+        "auth_user": [
+            "admin"
+        ], 
+        "email": "admin@example.com"
+    }
+},
+{
+    "pk": 2, 
+    "model": "users.user", 
+    "fields": {
+        "github_login": "", 
+        "name": "dba01", 
+        "created_at": "2013-07-09T13:33:01Z", 
+        "updated_at": "2013-07-09T13:33:01Z", 
+        "role": 2, 
+        "auth_user": [
+            "dba01"
+        ], 
+        "email": "dba01@example.com"
+    }
+},
+{
+    "pk": 3, 
+    "model": "users.user", 
+    "fields": {
+        "github_login": "", 
+        "name": "dba02", 
+        "created_at": "2013-07-09T13:33:20Z", 
+        "updated_at": "2013-07-09T13:33:20Z", 
+        "role": 2, 
+        "auth_user": [
+            "dba02"
+        ], 
+        "email": "dba02@example.com"
+    }
+},
+{
+    "pk": 4, 
+    "model": "users.user", 
+    "fields": {
+        "github_login": "", 
+        "name": "dev01", 
+        "created_at": "2013-07-09T13:33:52Z", 
+        "updated_at": "2013-07-09T13:33:52Z", 
+        "role": 3, 
+        "auth_user": [
+            "dev01"
+        ], 
+        "email": "dev01@example.com"
+    }
+},
+{
+    "pk": 5, 
+    "model": "users.user", 
+    "fields": {
+        "github_login": "", 
+        "name": "dev02", 
+        "created_at": "2013-07-09T13:34:09Z", 
+        "updated_at": "2013-07-09T13:34:09Z", 
+        "role": 3, 
+        "auth_user": [
+            "dev02"
+        ], 
+        "email": "dev02@example.com"
+    }
+},
+{
+    "pk": 1, 
+    "model": "servers.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:40Z", 
+        "updated_at": "2013-04-26T08:24:40Z", 
+        "name": "dev"
+    }
+},
+{
+    "pk": 2, 
+    "model": "servers.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:48Z", 
+        "updated_at": "2013-04-26T08:24:48Z", 
+        "name": "test"
+    }
+},
+{
+    "pk": 3, 
+    "model": "servers.environment", 
+    "fields": {
+        "created_at": "2013-04-26T08:24:53Z", 
+        "updated_at": "2013-04-26T08:24:53Z", 
+        "name": "prod"
+    }
+},
+{
+    "pk": 1, 
+    "model": "changesettests.testtype", 
+    "fields": {
+        "created_at": "2013-04-26T07:21:12Z", 
+        "description": "spin up an instance, verify changes are valid sql and won't cause errors", 
+        "updated_at": "2013-04-26T07:22:58Z", 
+        "name": "syntax"
+    }
+},
+{
+    "pk": 1, 
+    "model": "changesetvalidations.validationtype", 
+    "fields": {
+        "created_at": "2013-04-15T17:24:34Z", 
+        "description": "verify that update statements do not have a where clause", 
+        "updated_at": "2013-04-15T17:24:34Z", 
+        "validation_commands": "", 
+        "name": "no update with where clause"
+    }
+}
+]
