@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def submit_changeset(
         from_form=True, changeset_form=None, changeset_detail_formset=None,
         submitted_by=None, request=None,
-        changeset=None, changeset_detail_list=None):
+        changeset=None, changeset_detail_list=None, unit_testing=False):
 
     if from_form:
         changeset = changeset_form.save(commit=False)
@@ -40,7 +40,8 @@ def submit_changeset(
         type=models.ChangesetAction.TYPE_CREATED,
         timestamp=timezone.now())
 
-    event_handlers.on_changeset_submit(changeset, request)
+    if not unit_testing:
+        event_handlers.on_changeset_submit(changeset, request)
 
     return changeset
 
