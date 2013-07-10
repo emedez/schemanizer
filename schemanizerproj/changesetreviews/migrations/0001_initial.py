@@ -17,7 +17,7 @@ class Migration(SchemaMigration):
             ('schema_version', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['schemaversions.SchemaVersion'], null=True, on_delete=models.SET_NULL, blank=True)),
             ('results_log', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
             ('success', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('task_id', self.gf('django.db.models.fields.CharField')(default=None, max_length=36, blank=True)),
+            ('task_id', self.gf('django.db.models.fields.CharField')(default='', max_length=36, blank=True)),
         ))
         db.send_create_signal(u'changesetreviews', ['ChangesetReview'])
 
@@ -65,7 +65,7 @@ class Migration(SchemaMigration):
             'results_log': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'schema_version': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['schemaversions.SchemaVersion']", 'null': 'True', 'on_delete': 'models.SET_NULL', 'blank': 'True'}),
             'success': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'task_id': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '36', 'blank': 'True'}),
+            'task_id': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '36', 'blank': 'True'}),
             'updated_at': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'auto_now_add': 'True', 'null': 'True', 'blank': 'True'})
         },
         u'changesets.changeset': {
@@ -81,7 +81,7 @@ class Migration(SchemaMigration):
             'is_deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'repo_filename': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'review_status': ('django.db.models.fields.CharField', [], {'default': "u'needs'", 'max_length': '11', 'blank': 'True'}),
-            'review_version': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'review_version'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['schemaversions.SchemaVersion']", 'null': 'True'}),
+            'review_version': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'review_version'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['schemaversions.SchemaVersion']", 'blank': 'True', 'null': 'True'}),
             'reviewed_at': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'reviewed_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'reviewed_by'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['users.User']", 'blank': 'True', 'null': 'True'}),
             'submitted_at': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),

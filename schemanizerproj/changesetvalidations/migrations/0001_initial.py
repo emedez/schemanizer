@@ -83,7 +83,7 @@ class Migration(SchemaMigration):
             'is_deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'repo_filename': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'review_status': ('django.db.models.fields.CharField', [], {'default': "u'needs'", 'max_length': '11', 'blank': 'True'}),
-            'review_version': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'review_version'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['schemaversions.SchemaVersion']", 'null': 'True'}),
+            'review_version': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'review_version'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['schemaversions.SchemaVersion']", 'blank': 'True', 'null': 'True'}),
             'reviewed_at': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'reviewed_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'db_column': "'reviewed_by'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': u"orm['users.User']", 'blank': 'True', 'null': 'True'}),
             'submitted_at': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
