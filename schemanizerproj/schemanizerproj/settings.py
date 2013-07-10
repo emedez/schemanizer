@@ -267,7 +267,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True
         },
-        'chnagesetreviews': {
+        'changesetreviews': {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True

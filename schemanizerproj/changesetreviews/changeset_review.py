@@ -124,6 +124,7 @@ class ChangesetReview(object):
                     host = settings.MYSQL_HOST
                 else:
                     host = None
+                log.debug('host = %s', host)
 
                 mysql_user = 'sandbox_%s' % helpers.random_string(4)
                 mysql_password = 'sandbox_%s' % helpers.random_string(4)
