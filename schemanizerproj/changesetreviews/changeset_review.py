@@ -24,7 +24,7 @@ class ChangesetReview(object):
 
     def __init__(
             self, changeset, schema_version, reviewed_by,
-            message_callback=None, task_id=None, no_ec2=None):
+            message_callback=None, task_id='', no_ec2=None):
 
         super(ChangesetReview, self).__init__()
 
@@ -301,7 +301,7 @@ class ChangesetReview(object):
                 self.review_results_url = 'http://%s%s' % (
                     site.domain, url)
 
-                models.ChangesetReview.objects.create(
+                self.changeset_review = models.ChangesetReview.objects.create(
                     changeset=self.changeset,
                     schema_version=self.schema_version,
                     results_log='',
@@ -316,7 +316,7 @@ class ChangesetReview(object):
             msg = 'ERROR %s: %s' % (type(e), e)
             log.exception(msg)
             self.has_errors = True
-            models.ChangesetReview.objects.create(
+            self.changeset_review = models.ChangesetReview.objects.create(
                 changeset=self.changeset,
                 schema_version=self.schema_version,
                 results_log=msg, success=False,
@@ -339,7 +339,7 @@ class ChangesetReview(object):
 
 def review_changeset(
         changeset, schema_version=None, reviewed_by=None,
-        message_callback=None, request=None, task_id=None,
+        message_callback=None, request=None, task_id='',
         unit_testing=False):
     """Reviews changeset."""
     database_schema = changeset.database_schema

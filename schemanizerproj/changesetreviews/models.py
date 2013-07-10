@@ -11,7 +11,7 @@ class ChangesetReview(utils_models.TimeStampedModel):
         on_delete=models.SET_NULL)
     results_log = models.TextField(blank=True, default='')
     success = models.BooleanField(default=False)
-    task_id = models.CharField(max_length=36, blank=True, default=None)
+    task_id = models.CharField(max_length=36, blank=True, default='')
 
     class Meta:
         db_table = 'changeset_reviews'
