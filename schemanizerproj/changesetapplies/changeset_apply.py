@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 def apply_changeset(changeset, applied_by, server, message_callback=None,
-                    task_id=None, request=None):
+                    task_id='', request=None, unit_testing=False):
     """Applies changeset to specified server."""
 
     if not privileges_logic.can_user_apply_changeset(applied_by, changeset):
@@ -29,9 +29,11 @@ def apply_changeset(changeset, applied_by, server, message_callback=None,
     if settings.MYSQL_PASSWORD:
         connection_options['passwd'] = settings.MYSQL_PASSWORD
 
-    changeset_apply_obj = ChangesetApply(changeset, applied_by, server,
-                                         connection_options, message_callback,
-                                         task_id=task_id, request=request)
+    changeset_apply_obj = ChangesetApply(
+        changeset, applied_by, server,
+        connection_options, message_callback,
+        task_id=task_id, request=request,
+        unit_testing=unit_testing)
     changeset_apply_obj.run()
 
     return changeset_apply_obj
@@ -40,8 +42,10 @@ def apply_changeset(changeset, applied_by, server, message_callback=None,
 class ChangesetApply(object):
     """Changeset apply logic."""
 
-    def __init__(self, changeset, applied_by, server, connection_options=None,
-                 message_callback=None, task_id=None, request=None):
+    def __init__(
+            self, changeset, applied_by, server, connection_options=None,
+            message_callback=None, task_id=None, request=None,
+            unit_testing=False):
         """Initializes instance."""
 
         super(ChangesetApply, self).__init__()
@@ -63,11 +67,13 @@ class ChangesetApply(object):
 
         self.task_id = task_id
         self.request = request
+        self.unit_testing = unit_testing
 
         self.messages = []
         self.has_errors = False
         self.changeset_detail_applies = []
         self.changeset_detail_apply_ids = []
+        self.changeset_apply = None
 
     def store_message(self, message, message_type='info', extra=None):
         """Stores message."""
@@ -247,15 +253,16 @@ class ChangesetApply(object):
                 timestamp=timezone.now())
             changesets_models.ChangesetActionServerMap.objects.create(
                 changeset_action=changeset_action, server=self.server)
-            changeset_apply = models.ChangesetApply.objects.create(
+            self.changeset_apply = models.ChangesetApply.objects.create(
                 changeset=self.changeset, server=self.server,
                 applied_at=timezone.now(), applied_by=self.applied_by,
                 success=True,
                 changeset_action=changeset_action,
                 task_id=self.task_id)
 
-            event_handlers.on_changeset_applied(
-                changeset_apply, request=self.request)
+            if not self.unit_testing:
+                event_handlers.on_changeset_applied(
+                    self.changeset_apply, request=self.request)
 
         except exceptions.SchemaDoesNotMatchError, e:
             msg = 'ERROR %s: %s' % (type(e), e.message)
@@ -271,7 +278,7 @@ class ChangesetApply(object):
                     timestamp=timezone.now())
                 changesets_models.ChangesetActionServerMap.objects.create(
                     changeset_action=changeset_action, server=self.server)
-                changeset_apply = models.ChangesetApply.objects.create(
+                self.changeset_apply = models.ChangesetApply.objects.create(
                     changeset=self.changeset, server=self.server,
                     applied_at=timezone.now(), applied_by=self.applied_by,
                     results_log=u'%s\nSchema delta:\n%s' % (msg, e.delta),
@@ -279,8 +286,9 @@ class ChangesetApply(object):
                     changeset_action=changeset_action,
                     task_id=self.task_id)
 
-                event_handlers.on_changeset_apply_failed(
-                    changeset_apply, request=self.request)
+                if not self.unit_testing:
+                    event_handlers.on_changeset_apply_failed(
+                        self.changeset_apply, request=self.request)
             except:
                 log.exception('EXCEPTION')
                 pass
@@ -298,7 +306,7 @@ class ChangesetApply(object):
                     timestamp=timezone.now())
                 changesets_models.ChangesetActionServerMap.objects.create(
                     changeset_action=changeset_action, server=self.server)
-                changeset_apply = models.ChangesetApply.objects.create(
+                self.changeset_apply = models.ChangesetApply.objects.create(
                     changeset=self.changeset, server=self.server,
                     applied_at=timezone.now(), applied_by=self.applied_by,
                     results_log=msg,
@@ -306,8 +314,9 @@ class ChangesetApply(object):
                     changeset_action=changeset_action,
                     task_id=self.task_id)
 
-                event_handlers.on_changeset_apply_failed(
-                    changeset_apply, request=self.request)
+                if not self.unit_testing:
+                    event_handlers.on_changeset_apply_failed(
+                        self.changeset_apply, request=self.request)
             except:
                 log.exception('EXCEPTION')
                 pass
