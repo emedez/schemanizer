@@ -23,73 +23,95 @@ class DiscoverServerThread(threading.Thread):
 
     def run(self):
         try:
-            # print '%s started.' % self.name
+
+            msg = '%s started.' % self.name
+            print msg
+            log.debug(msg)
+
             while not self.host_queue.empty():
                 try:
                     host = self.host_queue.get(False)
-                    time.sleep(0)
-                    hostname = str(host)
-                    # log.debug('[%s] Processing hostname %s', self.name, hostname)
-                    mysql_server_ports = []
-                    for port in self.port_set:
-                        try:
-                            # print '[%s] Checking %s:%s...' % (
-                            #     self.name, hostname, port)
-                            # log.debug('[%s] Checking port %s', self.name, port)
-                            socket_obj = socket.create_connection((hostname, port))
-                            socket_obj.close()
-                            # msg = '[%s] Port %s is open.' % (self.name, port)
-                            # print msg
-                            # log.debug(msg)
-                            connection_options = {
-                                'host': hostname,
-                                'port': port,
-                                'user': settings.MYSQL_USER,
-                                'passwd': settings.MYSQL_PASSWORD,
-                            }
-                            msg = (
-                                '[%s] Attempting MySQL server connection at '
-                                'port %s...' % (self.name, port))
-                            # print msg
-                            log.debug(msg)
-                            start_time = time.time()
-                            conn = MySQLdb.connect(**connection_options)
-                            try:
-                                with conn as cursor:
-                                    pass
-                            finally:
-                                conn.close()
-                            msg = (
-                                '[%s] Connected to MySQL server at %s:%s, '
-                                'elapsed time = %s.' % (
-                                    self.name, hostname, port,
-                                    time.time() - start_time))
-                            # print msg
-                            log.debug(msg)
-                            mysql_server_ports.append(port)
-                        except Exception, e:
-                            # msg = '[%s] ERROR %s: %s' % (self.name, type(e), e)
-                            # log.exception(msg)
-                            pass
+                    try:
                         time.sleep(0)
+                        hostname = str(host)
 
-                    if len(mysql_server_ports) == 1:
-                        self.server_queue.put(dict(
-                            name=hostname,
-                            host=hostname,
-                            hostname=hostname,
-                            port=mysql_server_ports[0],
+                        msg = '[%s] Processing hostname %s' % (
+                            self.name, hostname)
+                        print msg
+                        log.debug(msg)
 
-                        ))
-                    else:
-                        for index, port in enumerate(mysql_server_ports):
+                        mysql_server_ports = []
+                        for port in self.port_set:
+                            try:
+
+                                msg = '[%s] Checking %s:%s...' % (
+                                    self.name, hostname, port)
+                                print msg
+                                log.debug(msg)
+
+                                socket_obj = socket.create_connection(
+                                    (hostname, port))
+                                socket_obj.close()
+
+                                msg = '[%s] Port %s is open.' % (
+                                    self.name, port)
+                                print msg
+                                log.debug(msg)
+
+                                connection_options = {
+                                    'host': hostname,
+                                    'port': port,
+                                    'user': settings.MYSQL_USER,
+                                    'passwd': settings.MYSQL_PASSWORD,
+                                }
+
+                                msg = (
+                                    '[%s] Attempting MySQL server connection '
+                                    'at port %s...' % (self.name, port))
+                                print msg
+                                log.debug(msg)
+
+                                start_time = time.time()
+                                conn = MySQLdb.connect(**connection_options)
+                                try:
+                                    with conn as cursor:
+                                        pass
+                                finally:
+                                    conn.close()
+
+                                msg = (
+                                    '[%s] Connected to MySQL server at %s:%s, '
+                                    'elapsed time = %s.' % (
+                                        self.name, hostname, port,
+                                        time.time() - start_time))
+                                print msg
+                                log.debug(msg)
+
+                                mysql_server_ports.append(port)
+                            except Exception, e:
+                                # msg = '[%s] ERROR %s: %s' % (self.name, type(e), e)
+                                # log.exception(msg)
+                                pass
+                            time.sleep(0)
+
+                        if len(mysql_server_ports) == 1:
                             self.server_queue.put(dict(
-                                name='%s (%s)' % (hostname, index),
-                                host=host,
+                                name=hostname,
+                                host=hostname,
                                 hostname=hostname,
-                                port=port,
+                                port=mysql_server_ports[0],
+
                             ))
-                    self.host_queue.task_done()
+                        else:
+                            for index, port in enumerate(mysql_server_ports):
+                                self.server_queue.put(dict(
+                                    name='%s (%s)' % (hostname, index),
+                                    host=host,
+                                    hostname=hostname,
+                                    port=port,
+                                ))
+                    finally:
+                        self.host_queue.task_done()
                 except Queue.Empty:
                     pass
                 time.sleep(0)
@@ -99,8 +121,9 @@ class DiscoverServerThread(threading.Thread):
             log.exception(msg)
 
         finally:
-            # print '%s ended.' % self.name
-            pass
+            msg = '%s ended.' % self.name
+            print msg
+            log.debug(msg)
 
 
 def discover_mysql_servers(hosts, ports='3306'):
@@ -113,8 +136,11 @@ def discover_mysql_servers(hosts, ports='3306'):
         3300-3310, 3306
     """
     start_time = time.time()
-    log.debug('Server discovery started.')
-    print 'start_time = %s' % start_time
+
+    msg = 'Serer discovery started, start time = %s' % start_time
+    print msg
+    log.debug(msg)
+
     port_set = helpers.parse_int_set(ports)
     host_queue = Queue.Queue()
     # max = 3
@@ -130,7 +156,11 @@ def discover_mysql_servers(hosts, ports='3306'):
     max_threads = 256
     thread_list = []
     server_queue = Queue.Queue()
-    log.debug('Starting threads.')
+
+    msg = 'Starting threads'
+    print msg
+    log.debug(msg)
+
     for i in range(max_threads):
         thread_obj = DiscoverServerThread(
             host_queue, port_set, server_queue, name='thread-%s' % str(i))
@@ -141,7 +171,9 @@ def discover_mysql_servers(hosts, ports='3306'):
     msg = 'Waiting for all hosts to be processed.'
     print msg
     log.debug(msg)
+
     host_queue.join()
+
     msg = 'Threads ended'
     print msg
     log.debug(msg)
@@ -149,14 +181,20 @@ def discover_mysql_servers(hosts, ports='3306'):
     mysql_servers = []
     while not server_queue.empty():
         mysql_server = server_queue.get()
-        pprint.pprint(mysql_server)
-        mysql_servers.append(mysql_server)
-        server_queue.task_done()
+        try:
+            msg = 'server = %s' % pprint.pformat(mysql_server)
+            print msg
+            log.debug(msg)
+
+            mysql_servers.append(mysql_server)
+        finally:
+            server_queue.task_done()
 
     log.debug(
         'Server discovery completed, elapsed time = %s.',
         time.time() - start_time)
     print 'elapsed time = %s' % (time.time() - start_time)
+
     return mysql_servers
 
 
