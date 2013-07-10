@@ -89,8 +89,11 @@ class DiscoverServerThread(threading.Thread):
 
                                 mysql_server_ports.append(port)
                             except Exception, e:
-                                # msg = '[%s] ERROR %s: %s' % (self.name, type(e), e)
-                                # log.exception(msg)
+
+                                msg = '[%s] ERROR %s: %s' % (self.name, type(e), e)
+                                print msg
+                                log.exception(msg)
+                                
                                 pass
                             time.sleep(0)
 
@@ -102,7 +105,7 @@ class DiscoverServerThread(threading.Thread):
                                 port=mysql_server_ports[0],
 
                             ))
-                        else:
+                        elif len(mysql_server_ports) > 1:
                             for index, port in enumerate(mysql_server_ports):
                                 self.server_queue.put(dict(
                                     name='%s (%s)' % (hostname, index),
@@ -113,11 +116,13 @@ class DiscoverServerThread(threading.Thread):
                     finally:
                         self.host_queue.task_done()
                 except Queue.Empty:
+                    print 'queue empty'
                     pass
                 time.sleep(0)
 
         except Exception, e:
             msg = '[%s] ERROR %s: %s' % (self.name, type(e), e)
+            print msg
             log.exception(msg)
 
         finally:
@@ -180,15 +185,20 @@ def discover_mysql_servers(hosts, ports='3306'):
 
     mysql_servers = []
     while not server_queue.empty():
-        mysql_server = server_queue.get()
         try:
-            msg = 'server = %s' % pprint.pformat(mysql_server)
-            print msg
-            log.debug(msg)
+            mysql_server = server_queue.get(False)
 
-            mysql_servers.append(mysql_server)
-        finally:
-            server_queue.task_done()
+            try:
+                msg = 'server = %s' % pprint.pformat(mysql_server)
+                print msg
+                log.debug(msg)
+
+                mysql_servers.append(mysql_server)
+            finally:
+                server_queue.task_done()
+        except Queue.Empty:
+            pass
+        time.sleep(0)
 
     log.debug(
         'Server discovery completed, elapsed time = %s.',
