@@ -90,3 +90,10 @@ class SubmitChangesetTestCase(TestCase):
         self.assertTrue(changeset.pk is not None)
         self.assertEqual(changeset.submitted_by, self.user_dev01)
         self.assertTrue(changeset.submitted_at is not None)
+
+        changeset_actions = models.ChangesetAction.objects.filter(
+            changeset=changeset).order_by('-id')
+        self.assertTrue(changeset_actions.exists())
+        changeset_action = changeset_actions[0]
+        self.assertEqual(
+            changeset_action.type, models.ChangesetAction.TYPE_CREATED)
