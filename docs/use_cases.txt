@@ -70,6 +70,8 @@ Note: Minimum required role is specified inside the parenthesis.
     - creates entry in events
     - sends email
 
+* view ongoing changeset reviews (developer)
+
 * update changeset (developer)
     - only changesets that are not yet approved can be updated
     - resets review status to 'needs'
@@ -94,6 +96,9 @@ Note: Minimum required role is specified inside the parenthesis.
     - sends email
 
 * apply changeset (developer)
+    - first time the changeset is applied, before and after schema versions
+      is saved for the changeset.
+    - succeeding changeset applies check for correct schema versions
     - creates entry in changeset actions
     - creates entry in events
     - sends email
