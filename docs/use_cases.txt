@@ -1,0 +1,110 @@
+Use Cases
+=========
+Note: Minimum required role is specified inside the parenthesis.
+
+
+* create user (admin)
+    - creates entry in events
+
+* update user (admin)
+    - creates entry in events
+
+* delete user (admin)
+    - creates entry in events
+
+* view list of environments (developer)
+
+* add environment (dba)
+    - creates entry in events
+
+* update environment (dba)
+    - creates entry in events
+
+* delete environment (dba
+    - creates entry in events
+
+* discover servers (developer)
+
+* add server (developer)
+    - creates entry in events
+
+* update server (developer)
+    - creates entry in events
+
+* delete server (developer)
+    - creates entry in events
+
+* view list of servers (developer)
+
+* generate schema version (developer)
+    - creates entry in events
+
+* view list of database schemas (developer)
+
+* view list of schema versions (developer)
+
+* view schema version (developer)
+
+* schema check (developer)
+    - creates entry in events
+
+* download schema version ddl (developer)
+
+* submit changeset (developer)
+    - creates entry in changese actions
+    - creates entry in events
+    - sends email
+    - launches review changeset task
+
+* view list of changesets (developer)
+
+* view changeset (developer)
+    - shows changeset details
+    - shows changeset actions
+
+* view review results (developer)
+
+* review changeset (dba)
+    - runs syntax test for the changeset
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* update changeset (developer)
+    - only changesets that are not yet approved can be updated
+    - resets review status to 'needs'
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* approve changeset (dba)
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* reject changeset (dba)
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* soft delete changeset (developer)
+    - developers can only delete changesets that are not yet approved
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* apply changeset (developer)
+    - creates entry in changeset actions
+    - creates entry in events
+    - sends email
+
+* python manage.py schema_check
+    - aborts if there is an ongoing changeset apply
+    - sends email about unknown schema versions
+
+* python manage.py check_changesets_repository
+    - submits or updates changeset
+    - sends email if there are errors while submitting or updating
+
+
+
