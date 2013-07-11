@@ -111,7 +111,8 @@ class SchemaVersion(DetailView):
                 params = urllib.urlencode(
                     dict(database_schema_id=schema_version.database_schema.pk))
                 event_handlers.on_schema_check(
-                    request, schema_version.database_schema)
+                    request=request,
+                    database_schema=schema_version.database_schema)
                 return redirect('%s?%s' % (url, params))
         except Exception, e:
             msg = 'ERROR %s: %s' % (type(e), e)
