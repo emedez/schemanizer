@@ -209,9 +209,6 @@ m2.xlarge, m2.2xlarge, m2.4xlarge, cc1.4xlarge, cg1.4xlarge, cc2.8xlarge
 AWS_INSTANCE_TYPE = 'm1.small'
 ```
 
-
-#### MySQL Server Settings for Changeset Operations
-
 AWS_SSH_KEY_FILE and AWS_SSH_USER are used to connect to an EC2 instance
 via SSH to check the status of MySQL server and to create
 a MySQL user with the required privileges.
@@ -227,6 +224,9 @@ AWS_SSH_USER = 'root'       # username to be used when connecting to
                             # to the MySQL server locally without a password.
 ```
 
+
+#### MySQL Server Settings for Changeset Operations
+
 MySQL host and port. If MYSQL_HOST is None, the EC2 instance host name is used.
 MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD are also used in changeset apply operations.
 ```
@@ -238,7 +238,7 @@ MYSQL_PASSWORD = 'sandbox'
 The user specified on MYSQL_USER needs a RELOAD and PROCESS privileges during the changeset review/apply process.
 To grant privileges, run the following in MySQL console using a user that can grant privileges to other users.
 ```
-GRANT RELOAD,PROCESS ON . TO 'sandbox'@'%';
+GRANT ALL PRIVILEGES ON *.* TO 'sandbox'@'%';
 ```
 
 When an EC2 instance is launched, it needs some time before it can be utilized.
@@ -570,7 +570,7 @@ Dumping and Restoring Data
 Use the following command to dump data:
 
 ```
-$ ./manage.py dumpdata --indent=4 -n -e auth.Permission auth sites schemanizer > data.json
+$ ./manage.py dumpdata --indent=4 -n -e auth.Permission auth sites changesetapplies changesetreviews changesets changesettests changesetvalidations emails events schemanizer schemaversions servers users utils > data.json
 ```
 
 To restore:
