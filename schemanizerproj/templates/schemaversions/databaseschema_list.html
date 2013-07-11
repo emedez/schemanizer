@@ -24,7 +24,9 @@
                     <td>{{ obj.id }}</td>
                     <td>{{ obj.name }}</td>
                     <td>
-                        <a href="{% url 'schemaversions_schema_version_list' %}?database_schema={{ obj.id }}">View schema versions</a></td>
+                        <a href="{% url 'schemaversions_schema_version_list' %}?database_schema={{ obj.id }}">View schema versions</a> |
+                        <a href="{% url 'schemaversions_schema_check' obj.pk %}">Schema Check</a>
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

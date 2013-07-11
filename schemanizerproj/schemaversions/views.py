@@ -1,7 +1,8 @@
-import StringIO
 import json
 import logging
+import StringIO
 import urllib
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,8 +14,9 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, FormView, DetailView, View
-from utils import decorators
+
 from servers import models as servers_models
+from utils import decorators
 from . import (
     models, user_access, forms, schema_functions, event_handlers)
 
@@ -119,6 +121,34 @@ class SchemaVersion(DetailView):
             messages.error(request, msg)
             log.exception(msg)
         return self.get(request, *args, **kwargs)
+
+
+def schema_check(request, database_schema_pk):
+    try:
+        database_schema_pk = int(database_schema_pk)
+        database_schema = models.DatabaseSchema.objects.get(pk=database_schema_pk)
+        database_schema.generate_server_data(
+            servers=servers_models.Server.objects.all(),
+            connection_options={
+                'user': settings.MYSQL_USER,
+                'passwd': settings.MYSQL_PASSWORD
+            }
+        )
+        event_handlers.on_schema_check(
+            database_schema=database_schema,
+            request=request
+        )
+    except Exception, e:
+        msg = 'ERROR %s: %s' % (type(e), e)
+        log.exception(msg)
+        messages.error(request, msg)
+    finally:
+        url = reverse('servers_server_data_list')
+        params = urllib.urlencode(
+            dict(database_schema_id=database_schema_pk)
+        )
+        return redirect('%s?%s' % (url, params))
+
 
 
 class SchemaVersionDdlDownload(View):

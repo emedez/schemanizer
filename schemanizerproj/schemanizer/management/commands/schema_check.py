@@ -1,10 +1,16 @@
 import logging
 from optparse import make_option
+
 from django.core.management.base import BaseCommand
+
 from celery import states
 from djcelery import models as djcelery_models
+
 from emails import email_functions
-from schemaversions import models as schemaversions_models
+from schemaversions import (
+    event_handlers as schemaversions_event_handlers,
+    models as schemaversions_models,
+)
 from servers import models as servers_models
 
 log = logging.getLogger(__name__)
@@ -30,7 +36,9 @@ class Command(BaseCommand):
                         except Exception, e:
                             log.exception('EXCEPTION')
                             print '        ERROR %s: %s' % (type(e), e)
-
+                    schemaversions_event_handlers.on_schema_check(
+                        database_schema
+                    )
                 server_data_list = list(
                     servers_models.ServerData.objects.filter(
                         schema_version=None))

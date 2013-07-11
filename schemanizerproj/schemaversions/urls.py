@@ -31,5 +31,12 @@ urlpatterns = patterns('',
         'schemaversions.views.ajax_get_schema_version',
         name='schemaversions_ajax_get_schema_version'),
 
-
+    #
+    # schema check
+    #
+    url(
+        r'^schema-check/(?P<database_schema_pk>\d+)/$',
+        'schemaversions.views.schema_check',
+        name='schemaversions_schema_check'
+    )
 )
