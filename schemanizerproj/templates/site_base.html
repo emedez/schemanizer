@@ -15,7 +15,8 @@
     {% block layout %}
         <div class="container-fluid">
             {% block navbar %}
-                <div class="navbar navbar-fixed-top navbar-inverse">
+                {# <div class="navbar navbar-fixed-top navbar-inverse"> #}
+                <div class="navbar navbar-inverse">
                     <div class="navbar-inner">
                         <a class="brand" href="{% url 'home' %}">{% block brand %}Schemanizer{% endblock %}</a>
                         {% if request.user.is_authenticated %}
