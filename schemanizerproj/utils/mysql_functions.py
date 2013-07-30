@@ -251,17 +251,20 @@ def is_mysql_server_running(hostname, username, key_filename=None):
     c.connect(**params)
 
     try:
-        stdin, stdout, stderr = c.exec_command('service mysql status')
+        # stdin, stdout, stderr = c.exec_command('service mysql status')
+        stdin, stdout, stderr = c.exec_command('mysqladmin ping')
         stdout_string = stdout.read()
         stderr_string = stderr.read()
         log.debug('stdout_string = %s', stdout_string)
         log.debug('stderr_string = %s', stderr_string)
-        mysql_running = any([
-            # CentOS/Percona
-            stdout_string.lower().startswith('mysql running'),
-            # Ubuntu
-            stdout_string.lower().startswith('mysql start/running')
-        ])
+        # mysql_running = any([
+        #     # CentOS/Percona
+        #     stdout_string.lower().startswith('mysql running'),
+        #     # Ubuntu
+        #     stdout_string.lower().startswith('mysql start/running')
+        # ])
+        mysql_running = stdout_string.strip().lower().startswith(
+            'mysqld is alive')
     finally:
         c.close()
 
